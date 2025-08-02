@@ -1,6 +1,3 @@
-search.js
-
-// pages/search.js (Protected Search Page)
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Layout from '../components/Layout'
