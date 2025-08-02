@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Layout from '../components/Layout'
 import { useRouter } from 'next/router'
-import { checkFeatureAccess } from '../lib/supabase'
 
 export default function Search() {
   const { isAuthenticated, user, profile, loading, isPremium } = useAuth()
