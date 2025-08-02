@@ -1,6 +1,3 @@
-_app.js
-
-// pages/_app.js
 import { AuthProvider } from '../contexts/AuthContext'
 import '../styles/globals.css'
 
