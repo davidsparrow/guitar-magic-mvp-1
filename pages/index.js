@@ -1,6 +1,3 @@
-index.js
-
-// pages/index.js (Home/Landing Page)
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Layout from '../components/Layout'
