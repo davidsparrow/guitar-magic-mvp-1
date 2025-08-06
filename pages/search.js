@@ -15,6 +15,9 @@ import {
 
 export default function Search() {
   const { isAuthenticated, user, profile, loading, isPremium } = useAuth()
+
+// ADD THIS DEBUG LINE:
+console.log('🔍 Search page auth state:', { isAuthenticated, loading, user: !!user, profile: !!profile })
   const router = useRouter()
   
   // Search states
