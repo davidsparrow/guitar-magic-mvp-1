@@ -111,12 +111,25 @@ export default function Search() {
     }
   }
 
-  const handleVideoSelect = (video) => {
-    // TODO: Navigate to video player page or open video modal
-    console.log('Selected video:', video)
-    alert(`Selected: ${video.snippet.title}\nWe'll build the video player next!`)
-  }
-
+ 
+ const handleVideoSelect = (video) => {
+  const videoId = video.id.videoId
+  
+  // Store video info for the player page
+  localStorage.setItem('currentVideo', JSON.stringify({
+    id: videoId,
+    title: video.snippet.title,
+    channelTitle: video.snippet.channelTitle,
+    description: video.snippet.description,
+    thumbnails: video.snippet.thumbnails,
+    publishedAt: video.snippet.publishedAt,
+    statistics: video.statistics,
+    contentDetails: video.contentDetails
+  }))
+  
+  // Navigate to video player
+  router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
+}
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch()
