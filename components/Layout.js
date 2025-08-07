@@ -17,17 +17,23 @@ const Layout = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
-  const handleSignOut = async () => {
-    setIsSigningOut(true)
-    try {
-      await signOut()
-      setShowUserMenu(false)
-    } catch (error) {
-      console.error('Sign out error:', error)
-    } finally {
-      setIsSigningOut(false)
+const handleSignOut = async () => {
+  console.log('🚪 LOGOUT: Starting logout process')
+  setIsSigningOut(true)
+  try {
+    const result = await signOut()
+    console.log('🚪 LOGOUT: Result:', result)
+    if (result.error) {
+      console.error('🚪 LOGOUT: Error occurred:', result.error)
+      alert('Logout failed: ' + result.error.message)
     }
+  } catch (error) {
+    console.error('🚪 LOGOUT: Exception:', error)
+    alert('Logout error: ' + error.message)
+  } finally {
+    setIsSigningOut(false)
   }
+}
 
   if (loading) {
     return (
