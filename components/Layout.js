@@ -1,4 +1,4 @@
-// components/Layout.js - Enhanced Layout with Clickable Logo
+// components/Layout.js - Enhanced Layout with Clickable Logo and more changes
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
