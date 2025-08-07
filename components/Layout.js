@@ -1,4 +1,4 @@
-// components/Layout.js - Enhanced Layout with Clickable Logo, menu enhancements
+// components/Layout.js - Enhanced Layout with Clickable Logo menu logout test
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -69,6 +69,25 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* MOVED: Small header test button to left side */}
+      <button 
+        onClick={testDirectLogout}
+        style={{
+          position: 'fixed', 
+          top: '100px', 
+          left: '10px', 
+          background: 'red', 
+          color: 'white', 
+          padding: '5px 8px',
+          fontSize: '10px',
+          zIndex: 9999,
+          border: 'none',
+          borderRadius: '3px'
+        }}
+      >
+        🧪 TEST
+      </button>
+
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -135,8 +154,18 @@ const Layout = ({ children }) => {
                     >
                       {/* User Info Header */}
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{userName}</p>
-                        <p className="text-xs text-gray-500">{userEmail}</p>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{userName}</p>
+                            <p className="text-xs text-gray-500">{userEmail}</p>
+                          </div>
+                          <button 
+                            onClick={() => setShowUserMenu(false)}
+                            className="text-gray-400 hover:text-gray-600 text-xl"
+                          >
+                            ×
+                          </button>
+                        </div>
                         <div className="flex items-center mt-2">
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             isPremium 
@@ -153,14 +182,20 @@ const Layout = ({ children }) => {
                         <a 
                           href="/" 
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          onClick={() => setShowUserMenu(false)}
+                          onMouseDown={(e) => {
+                            console.log('🧪 HOME LINK: Clicked')
+                            setShowUserMenu(false)
+                          }}
                         >
                           🏠 Home
                         </a>
                         <a 
                           href="/search" 
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          onClick={() => setShowUserMenu(false)}
+                          onMouseDown={(e) => {
+                            console.log('🧪 SEARCH LINK: Clicked')
+                            setShowUserMenu(false)
+                          }}
                         >
                           🔍 Search Videos
                         </a>
@@ -203,9 +238,10 @@ const Layout = ({ children }) => {
                         <div className="border-t border-gray-100 my-1"></div>
                         
                         <button
-                          onClick={(e) => {
+                          onMouseDown={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
+                            console.log('🧪 MENU SIGNOUT: Button clicked')
                             handleSignOut()
                           }}
                           disabled={isSigningOut}
@@ -214,18 +250,17 @@ const Layout = ({ children }) => {
                           {isSigningOut ? '🔄 Signing Out...' : '🚪 Sign Out'}
                         </button>
 
-                        {/* UPDATED: Test button using testDirectLogout - moved to bottom of menu */}
-                        <div className="border-t border-gray-100 my-1"></div>
+                        {/* UPDATED: Much smaller test button that fits in menu */}
                         <button 
-                          onClick={(e) => {
+                          onMouseDown={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            console.log('🧪 TEST: Menu button clicked')
+                            console.log('🧪 MENU TEST: Button clicked')
                             testDirectLogout()
                           }}
-                          className="block w-full text-left px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 transition-colors rounded mx-2 my-1"
+                          className="block w-full text-left px-4 py-1 text-xs bg-red-600 text-white hover:bg-red-700 transition-colors rounded mx-1 my-1"
                         >
-                          🧪 TEST DIRECT LOGOUT
+                          🧪 Test
                         </button>
 
                       </div>
@@ -247,13 +282,13 @@ const Layout = ({ children }) => {
         {children}
       </main>
 
-      {/* Background Click to Close Menu */}
-      {showUserMenu && (
+      {/* Background Click to Close Menu - TEMPORARILY DISABLED FOR TESTING */}
+      {/* {showUserMenu && (
         <div
           className="fixed inset-0 z-[50]"
           onClick={() => setShowUserMenu(false)}
         ></div>
-      )}
+      )} */}
     </div>
   )
 }
