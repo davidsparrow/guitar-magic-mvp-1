@@ -65,8 +65,7 @@ export default function Search() {
     }
   }, [])
 
-  // Add this NEW TEST BUTTON test function inside your Search component:
-const testLogout = async () => {
+  const testLogout = async () => {
   console.log('🧪 SEARCH PAGE: Testing logout...')
   try {
     const result = await signOut()
@@ -75,7 +74,6 @@ const testLogout = async () => {
     console.error('🧪 SEARCH PAGE: Logout error:', error)
   }
 }
-
 
   const handleSearch = async (query = searchQuery, pageToken = null) => {
     if (!query?.trim()) return
@@ -260,6 +258,23 @@ const testLogout = async () => {
             </p>
           </div>
 
+          <button 
+  onClick={testLogout}
+  style={{
+    position: 'fixed', 
+    top: '100px', 
+    right: '10px', 
+    background: 'red', 
+    color: 'white', 
+    padding: '10px',
+    zIndex: 9999,
+    border: 'none',
+    borderRadius: '5px'
+  }}
+>
+  🧪 TEST LOGOUT FROM SEARCH
+</button>
+
           <div className="max-w-2xl mx-auto">
             <div className="relative">
               <input
@@ -291,23 +306,6 @@ const testLogout = async () => {
                   className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 px-3 py-1 rounded-full text-sm transition-colors"
                 >
                   {tag}
-                </button>
-             
-                <button 
-                  onClick={testLogout}
-                  style={{
-                    position: 'fixed', 
-                    top: '100px', 
-                    right: '10px', 
-                    background: 'red', 
-                    color: 'white', 
-                    padding: '10px',
-                    zIndex: 9999,
-                    border: 'none',
-                    borderRadius: '5px'
-                  }}
-                >
-                  🧪 TESTING LOGOUT FROM SEARCH
                 </button>
               ))}
             </div>
