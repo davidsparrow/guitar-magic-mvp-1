@@ -34,7 +34,48 @@ const handleSignOut = async () => {
     setIsSigningOut(false)
   }
 }
+// Replace your handleSignOut function in Layout.js with this debug version:
 
+const handleSignOut = async () => {
+  console.log('🚪 LAYOUT LOGOUT: Starting logout process')
+  console.log('🚪 LAYOUT LOGOUT: signOut function type:', typeof signOut)
+  console.log('🚪 LAYOUT LOGOUT: signOut function:', signOut)
+  
+  setIsSigningOut(true)
+  setShowUserMenu(false) // Close the menu first
+  
+  try {
+    console.log('🚪 LAYOUT LOGOUT: About to call signOut()...')
+    const result = await signOut()
+    console.log('🚪 LAYOUT LOGOUT: signOut() completed, result:', result)
+    
+    if (result && result.error) {
+      console.error('🚪 LAYOUT LOGOUT: Error in result:', result.error)
+      alert('Logout failed: ' + result.error.message)
+    } else {
+      console.log('🚪 LAYOUT LOGOUT: Success!')
+    }
+  } catch (error) {
+    console.error('🚪 LAYOUT LOGOUT: Exception caught:', error)
+    console.error('🚪 LAYOUT LOGOUT: Error stack:', error.stack)
+    alert('Logout error: ' + error.message)
+  } finally {
+    console.log('🚪 LAYOUT LOGOUT: Finally block reached')
+    setIsSigningOut(false)
+  }
+}
+
+// Also add this simplified test function right next to handleSignOut:
+const testDirectLogout = async () => {
+  console.log('🧪 LAYOUT TEST: Direct logout test starting...')
+  setShowUserMenu(false) // Close menu
+  try {
+    const result = await signOut()
+    console.log('🧪 LAYOUT TEST: Direct logout result:', result)
+  } catch (error) {
+    console.error('🧪 LAYOUT TEST: Direct logout error:', error)
+  }
+}
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -182,17 +223,12 @@ const handleSignOut = async () => {
                         >
                           {isSigningOut ? '🔄 Signing Out...' : '🚪 Sign Out'}
                         </button>
-
                         <button 
-                          onClick={() => {
-                            console.log('🧪 TEST: Button clicked')
-                            handleSignOut()
-                          }}
+                          onClick={testDirectLogout}
                           style={{background: 'red', color: 'white', padding: '10px'}}
                         >
-                          TEST LOGOUT
+                          TEST DIRECT LOGOUT
                         </button>
-
                       </div>
                     </div>
                   )}
