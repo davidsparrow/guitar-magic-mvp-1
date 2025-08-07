@@ -15,10 +15,10 @@ import {
 
 export default function Search() {
   const { isAuthenticated, user, profile, loading, isPremium } = useAuth()
-
-// ADD THIS DEBUG LINE:
-console.log('🔍 Search page auth state:', { isAuthenticated, loading, user: !!user, profile: !!profile })
-  const router = useRouter()
+  const router = useRouter() // FIXED: removed extra ]
+  
+  // DEBUG: Check for infinite re-renders
+  console.log('🔄 SEARCH PAGE RENDER:', Date.now())
   
   // Search states
   const [searchQuery, setSearchQuery] = useState('')
@@ -35,13 +35,23 @@ console.log('🔍 Search page auth state:', { isAuthenticated, loading, user: !!
   const [currentPage, setCurrentPage] = useState(1)
   const [totalResults, setTotalResults] = useState(0)
 
+  // DEBUG: Watch auth state changes (ONLY ONE NEEDED)
+  useEffect(() => {
+    console.log('🔍 AUTH STATE CHANGE:', {
+      isAuthenticated,
+      loading,
+      user: user ? 'exists' : 'null',
+      profile: profile ? 'exists' : 'null',
+      timestamp: new Date().toISOString()
+    })
+  }, [isAuthenticated, loading, user, profile])
+
   // Redirect non-authenticated users
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push('/')
       return
     }
-
     // Check feature access for authenticated users
     if (user && !loading) {
       checkFeatureAccess(user.id, 'custom_loops').then(setHasLoopAccess)
