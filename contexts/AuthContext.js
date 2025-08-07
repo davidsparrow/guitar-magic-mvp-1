@@ -17,6 +17,20 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // SEPARATE useEffect for timeout (not nested!)
+  useEffect(() => {
+    // Safety timeout - if loading stays true for more than 10 seconds, force it to false
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('⚠️ Loading timeout - forcing loading to false')
+        setLoading(false)
+      }
+    }, 10000) // 10 seconds
+
+    return () => clearTimeout(timeout)
+  }, [loading])
+
+  // SEPARATE useEffect for auth management
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
@@ -27,7 +41,10 @@ export const AuthProvider = ({ children }) => {
           console.error('Auth session error:', error)
         } else if (session?.user) {
           setUser(session.user)
-          await fetchUserProfile(session.user.id)
+          // Don't await - fetch profile in background
+          fetchUserProfile(session.user.id).catch(err => {
+            console.error('Profile fetch failed:', err)
+          })
         }
       } catch (error) {
         console.error('Failed to get session:', error)
@@ -45,11 +62,16 @@ export const AuthProvider = ({ children }) => {
         
         if (session?.user) {
           setUser(session.user)
-          await fetchUserProfile(session.user.id)
+          // Don't await - fetch profile in background
+          fetchUserProfile(session.user.id).catch(err => {
+            console.error('Profile fetch failed:', err)
+          })
         } else {
           setUser(null)
           setProfile(null)
         }
+        
+        // ALWAYS set loading to false regardless of profile fetch
         setLoading(false)
       }
     )
