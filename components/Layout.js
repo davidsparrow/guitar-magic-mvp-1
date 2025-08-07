@@ -182,6 +182,17 @@ const handleSignOut = async () => {
                         >
                           {isSigningOut ? '🔄 Signing Out...' : '🚪 Sign Out'}
                         </button>
+
+                        <button 
+                          onClick={() => {
+                            console.log('🧪 TEST: Button clicked')
+                            handleSignOut()
+                          }}
+                          style={{background: 'red', color: 'white', padding: '10px'}}
+                        >
+                          TEST LOGOUT
+                        </button>
+
                       </div>
                     </div>
                   )}
