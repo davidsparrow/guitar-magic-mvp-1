@@ -1,4 +1,4 @@
-// components/Layout.js - Enhanced Layout with Clickable Logo menu logout test
+// components/Layout.js - Enhanced Layout with Clickable Logo, menu logout
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -17,45 +17,24 @@ const Layout = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
-  // UPDATED: Debug version of handleSignOut
+  // Simplified handleSignOut function (keeping it working!)
   const handleSignOut = async () => {
-    console.log('🚪 LAYOUT LOGOUT: Starting logout process')
-    console.log('🚪 LAYOUT LOGOUT: signOut function type:', typeof signOut)
-    console.log('🚪 LAYOUT LOGOUT: signOut function:', signOut)
-    
+    console.log('🚪 LOGOUT: Starting logout process')
     setIsSigningOut(true)
     setShowUserMenu(false) // Close the menu first
     
     try {
-      console.log('🚪 LAYOUT LOGOUT: About to call signOut()...')
       const result = await signOut()
-      console.log('🚪 LAYOUT LOGOUT: signOut() completed, result:', result)
-      
+      console.log('🚪 LOGOUT: Result:', result)
       if (result && result.error) {
-        console.error('🚪 LAYOUT LOGOUT: Error in result:', result.error)
+        console.error('🚪 LOGOUT: Error occurred:', result.error)
         alert('Logout failed: ' + result.error.message)
-      } else {
-        console.log('🚪 LAYOUT LOGOUT: Success!')
       }
     } catch (error) {
-      console.error('🚪 LAYOUT LOGOUT: Exception caught:', error)
-      console.error('🚪 LAYOUT LOGOUT: Error stack:', error.stack)
+      console.error('🚪 LOGOUT: Exception:', error)
       alert('Logout error: ' + error.message)
     } finally {
-      console.log('🚪 LAYOUT LOGOUT: Finally block reached')
       setIsSigningOut(false)
-    }
-  }
-
-  // NEW: Simplified test function
-  const testDirectLogout = async () => {
-    console.log('🧪 LAYOUT TEST: Direct logout test starting...')
-    setShowUserMenu(false) // Close menu
-    try {
-      const result = await signOut()
-      console.log('🧪 LAYOUT TEST: Direct logout result:', result)
-    } catch (error) {
-      console.error('🧪 LAYOUT TEST: Direct logout error:', error)
     }
   }
 
@@ -69,25 +48,6 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* MOVED: Small header test button to left side */}
-      <button 
-        onClick={testDirectLogout}
-        style={{
-          position: 'fixed', 
-          top: '100px', 
-          left: '10px', 
-          background: 'red', 
-          color: 'white', 
-          padding: '5px 8px',
-          fontSize: '10px',
-          zIndex: 9999,
-          border: 'none',
-          borderRadius: '3px'
-        }}
-      >
-        🧪 TEST
-      </button>
-
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -182,20 +142,14 @@ const Layout = ({ children }) => {
                         <a 
                           href="/" 
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          onMouseDown={(e) => {
-                            console.log('🧪 HOME LINK: Clicked')
-                            setShowUserMenu(false)
-                          }}
+                          onClick={() => setShowUserMenu(false)}
                         >
                           🏠 Home
                         </a>
                         <a 
                           href="/search" 
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          onMouseDown={(e) => {
-                            console.log('🧪 SEARCH LINK: Clicked')
-                            setShowUserMenu(false)
-                          }}
+                          onClick={() => setShowUserMenu(false)}
                         >
                           🔍 Search Videos
                         </a>
@@ -241,26 +195,12 @@ const Layout = ({ children }) => {
                           onMouseDown={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            console.log('🧪 MENU SIGNOUT: Button clicked')
                             handleSignOut()
                           }}
                           disabled={isSigningOut}
                           className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
                         >
                           {isSigningOut ? '🔄 Signing Out...' : '🚪 Sign Out'}
-                        </button>
-
-                        {/* UPDATED: Much smaller test button that fits in menu */}
-                        <button 
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            console.log('🧪 MENU TEST: Button clicked')
-                            testDirectLogout()
-                          }}
-                          className="block w-full text-left px-4 py-1 text-xs bg-red-600 text-white hover:bg-red-700 transition-colors rounded mx-1 my-1"
-                        >
-                          🧪 Test
                         </button>
 
                       </div>
@@ -282,13 +222,13 @@ const Layout = ({ children }) => {
         {children}
       </main>
 
-      {/* Background Click to Close Menu - TEMPORARILY DISABLED FOR TESTING */}
-      {/* {showUserMenu && (
+      {/* Background Click to Close Menu */}
+      {showUserMenu && (
         <div
           className="fixed inset-0 z-[50]"
           onClick={() => setShowUserMenu(false)}
         ></div>
-      )} */}
+      )}
     </div>
   )
 }
