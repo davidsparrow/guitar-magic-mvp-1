@@ -17,65 +17,48 @@ const Layout = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
-const handleSignOut = async () => {
-  console.log('🚪 LOGOUT: Starting logout process')
-  setIsSigningOut(true)
-  try {
-    const result = await signOut()
-    console.log('🚪 LOGOUT: Result:', result)
-    if (result.error) {
-      console.error('🚪 LOGOUT: Error occurred:', result.error)
-      alert('Logout failed: ' + result.error.message)
-    }
-  } catch (error) {
-    console.error('🚪 LOGOUT: Exception:', error)
-    alert('Logout error: ' + error.message)
-  } finally {
-    setIsSigningOut(false)
-  }
-}
-// Replace your handleSignOut function in Layout.js with this debug version:
-
-const handleSignOut = async () => {
-  console.log('🚪 LAYOUT LOGOUT: Starting logout process')
-  console.log('🚪 LAYOUT LOGOUT: signOut function type:', typeof signOut)
-  console.log('🚪 LAYOUT LOGOUT: signOut function:', signOut)
-  
-  setIsSigningOut(true)
-  setShowUserMenu(false) // Close the menu first
-  
-  try {
-    console.log('🚪 LAYOUT LOGOUT: About to call signOut()...')
-    const result = await signOut()
-    console.log('🚪 LAYOUT LOGOUT: signOut() completed, result:', result)
+  // UPDATED: Debug version of handleSignOut
+  const handleSignOut = async () => {
+    console.log('🚪 LAYOUT LOGOUT: Starting logout process')
+    console.log('🚪 LAYOUT LOGOUT: signOut function type:', typeof signOut)
+    console.log('🚪 LAYOUT LOGOUT: signOut function:', signOut)
     
-    if (result && result.error) {
-      console.error('🚪 LAYOUT LOGOUT: Error in result:', result.error)
-      alert('Logout failed: ' + result.error.message)
-    } else {
-      console.log('🚪 LAYOUT LOGOUT: Success!')
+    setIsSigningOut(true)
+    setShowUserMenu(false) // Close the menu first
+    
+    try {
+      console.log('🚪 LAYOUT LOGOUT: About to call signOut()...')
+      const result = await signOut()
+      console.log('🚪 LAYOUT LOGOUT: signOut() completed, result:', result)
+      
+      if (result && result.error) {
+        console.error('🚪 LAYOUT LOGOUT: Error in result:', result.error)
+        alert('Logout failed: ' + result.error.message)
+      } else {
+        console.log('🚪 LAYOUT LOGOUT: Success!')
+      }
+    } catch (error) {
+      console.error('🚪 LAYOUT LOGOUT: Exception caught:', error)
+      console.error('🚪 LAYOUT LOGOUT: Error stack:', error.stack)
+      alert('Logout error: ' + error.message)
+    } finally {
+      console.log('🚪 LAYOUT LOGOUT: Finally block reached')
+      setIsSigningOut(false)
     }
-  } catch (error) {
-    console.error('🚪 LAYOUT LOGOUT: Exception caught:', error)
-    console.error('🚪 LAYOUT LOGOUT: Error stack:', error.stack)
-    alert('Logout error: ' + error.message)
-  } finally {
-    console.log('🚪 LAYOUT LOGOUT: Finally block reached')
-    setIsSigningOut(false)
   }
-}
 
-// Also add this simplified test function right next to handleSignOut:
-const testDirectLogout = async () => {
-  console.log('🧪 LAYOUT TEST: Direct logout test starting...')
-  setShowUserMenu(false) // Close menu
-  try {
-    const result = await signOut()
-    console.log('🧪 LAYOUT TEST: Direct logout result:', result)
-  } catch (error) {
-    console.error('🧪 LAYOUT TEST: Direct logout error:', error)
+  // NEW: Simplified test function
+  const testDirectLogout = async () => {
+    console.log('🧪 LAYOUT TEST: Direct logout test starting...')
+    setShowUserMenu(false) // Close menu
+    try {
+      const result = await signOut()
+      console.log('🧪 LAYOUT TEST: Direct logout result:', result)
+    } catch (error) {
+      console.error('🧪 LAYOUT TEST: Direct logout error:', error)
+    }
   }
-}
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -217,18 +200,30 @@ const testDirectLogout = async () => {
                         <div className="border-t border-gray-100 my-1"></div>
                         
                         <button
-                          onClick={handleSignOut}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleSignOut()
+                          }}
                           disabled={isSigningOut}
                           className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
                         >
                           {isSigningOut ? '🔄 Signing Out...' : '🚪 Sign Out'}
                         </button>
+
+                        {/* UPDATED: Test button using testDirectLogout */}
                         <button 
-                          onClick={testDirectLogout}
-                          style={{background: 'red', color: 'white', padding: '10px'}}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            console.log('🧪 TEST: Button clicked')
+                            testDirectLogout()
+                          }}
+                          style={{background: 'red', color: 'white', padding: '10px', width: '100%', border: 'none', borderRadius: '5px', marginTop: '5px'}}
                         >
                           TEST DIRECT LOGOUT
                         </button>
+
                       </div>
                     </div>
                   )}
