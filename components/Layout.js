@@ -1,4 +1,4 @@
-// components/Layout.js - Enhanced Layout with Clickable Logo and more changes
+// components/Layout.js - Enhanced Layout with Clickable Logo, menu enhancements
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -129,7 +129,10 @@ const Layout = ({ children }) => {
 
                   {/* Dropdown Menu */}
                   {showUserMenu && (
-                    <div className="absolute top-12 right-0 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-64 z-50">
+                    <div 
+                      className="absolute top-12 right-0 bg-white rounded-xl shadow-lg border border-gray-200 py-2 w-64 z-[60]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {/* User Info Header */}
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">{userName}</p>
@@ -211,17 +214,18 @@ const Layout = ({ children }) => {
                           {isSigningOut ? '🔄 Signing Out...' : '🚪 Sign Out'}
                         </button>
 
-                        {/* UPDATED: Test button using testDirectLogout */}
+                        {/* UPDATED: Test button using testDirectLogout - moved to bottom of menu */}
+                        <div className="border-t border-gray-100 my-1"></div>
                         <button 
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            console.log('🧪 TEST: Button clicked')
+                            console.log('🧪 TEST: Menu button clicked')
                             testDirectLogout()
                           }}
-                          style={{background: 'red', color: 'white', padding: '10px', width: '100%', border: 'none', borderRadius: '5px', marginTop: '5px'}}
+                          className="block w-full text-left px-4 py-2 text-sm bg-red-600 text-white hover:bg-red-700 transition-colors rounded mx-2 my-1"
                         >
-                          TEST DIRECT LOGOUT
+                          🧪 TEST DIRECT LOGOUT
                         </button>
 
                       </div>
@@ -246,7 +250,7 @@ const Layout = ({ children }) => {
       {/* Background Click to Close Menu */}
       {showUserMenu && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-[50]"
           onClick={() => setShowUserMenu(false)}
         ></div>
       )}
