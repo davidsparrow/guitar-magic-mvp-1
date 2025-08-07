@@ -403,15 +403,6 @@ export default function Search() {
               <button className="text-white border border-white/30 px-6 py-3 rounded-xl font-medium hover:bg-white/10 transition-colors">
                 Learn More
               </button>
-              <button 
-                onClick={() => {
-                  console.log('🧪 TEST: Button clicked')
-                  handleSignOut()
-                }}
-                style={{background: 'red', color: 'white', padding: '10px'}}
-              >
-                TEST LOGOUT
-              </button>
             </div>
           </div>
         )}
