@@ -1,10 +1,10 @@
-// pages/watch.js - FIXED VIDEO SIZING VERSION
+// pages/watch.js - Footer Controls Only, Centered Video
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRouter } from 'next/router'
 import YouTube from 'react-youtube'
 
-// React Icons - CORRECTED imports
+// React Icons
 import { FaPlay, FaPause } from "react-icons/fa"
 import { RiFlipHorizontal2Fill, RiFlipVertical2Fill } from "react-icons/ri"
 import { IoVolumeHigh, IoVolumeMute } from "react-icons/io5"
@@ -15,7 +15,6 @@ export default function Watch() {
   const router = useRouter()
   const { v: videoId, title, channel } = router.query
   const playerRef = useRef(null)
-  const controlsTimeoutRef = useRef(null)
   const intervalRef = useRef(null)
   
   // Video states
@@ -36,9 +35,7 @@ export default function Watch() {
   const [isLooping, setIsLooping] = useState(false)
   
   // UI states
-  const [showControls, setShowControls] = useState(true)
   const [showMenu, setShowMenu] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
   
   // Video info
   const [videoInfo, setVideoInfo] = useState({
@@ -77,35 +74,6 @@ export default function Watch() {
     }
   }, [isAuthenticated, loading, router])
 
-  // Auto-hide controls with Apple-style timing
-  useEffect(() => {
-    if (showControls && !isHovered) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false)
-      }, 4000) // 4 seconds like Apple TV
-    }
-
-    return () => {
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
-      }
-    }
-  }, [showControls, isHovered])
-
-  // Show controls on mouse move
-  const handleMouseMove = () => {
-    setShowControls(true)
-  }
-
-  const handleMouseEnter = () => {
-    setIsHovered(true)
-    setShowControls(true)
-  }
-
-  const handleMouseLeave = () => {
-    setIsHovered(false)
-  }
-
   // YouTube player event handlers
   const onPlayerReady = (event) => {
     playerRef.current = event.target
@@ -124,11 +92,10 @@ export default function Watch() {
           event.target.seekTo(loopStart)
         }
       }
-    }, 100) // 100ms for smooth progress
+    }, 100)
   }
 
   const onPlayerStateChange = (event) => {
-    // YouTube player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
     setIsPlaying(event.data === 1)
   }
 
@@ -233,21 +200,22 @@ export default function Watch() {
     return `${formatTime(seconds)}.${ms.toString().padStart(3, '0')}`
   }
 
-  // YouTube player options - FIXED SIZING
+  // YouTube player options
   const playerOpts = {
     height: '100%',
     width: '100%',
     playerVars: {
-      controls: 0,           // Hide YouTube controls
+      controls: 0,           // Hide YouTube controls completely
       disablekb: 1,         // Disable keyboard controls
       fs: 0,                // Disable fullscreen button
       modestbranding: 1,    // Minimal YouTube branding
-      rel: 0,               // No related videos
+      rel: 0,               // No related videos at end
       showinfo: 0,          // No video info
       iv_load_policy: 3,    // No annotations
       cc_load_policy: 0,    // No captions by default
       playsinline: 1,       // Play inline on mobile
       autoplay: 0,          // Don't autoplay
+      end: Math.floor(duration * 0.98), // End before suggested videos appear
     }
   }
 
@@ -260,7 +228,7 @@ export default function Watch() {
   }
 
   if (!isAuthenticated) {
-    return null // Will redirect
+    return null
   }
 
   if (!videoId) {
@@ -280,9 +248,9 @@ export default function Watch() {
   }
 
   return (
-    <div className="h-screen bg-black text-white flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-black/90 backdrop-blur-md p-4 flex items-center justify-between z-40 flex-shrink-0 border-b border-white/10">
+      <header className="bg-black/95 backdrop-blur-md p-4 flex items-center justify-between z-40 flex-shrink-0 border-b border-white/10">
         <div className="w-full flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-3">
@@ -307,7 +275,7 @@ export default function Watch() {
           {/* Hamburger Menu */}
           <button 
             onClick={() => setShowMenu(true)}
-            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200 backdrop-blur-sm"
+            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200"
           >
             <div className="w-6 h-6 flex flex-col justify-center items-center">
               <span className="bg-white block h-0.5 w-6 rounded-full mb-1.5"></span>
@@ -318,251 +286,233 @@ export default function Watch() {
         </div>
       </header>
 
-      {/* Video Container - FIXED TO FILL SCREEN */}
-      <div 
-        className="flex-1 relative bg-black min-h-0"
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* YouTube Player Container - FIXED SIZING */}
+      {/* Video Container - CENTERED PROPERLY */}
+      <div className="flex-1 relative bg-black flex items-center justify-center">
+        {/* YouTube Player - Properly Centered */}
         <div 
-          className="absolute inset-0 flex items-center justify-center p-4"
+          className="w-full h-full flex items-center justify-center p-4"
           style={{
             transform: `scale${isFlippedH ? 'X' : ''}(-1) scale${isFlippedV ? 'Y' : ''}(-1)`,
             transition: 'transform 0.3s ease'
           }}
         >
-          {/* Video wrapper with proper aspect ratio */}
-          <div className="w-full h-full max-w-none max-h-none flex items-center justify-center">
-            <div 
-              className="relative bg-black"
-              style={{ 
-                width: '100%',
-                height: '100%',
-                maxWidth: 'calc(100vh * 16/9)', // Maintain 16:9 but don't exceed screen
-                maxHeight: 'calc(100vw * 9/16)'  // Maintain 16:9 but don't exceed screen
-              }}
-            >
-              <YouTube
-                videoId={videoId}
-                opts={playerOpts}
-                onReady={onPlayerReady}
-                onStateChange={onPlayerStateChange}
-                onError={onPlayerError}
-                className="absolute inset-0"
-                iframeClassName="w-full h-full"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Apple + YouTube Style Transparent Controls Overlay */}
-        <div 
-          className={`absolute inset-0 pointer-events-none transition-all duration-300 ease-out z-10 ${
-            showControls ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          {/* Top Gradient */}
-          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/60 via-black/20 to-transparent pointer-events-none" />
-          
-          {/* Bottom Controls - YouTube Style with Apple Design */}
-          <div className="absolute bottom-0 left-0 right-0 pointer-events-auto">
-            {/* Bottom Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm" />
-            
-            {/* Controls Container */}
-            <div className="relative p-6 pb-8">
-              {/* Timeline Section */}
-              <div className="mb-6">
-                {/* Time Display */}
-                <div className="flex items-center justify-between text-sm font-medium text-white/90 mb-3">
-                  <span className="font-mono">{formatTimeMs(currentTime)}</span>
-                  <span className="font-mono">{formatTime(duration)}</span>
-                </div>
-                
-                {/* Progress Bar - Apple Style */}
-                <div className="relative group">
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration}
-                    value={currentTime}
-                    onChange={(e) => handleSeekTo(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer 
-                              group-hover:h-1.5 transition-all duration-200
-                              [&::-webkit-slider-thumb]:appearance-none 
-                              [&::-webkit-slider-thumb]:w-4 
-                              [&::-webkit-slider-thumb]:h-4 
-                              [&::-webkit-slider-thumb]:rounded-full 
-                              [&::-webkit-slider-thumb]:bg-white 
-                              [&::-webkit-slider-thumb]:shadow-lg
-                              [&::-webkit-slider-thumb]:transition-all
-                              [&::-webkit-slider-thumb]:duration-200
-                              group-hover:[&::-webkit-slider-thumb]:scale-125"
-                    style={{
-                      background: `linear-gradient(to right, white 0%, white ${(currentTime / duration) * 100}%, rgba(255,255,255,0.3) ${(currentTime / duration) * 100}%, rgba(255,255,255,0.3) 100%)`
-                    }}
-                  />
-                  
-                  {/* Loop markers - Premium */}
-                  {isPremium && loopStart !== null && (
-                    <div 
-                      className="absolute top-1/2 transform -translate-y-1/2 w-1 h-4 bg-yellow-400 rounded-full shadow-md"
-                      style={{ left: `${(loopStart / duration) * 100}%` }}
-                    />
-                  )}
-                  {isPremium && loopEnd !== null && (
-                    <div 
-                      className="absolute top-1/2 transform -translate-y-1/2 w-1 h-4 bg-yellow-400 rounded-full shadow-md"
-                      style={{ left: `${(loopEnd / duration) * 100}%` }}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Controls Row - Apple Layout */}
-              <div className="flex items-center justify-between">
-                {/* Left: Primary Controls */}
-                <div className="flex items-center space-x-4">
-                  {/* Play/Pause - Large Apple Style */}
-                  <button 
-                    onClick={handlePlayPause}
-                    disabled={!isPlayerReady}
-                    className="p-3 hover:scale-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isPlaying ? (
-                      <FaPause className="w-8 h-8 text-white drop-shadow-lg" />
-                    ) : (
-                      <FaPlay className="w-8 h-8 text-white drop-shadow-lg" />
-                    )}
-                  </button>
-
-                  {/* Volume Control */}
-                  <div className="flex items-center space-x-3">
-                    <button 
-                      onClick={toggleMute}
-                      className="p-2 hover:scale-110 transition-all duration-200"
-                    >
-                      {isMuted || volume === 0 ? (
-                        <IoVolumeMute className="w-6 h-6 text-white drop-shadow-lg" />
-                      ) : (
-                        <IoVolumeHigh className="w-6 h-6 text-white drop-shadow-lg" />
-                      )}
-                    </button>
-                    
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={isMuted ? 0 : volume}
-                      onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
-                      className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer
-                                [&::-webkit-slider-thumb]:appearance-none 
-                                [&::-webkit-slider-thumb]:w-3 
-                                [&::-webkit-slider-thumb]:h-3 
-                                [&::-webkit-slider-thumb]:rounded-full 
-                                [&::-webkit-slider-thumb]:bg-white 
-                                [&::-webkit-slider-thumb]:shadow-lg"
-                    />
-                  </div>
-
-                  {/* Back Button */}
-                  <button 
-                    onClick={goBack}
-                    className="p-2 hover:scale-110 transition-all duration-200"
-                  >
-                    <HiOutlineArrowLeft className="w-6 h-6 text-white drop-shadow-lg" />
-                  </button>
-                </div>
-
-                {/* Center: Flip Controls */}
-                <div className="flex items-center space-x-3">
-                  <button 
-                    onClick={toggleFlipH}
-                    className={`p-3 rounded-2xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
-                      isFlippedH 
-                        ? 'bg-blue-500/80 shadow-lg shadow-blue-500/25' 
-                        : 'bg-white/20 hover:bg-white/30'
-                    }`}
-                    title="Flip Horizontal"
-                  >
-                    <RiFlipHorizontal2Fill className="w-5 h-5 text-white drop-shadow-lg" />
-                  </button>
-                  
-                  <button 
-                    onClick={toggleFlipV}
-                    className={`p-3 rounded-2xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
-                      isFlippedV 
-                        ? 'bg-blue-500/80 shadow-lg shadow-blue-500/25' 
-                        : 'bg-white/20 hover:bg-white/30'
-                    }`}
-                    title="Flip Vertical"
-                  >
-                    <RiFlipVertical2Fill className="w-5 h-5 text-white drop-shadow-lg" />
-                  </button>
-                </div>
-
-                {/* Right: Premium Loop Controls */}
-                <div className="flex items-center space-x-2">
-                  {isPremium ? (
-                    <>
-                      <button 
-                        onClick={() => setLoopPoint('start')}
-                        className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
-                          loopStart !== null 
-                            ? 'bg-yellow-500/80 text-black shadow-lg shadow-yellow-500/25' 
-                            : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                        title="Set Loop Start"
-                      >
-                        [A
-                      </button>
-                      <button 
-                        onClick={() => setLoopPoint('end')}
-                        className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
-                          loopEnd !== null 
-                            ? 'bg-yellow-500/80 text-black shadow-lg shadow-yellow-500/25' 
-                            : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                        title="Set Loop End"
-                      >
-                        B]
-                      </button>
-                      <button 
-                        onClick={toggleLoop}
-                        disabled={loopStart === null || loopEnd === null}
-                        className={`px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm ${
-                          isLooping 
-                            ? 'bg-green-500/80 shadow-lg shadow-green-500/25 text-white' 
-                            : 'bg-white/20 hover:bg-white/30 text-white'
-                        }`}
-                        title="Toggle Loop"
-                      >
-                        🔁 {isLooping ? 'ON' : 'OFF'}
-                      </button>
-                      <button 
-                        onClick={clearLoop}
-                        className="px-3 py-2 text-sm font-medium rounded-xl bg-white/20 text-white hover:bg-red-500/80 transition-all duration-200 hover:scale-105 backdrop-blur-sm"
-                        title="Clear Loop"
-                      >
-                        ✕
-                      </button>
-                    </>
-                  ) : (
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
-                      <span className="text-sm text-white/70">Loop controls: </span>
-                      <span className="text-sm text-yellow-400 font-medium">Premium</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          <div 
+            className="relative bg-black shadow-2xl"
+            style={{ 
+              width: 'min(100%, calc((100vh - 200px) * 16/9))', // Responsive width
+              height: 'min(calc(100vw * 9/16), calc(100vh - 200px))', // Responsive height
+              aspectRatio: '16/9'
+            }}
+          >
+            <YouTube
+              videoId={videoId}
+              opts={playerOpts}
+              onReady={onPlayerReady}
+              onStateChange={onPlayerStateChange}
+              onError={onPlayerError}
+              className="w-full h-full"
+              iframeClassName="w-full h-full rounded-lg"
+            />
           </div>
         </div>
       </div>
 
-      {/* Hamburger Menu Overlay - Apple Style */}
+      {/* Footer Controls - ALL CONTROLS MOVED HERE */}
+      <footer className="bg-black/95 backdrop-blur-xl border-t border-white/20 p-6 flex-shrink-0">
+        {/* Timeline Section */}
+        <div className="mb-6">
+          {/* Time Display */}
+          <div className="flex items-center justify-between text-sm font-medium text-white/90 mb-3">
+            <span className="font-mono text-blue-400">{formatTimeMs(currentTime)}</span>
+            <span className="font-mono text-gray-400">{formatTime(duration)}</span>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="relative group">
+            <input
+              type="range"
+              min="0"
+              max={duration}
+              value={currentTime}
+              onChange={(e) => handleSeekTo(parseFloat(e.target.value))}
+              className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer 
+                        group-hover:h-3 transition-all duration-200
+                        [&::-webkit-slider-thumb]:appearance-none 
+                        [&::-webkit-slider-thumb]:w-5 
+                        [&::-webkit-slider-thumb]:h-5 
+                        [&::-webkit-slider-thumb]:rounded-full 
+                        [&::-webkit-slider-thumb]:bg-white 
+                        [&::-webkit-slider-thumb]:shadow-xl
+                        [&::-webkit-slider-thumb]:border-2
+                        [&::-webkit-slider-thumb]:border-blue-500
+                        [&::-webkit-slider-thumb]:transition-all
+                        [&::-webkit-slider-thumb]:duration-200
+                        group-hover:[&::-webkit-slider-thumb]:scale-125"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentTime / duration) * 100}%, rgba(255,255,255,0.2) ${(currentTime / duration) * 100}%, rgba(255,255,255,0.2) 100%)`
+              }}
+            />
+            
+            {/* Loop markers - Premium */}
+            {isPremium && loopStart !== null && (
+              <div 
+                className="absolute top-1/2 transform -translate-y-1/2 w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg border border-yellow-300"
+                style={{ left: `${(loopStart / duration) * 100}%` }}
+              />
+            )}
+            {isPremium && loopEnd !== null && (
+              <div 
+                className="absolute top-1/2 transform -translate-y-1/2 w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg border border-yellow-300"
+                style={{ left: `${(loopEnd / duration) * 100}%` }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Controls Row */}
+        <div className="flex items-center justify-between">
+          {/* Left: Primary Controls */}
+          <div className="flex items-center space-x-6">
+            {/* Play/Pause */}
+            <button 
+              onClick={handlePlayPause}
+              disabled={!isPlayerReady}
+              className="p-4 hover:scale-110 transition-all duration-200 disabled:opacity-50 bg-white/10 rounded-full backdrop-blur-sm hover:bg-white/20"
+            >
+              {isPlaying ? (
+                <FaPause className="w-8 h-8 text-white drop-shadow-lg" />
+              ) : (
+                <FaPlay className="w-8 h-8 text-white drop-shadow-lg ml-1" />
+              )}
+            </button>
+
+            {/* Volume Control */}
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={toggleMute}
+                className="p-3 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg"
+              >
+                {isMuted || volume === 0 ? (
+                  <IoVolumeMute className="w-6 h-6 text-white drop-shadow-lg" />
+                ) : (
+                  <IoVolumeHigh className="w-6 h-6 text-white drop-shadow-lg" />
+                )}
+              </button>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-400">0</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
+                  className="w-24 h-1 bg-white/30 rounded-full appearance-none cursor-pointer
+                            [&::-webkit-slider-thumb]:appearance-none 
+                            [&::-webkit-slider-thumb]:w-4 
+                            [&::-webkit-slider-thumb]:h-4 
+                            [&::-webkit-slider-thumb]:rounded-full 
+                            [&::-webkit-slider-thumb]:bg-white 
+                            [&::-webkit-slider-thumb]:shadow-lg"
+                />
+                <span className="text-xs text-gray-400">100</span>
+              </div>
+            </div>
+
+            {/* Back Button */}
+            <button 
+              onClick={goBack}
+              className="p-3 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg flex items-center space-x-2"
+            >
+              <HiOutlineArrowLeft className="w-6 h-6 text-white drop-shadow-lg" />
+              <span className="text-sm text-white">Back</span>
+            </button>
+          </div>
+
+          {/* Center: Flip Controls */}
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={toggleFlipH}
+              className={`p-4 rounded-2xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
+                isFlippedH 
+                  ? 'bg-blue-500 shadow-lg shadow-blue-500/25' 
+                  : 'bg-white/20 hover:bg-white/30'
+              }`}
+              title="Flip Horizontal"
+            >
+              <RiFlipHorizontal2Fill className="w-6 h-6 text-white drop-shadow-lg" />
+            </button>
+            
+            <button 
+              onClick={toggleFlipV}
+              className={`p-4 rounded-2xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
+                isFlippedV 
+                  ? 'bg-blue-500 shadow-lg shadow-blue-500/25' 
+                  : 'bg-white/20 hover:bg-white/30'
+              }`}
+              title="Flip Vertical"
+            >
+              <RiFlipVertical2Fill className="w-6 h-6 text-white drop-shadow-lg" />
+            </button>
+          </div>
+
+          {/* Right: Premium Loop Controls */}
+          <div className="flex items-center space-x-3">
+            {isPremium ? (
+              <>
+                <button 
+                  onClick={() => setLoopPoint('start')}
+                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
+                    loopStart !== null 
+                      ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' 
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                  title="Set Loop Start"
+                >
+                  [A
+                </button>
+                <button 
+                  onClick={() => setLoopPoint('end')}
+                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
+                    loopEnd !== null 
+                      ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' 
+                      : 'bg-white/20 text-white hover:bg-white/30'
+                  }`}
+                  title="Set Loop End"
+                >
+                  B]
+                </button>
+                <button 
+                  onClick={toggleLoop}
+                  disabled={loopStart === null || loopEnd === null}
+                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm ${
+                    isLooping 
+                      ? 'bg-green-500 shadow-lg shadow-green-500/25 text-white' 
+                      : 'bg-white/20 hover:bg-white/30 text-white'
+                  }`}
+                  title="Toggle Loop"
+                >
+                  🔁 {isLooping ? 'ON' : 'OFF'}
+                </button>
+                <button 
+                  onClick={clearLoop}
+                  className="px-4 py-3 text-sm font-medium rounded-xl bg-white/20 text-white hover:bg-red-500 transition-all duration-200 hover:scale-105 backdrop-blur-sm"
+                  title="Clear Loop"
+                >
+                  ✕
+                </button>
+              </>
+            ) : (
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
+                <span className="text-sm text-white/70">Loop controls: </span>
+                <span className="text-sm text-yellow-400 font-medium">Premium Only</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </footer>
+
+      {/* Hamburger Menu Overlay */}
       {showMenu && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex">
           <div className="bg-gray-900/90 backdrop-blur-xl w-80 h-full shadow-2xl">
