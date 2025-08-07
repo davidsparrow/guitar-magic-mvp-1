@@ -14,7 +14,7 @@ import {
 } from '../lib/youtube'
 
 export default function Search() {
-  const { isAuthenticated, user, profile, loading, isPremium } = useAuth()
+  const { isAuthenticated, user, profile, loading, isPremium, signOut } = useAuth()
   const router = useRouter() // FIXED: removed extra ]
   
   // DEBUG: Check for infinite re-renders
@@ -64,6 +64,18 @@ export default function Search() {
       setSearchError('YouTube API is not configured. Please add your API key to environment variables.')
     }
   }, [])
+
+  // Add this NEW TEST BUTTON test function inside your Search component:
+const testLogout = async () => {
+  console.log('🧪 SEARCH PAGE: Testing logout...')
+  try {
+    const result = await signOut()
+    console.log('🧪 SEARCH PAGE: Logout result:', result)
+  } catch (error) {
+    console.error('🧪 SEARCH PAGE: Logout error:', error)
+  }
+}
+
 
   const handleSearch = async (query = searchQuery, pageToken = null) => {
     if (!query?.trim()) return
@@ -279,6 +291,23 @@ export default function Search() {
                   className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 px-3 py-1 rounded-full text-sm transition-colors"
                 >
                   {tag}
+                </button>
+             
+                <button 
+                  onClick={testLogout}
+                  style={{
+                    position: 'fixed', 
+                    top: '100px', 
+                    right: '10px', 
+                    background: 'red', 
+                    color: 'white', 
+                    padding: '10px',
+                    zIndex: 9999,
+                    border: 'none',
+                    borderRadius: '5px'
+                  }}
+                >
+                  🧪 TESTING LOGOUT FROM SEARCH
                 </button>
               ))}
             </div>

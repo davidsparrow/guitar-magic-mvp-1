@@ -1,7 +1,7 @@
 README
 
 
-# 🎬 GuitarMagic
+# 🎬 GuitarMagic Fliipin Awesome!
 
 Transform your YouTube experience with custom video controls, flipping, and looping features.
 
