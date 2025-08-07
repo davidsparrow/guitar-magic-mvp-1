@@ -1,4 +1,4 @@
-// pages/watch.js - Footer Controls Only, Centered Video
+// pages/watch.js - FIXED FOOTER VISIBILITY
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRouter } from 'next/router'
@@ -215,7 +215,6 @@ export default function Watch() {
       cc_load_policy: 0,    // No captions by default
       playsinline: 1,       // Play inline on mobile
       autoplay: 0,          // Don't autoplay
-      end: Math.floor(duration * 0.98), // End before suggested videos appear
     }
   }
 
@@ -249,8 +248,8 @@ export default function Watch() {
 
   return (
     <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="bg-black/95 backdrop-blur-md p-4 flex items-center justify-between z-40 flex-shrink-0 border-b border-white/10">
+      {/* Header - FIXED HEIGHT */}
+      <header className="bg-black/95 backdrop-blur-md p-4 flex items-center justify-between z-40 border-b border-white/10 h-20 flex-shrink-0">
         <div className="w-full flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-3">
@@ -286,9 +285,12 @@ export default function Watch() {
         </div>
       </header>
 
-      {/* Video Container - CENTERED PROPERLY */}
-      <div className="flex-1 relative bg-black flex items-center justify-center">
-        {/* YouTube Player - Properly Centered */}
+      {/* Video Container - CALCULATED HEIGHT */}
+      <div 
+        className="relative bg-black flex items-center justify-center"
+        style={{ height: 'calc(100vh - 80px - 160px)' }} // Total height minus header (80px) minus footer (160px)
+      >
+        {/* YouTube Player - Properly Sized */}
         <div 
           className="w-full h-full flex items-center justify-center p-4"
           style={{
@@ -297,10 +299,10 @@ export default function Watch() {
           }}
         >
           <div 
-            className="relative bg-black shadow-2xl"
+            className="relative bg-black shadow-2xl rounded-lg overflow-hidden"
             style={{ 
-              width: 'min(100%, calc((100vh - 200px) * 16/9))', // Responsive width
-              height: 'min(calc(100vw * 9/16), calc(100vh - 200px))', // Responsive height
+              width: 'min(100%, calc((100vh - 240px) * 16/9))', // Account for header + footer space
+              height: 'min(calc(100vw * 9/16), calc(100vh - 240px))', // Account for header + footer space
               aspectRatio: '16/9'
             }}
           >
@@ -311,18 +313,18 @@ export default function Watch() {
               onStateChange={onPlayerStateChange}
               onError={onPlayerError}
               className="w-full h-full"
-              iframeClassName="w-full h-full rounded-lg"
+              iframeClassName="w-full h-full"
             />
           </div>
         </div>
       </div>
 
-      {/* Footer Controls - ALL CONTROLS MOVED HERE */}
-      <footer className="bg-black/95 backdrop-blur-xl border-t border-white/20 p-6 flex-shrink-0">
+      {/* Footer Controls - FIXED HEIGHT, ALWAYS VISIBLE */}
+      <footer className="bg-black/95 backdrop-blur-xl border-t border-white/20 p-4 h-40 flex-shrink-0 flex flex-col justify-center">
         {/* Timeline Section */}
-        <div className="mb-6">
+        <div className="mb-4">
           {/* Time Display */}
-          <div className="flex items-center justify-between text-sm font-medium text-white/90 mb-3">
+          <div className="flex items-center justify-between text-sm font-medium text-white/90 mb-2">
             <span className="font-mono text-blue-400">{formatTimeMs(currentTime)}</span>
             <span className="font-mono text-gray-400">{formatTime(duration)}</span>
           </div>
@@ -369,100 +371,96 @@ export default function Watch() {
           </div>
         </div>
 
-        {/* Controls Row */}
+        {/* Controls Row - COMPACT DESIGN */}
         <div className="flex items-center justify-between">
           {/* Left: Primary Controls */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
             {/* Play/Pause */}
             <button 
               onClick={handlePlayPause}
               disabled={!isPlayerReady}
-              className="p-4 hover:scale-110 transition-all duration-200 disabled:opacity-50 bg-white/10 rounded-full backdrop-blur-sm hover:bg-white/20"
+              className="p-3 hover:scale-110 transition-all duration-200 disabled:opacity-50 bg-white/10 rounded-full backdrop-blur-sm hover:bg-white/20"
             >
               {isPlaying ? (
-                <FaPause className="w-8 h-8 text-white drop-shadow-lg" />
+                <FaPause className="w-6 h-6 text-white drop-shadow-lg" />
               ) : (
-                <FaPlay className="w-8 h-8 text-white drop-shadow-lg ml-1" />
+                <FaPlay className="w-6 h-6 text-white drop-shadow-lg ml-1" />
               )}
             </button>
 
-            {/* Volume Control */}
-            <div className="flex items-center space-x-3">
+            {/* Volume Control - COMPACT */}
+            <div className="flex items-center space-x-2">
               <button 
                 onClick={toggleMute}
-                className="p-3 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg"
+                className="p-2 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg"
               >
                 {isMuted || volume === 0 ? (
-                  <IoVolumeMute className="w-6 h-6 text-white drop-shadow-lg" />
+                  <IoVolumeMute className="w-5 h-5 text-white drop-shadow-lg" />
                 ) : (
-                  <IoVolumeHigh className="w-6 h-6 text-white drop-shadow-lg" />
+                  <IoVolumeHigh className="w-5 h-5 text-white drop-shadow-lg" />
                 )}
               </button>
               
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-400">0</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={isMuted ? 0 : volume}
-                  onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
-                  className="w-24 h-1 bg-white/30 rounded-full appearance-none cursor-pointer
-                            [&::-webkit-slider-thumb]:appearance-none 
-                            [&::-webkit-slider-thumb]:w-4 
-                            [&::-webkit-slider-thumb]:h-4 
-                            [&::-webkit-slider-thumb]:rounded-full 
-                            [&::-webkit-slider-thumb]:bg-white 
-                            [&::-webkit-slider-thumb]:shadow-lg"
-                />
-                <span className="text-xs text-gray-400">100</span>
-              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
+                className="w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer
+                          [&::-webkit-slider-thumb]:appearance-none 
+                          [&::-webkit-slider-thumb]:w-3 
+                          [&::-webkit-slider-thumb]:h-3 
+                          [&::-webkit-slider-thumb]:rounded-full 
+                          [&::-webkit-slider-thumb]:bg-white 
+                          [&::-webkit-slider-thumb]:shadow-lg"
+              />
             </div>
 
             {/* Back Button */}
             <button 
               onClick={goBack}
-              className="p-3 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg flex items-center space-x-2"
+              className="p-2 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg flex items-center space-x-1"
             >
-              <HiOutlineArrowLeft className="w-6 h-6 text-white drop-shadow-lg" />
+              <HiOutlineArrowLeft className="w-5 h-5 text-white drop-shadow-lg" />
               <span className="text-sm text-white">Back</span>
             </button>
           </div>
 
           {/* Center: Flip Controls */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <button 
               onClick={toggleFlipH}
-              className={`p-4 rounded-2xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
+              className={`p-3 rounded-xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
                 isFlippedH 
                   ? 'bg-blue-500 shadow-lg shadow-blue-500/25' 
                   : 'bg-white/20 hover:bg-white/30'
               }`}
               title="Flip Horizontal"
             >
-              <RiFlipHorizontal2Fill className="w-6 h-6 text-white drop-shadow-lg" />
+              <RiFlipHorizontal2Fill className="w-5 h-5 text-white drop-shadow-lg" />
             </button>
             
             <button 
               onClick={toggleFlipV}
-              className={`p-4 rounded-2xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
+              className={`p-3 rounded-xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
                 isFlippedV 
                   ? 'bg-blue-500 shadow-lg shadow-blue-500/25' 
                   : 'bg-white/20 hover:bg-white/30'
               }`}
               title="Flip Vertical"
             >
-              <RiFlipVertical2Fill className="w-6 h-6 text-white drop-shadow-lg" />
+              <RiFlipVertical2Fill className="w-5 h-5 text-white drop-shadow-lg" />
             </button>
           </div>
 
-          {/* Right: Premium Loop Controls */}
-          <div className="flex items-center space-x-3">
+          {/* Right: Premium Loop Controls - COMPACT */}
+          <div className="flex items-center space-x-2">
             {isPremium ? (
               <>
                 <button 
                   onClick={() => setLoopPoint('start')}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
                     loopStart !== null 
                       ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' 
                       : 'bg-white/20 text-white hover:bg-white/30'
@@ -473,7 +471,7 @@ export default function Watch() {
                 </button>
                 <button 
                   onClick={() => setLoopPoint('end')}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
                     loopEnd !== null 
                       ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' 
                       : 'bg-white/20 text-white hover:bg-white/30'
@@ -485,7 +483,7 @@ export default function Watch() {
                 <button 
                   onClick={toggleLoop}
                   disabled={loopStart === null || loopEnd === null}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm ${
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm ${
                     isLooping 
                       ? 'bg-green-500 shadow-lg shadow-green-500/25 text-white' 
                       : 'bg-white/20 hover:bg-white/30 text-white'
@@ -496,16 +494,16 @@ export default function Watch() {
                 </button>
                 <button 
                   onClick={clearLoop}
-                  className="px-4 py-3 text-sm font-medium rounded-xl bg-white/20 text-white hover:bg-red-500 transition-all duration-200 hover:scale-105 backdrop-blur-sm"
+                  className="px-3 py-2 text-sm font-medium rounded-lg bg-white/20 text-white hover:bg-red-500 transition-all duration-200 hover:scale-105 backdrop-blur-sm"
                   title="Clear Loop"
                 >
                   ✕
                 </button>
               </>
             ) : (
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
-                <span className="text-sm text-white/70">Loop controls: </span>
-                <span className="text-sm text-yellow-400 font-medium">Premium Only</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20">
+                <span className="text-xs text-white/70">Loop: </span>
+                <span className="text-xs text-yellow-400 font-medium">Premium</span>
               </div>
             )}
           </div>
