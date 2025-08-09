@@ -231,19 +231,6 @@ const Layout = ({ children }) => {
                           {isSigningOut ? '🔄 Signing Out...' : '🚪 Sign Out'}
                         </button>
 
-                        {/* UPDATED: Much smaller test button that fits in menu */}
-                        <button 
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            console.log('🧪 MENU TEST: Button clicked')
-                            testDirectLogout()
-                          }}
-                          className="block w-full text-left px-4 py-1 text-xs bg-red-600 text-white hover:bg-red-700 transition-colors rounded mx-1 my-1"
-                        >
-                          🧪 Test
-                        </button>
-
                       </div>
                     </div>
                   )}
