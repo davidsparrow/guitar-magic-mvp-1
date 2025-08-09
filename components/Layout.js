@@ -1,4 +1,4 @@
-// components/Layout.js - Enhanced Layout with logout button in menu
+// components/Layout.js - Enhanced Layout with Clickable Logo
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -69,25 +69,6 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* MOVED: Small header test button to left side */}
-      <button 
-        onClick={testDirectLogout}
-        style={{
-          position: 'fixed', 
-          top: '100px', 
-          left: '10px', 
-          background: 'red', 
-          color: 'white', 
-          padding: '5px 8px',
-          fontSize: '10px',
-          zIndex: 9999,
-          border: 'none',
-          borderRadius: '3px'
-        }}
-      >
-        🧪 TEST
-      </button>
-
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
