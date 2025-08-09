@@ -64,17 +64,6 @@ export default function Search() {
       setSearchError('YouTube API is not configured. Please add your API key to environment variables.')
     }
   }, [])
-
-  const testLogout = async () => {
-  console.log('🧪 SEARCH PAGE: Testing logout...')
-  try {
-    const result = await signOut()
-    console.log('🧪 SEARCH PAGE: Logout result:', result)
-  } catch (error) {
-    console.error('🧪 SEARCH PAGE: Logout error:', error)
-  }
-}
-
   const handleSearch = async (query = searchQuery, pageToken = null) => {
     if (!query?.trim()) return
     
@@ -257,24 +246,6 @@ export default function Search() {
               Find videos to flip, loop, and enjoy with our custom controls
             </p>
           </div>
-
-          <button 
-  onClick={testLogout}
-  style={{
-    position: 'fixed', 
-    top: '100px', 
-    right: '10px', 
-    background: 'red', 
-    color: 'white', 
-    padding: '10px',
-    zIndex: 9999,
-    border: 'none',
-    borderRadius: '5px'
-  }}
->
-  🧪 TEST LOGOUT FROM SEARCH
-</button>
-
           <div className="max-w-2xl mx-auto">
             <div className="relative">
               <input
