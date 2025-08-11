@@ -1,4 +1,4 @@
-// components/admin/BannerSettings.js - Admin interface for banner management
+// components/admin/BannerSettings.js - Admin only interface for banner management
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
