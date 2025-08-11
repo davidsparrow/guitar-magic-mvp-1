@@ -66,7 +66,6 @@ export default function Home() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/images/gt_splashBG_dark.png')`,
-          backgroundColor: '#000000',
           width: '100%',
           height: '100%',
           minWidth: '100vw',
