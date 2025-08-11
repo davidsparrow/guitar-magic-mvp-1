@@ -47,54 +47,25 @@ export default function Home() {
 
   if (!mounted || (loading && !router.isReady)) {
     return (
-      <div 
-        className="bg-black flex items-center justify-center overflow-hidden" 
-        style={{ 
-          height: '100vh', 
-          width: '100vw', 
-          margin: 0, 
-          padding: 0 
-        }}
-      >
+      <div className="h-screen bg-black flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
       </div>
     )
   }
 
   return (
-    <div 
-      className="relative overflow-hidden" 
-      style={{ 
-        height: '100vh', 
-        width: '100vw', 
-        margin: 0, 
-        padding: 0, 
-        position: 'relative',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0
-      }}
-    >
+    <div className="relative h-screen overflow-hidden bg-black">
       {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
-        className="absolute bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/gt_splashBG_dark.png')`,
-          minHeight: '100vh',
-          minWidth: '100vw',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: '100vw',
-          height: '100vh'
+          backgroundImage: `url('/images/gt_splashBG_dark.png')`
         }}
       />
 
       {/* Transparent Header */}
-      <header className="relative z-10 px-4 py-4">
-        <div className="flex justify-between items-center max-w-full">
+      <header className="relative z-10 px-6 py-4">
+        <div className="flex justify-between items-center">
           {/* Logo - Upper Left - NEW WIDE LOGO */}
           <a 
             href="/?home=true" 
@@ -120,7 +91,7 @@ export default function Home() {
       </header>
 
       {/* Main Content - Fixed Height, No Scroll */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-4" style={{ height: 'calc(100vh - 140px)' }}>
+      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ height: 'calc(100vh - 140px)' }}>
         
         {/* 1. Large Centered Tall Logo - YOUR ACTUAL IMAGE */}
         <div className="mb-8">
@@ -165,7 +136,7 @@ export default function Home() {
       </div>
 
       {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-10 px-4 py-6">
+      <footer className="relative z-10 px-6 py-6">
         <div className="flex justify-center items-center space-x-8 text-white/60 text-sm">
           <span>© 2025 VideoFlip</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
