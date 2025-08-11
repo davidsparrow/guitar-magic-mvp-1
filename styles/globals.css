@@ -2,12 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile-specific CSS reset and black background coverage */
 html,
 body {
   padding: 0;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  background-color: #000000 !important;
+  overflow-x: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure no white space on mobile */
+html {
+  background-color: #000000 !important;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: #000000 !important;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+/* Target mobile devices specifically */
+@media screen and (max-width: 1024px) {
+  html, body {
+    background-color: #000000 !important;
+    overflow-x: hidden;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+/* Target the specific problematic viewport range */
+@media screen and (min-width: 361px) and (max-width: 1024px) and (orientation: portrait) {
+  html, body {
+    background-color: #000000 !important;
+    overflow-x: hidden;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  /* Additional mobile-specific fixes */
+  #__next {
+    background-color: #000000 !important;
+    overflow-x: hidden;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  /* Ensure all containers are black */
+  div[class*="relative"] {
+    background-color: #000000 !important;
+  }
+}
+
+/* Additional mobile viewport fixes */
+@media screen and (max-width: 1024px) {
+  #__next {
+    background-color: #000000 !important;
+    overflow-x: hidden;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
 }
 
 a {

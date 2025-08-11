@@ -54,17 +54,29 @@ export default function Home() {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-black">
+    <div className="relative h-screen overflow-hidden bg-black" style={{ 
+      backgroundColor: '#000000',
+      minHeight: '100vh',
+      minHeight: '100dvh',
+      width: '100vw',
+      overflow: 'hidden'
+    }}>
       {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/gt_splashBG_dark.png')`
+          backgroundImage: `url('/images/gt_splashBG_dark.png')`,
+          backgroundColor: '#000000',
+          width: '100%',
+          height: '100%',
+          minWidth: '100vw',
+          minHeight: '100vh',
+          minHeight: '100dvh'
         }}
       />
 
       {/* Transparent Header */}
-      <header className="relative z-10 px-6 py-4">
+      <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-between items-center">
           {/* Logo - Upper Left - NEW WIDE LOGO */}
           <a 
@@ -91,7 +103,10 @@ export default function Home() {
       </header>
 
       {/* Main Content - Fixed Height, No Scroll */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ height: 'calc(100vh - 140px)' }}>
+      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
+        height: 'calc(100vh - 140px)',
+        backgroundColor: 'transparent'
+      }}>
         
         {/* 1. Large Centered Tall Logo - YOUR ACTUAL IMAGE */}
         <div className="mb-8">
@@ -136,7 +151,7 @@ export default function Home() {
       </div>
 
       {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-10 px-6 py-6">
+      <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-center items-center space-x-8 text-white/60 text-sm">
           <span>© 2025 VideoFlip</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
