@@ -59,7 +59,7 @@ export default function Home() {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `linear-gradient(135deg, rgba(88, 28, 135, 0.85), rgba(168, 85, 247, 0.85)), url('/images/gt_splashBG_dark.png')`
+          backgroundImage: `url('/images/gt_splashBG_dark.png')`
         }}
       />
 
