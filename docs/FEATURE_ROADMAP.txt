@@ -1,0 +1,244 @@
+FEATURE_SPECIFICATIONS
+
+# 🎯 Feature Specifications
+
+## 🔄 Video Flipping Controls
+### Free Tier ✅
+- **Vertical Flip**: CSS `transform: rotateX(180deg)`
+- **Horizontal Flip**: CSS `transform: rotateY(180deg)`
+- **Both**: Combined transforms
+- **Implementation**: Applied to YouTube iframe container
+
+## 🔁 Custom Loop Timeline
+### Premium Only 💎
+- **Timeline UI**: Draggable start/stop markers
+- **Precision**: Sub-second accuracy (0.1s increments)
+- **Loop Logic**: Monitor currentTime vs bounds
+- **Auto-seek**: Jump to start when reaching end
+- **Persistence**: Save/load custom loops per user
+
+## 🔍 Search & Discovery
+### Free Tier
+- **Daily Limit**: 20 searches per day
+- **History**: Last 5 searches saved
+- **Results**: YouTube Data API v3 integration
+
+### Premium Tier
+- **Unlimited**: No daily search limits
+- **Full History**: All searches saved indefinitely
+- **Advanced Filters**: Duration, quality, upload date
+
+## 🔐 User Management
+- **Authentication**: Supabase Auth (email + OAuth)
+- **Profiles**: Extended user data in user_profiles table
+- **Feature Gates**: Dynamic system for premium features
+- **Usage Tracking**: Analytics and limit enforcement
+
+---
+
+# 🚀 DEVELOPMENT ROADMAP: From MVP to Music Empire
+
+## 🎯 MVP Features (3-4 weeks)
+
+### **1. Enhanced Video Controls** ⭐ PRIORITY 1
+- **Auto-unflip during ads** (ad detection)
+- **Estimate**: 2-3 days
+- **Complexity**: Medium (YouTube Player API events)
+- **API**: YouTube Player iframe API
+
+### **2. Session State & Resume** ⭐ PRIORITY 1  
+- **Save exact timeline position + loop settings**
+- **Resume where user left off**
+- **Estimate**: 1-2 days
+- **Complexity**: Low (database + localStorage)
+
+### **3. Usage Tracking & Limits** ⭐ PRIORITY 1
+- **Track video watch time, search usage**
+- **Enforce tier limits (searches/day, watch minutes)**  
+- **Estimate**: 2-3 days
+- **Complexity**: Medium (database functions + UI enforcement)
+
+### **4. Legal Foundation** ✅ COMPLETED
+- **Privacy Policy, Terms of Service, Pricing pages**
+- **Menu integration and navigation**
+- **Estimate**: 1 day
+- **Complexity**: Low
+
+### **5. UI/UX Enhancement** ⭐ PRIORITY 2
+- **Home page redesign with floating modals**
+- **"How It Works", "Features", "Getting Started" modals**
+- **Estimate**: 2-3 days
+- **Complexity**: Medium (responsive design + animations)
+
+### **6. Top Banner System** ⭐ PRIORITY 2
+- **Admin-controlled announcement banner**
+- **Estimate**: 0.5 days  
+- **Complexity**: Low (already designed)
+
+### **7. Pricing Tiers Admin** ⭐ PRIORITY 2
+- **Complete admin interface for pricing management**
+- **Estimate**: 1 day
+- **Complexity**: Low (UI + database already designed)
+
+### **8. Top 100 Creators Tracking** ⭐ MVP ADDITION
+- **Monthly creator leaderboard by watch time**
+- **10% revenue sharing transparency**
+- **Public leaderboard page**
+- **Estimate**: 3-4 days
+- **Complexity**: Medium (aggregation + public page)
+
+## 🎵 Phase 2: Music Magic (4-5 weeks)
+
+### **9. Custom Caption Creator** ⭐ GAME-CHANGER
+- **Timeline-based text annotations**
+- **120-char text strings with start/stop times**
+- **No overlap validation, edit existing segments**
+- **Estimate**: 4-5 days
+- **Complexity**: Medium-High (timeline UI + sync logic)
+
+### **10. Basic Chord Diagrams** ⭐ GAME-CHANGER
+- **Manual chord name entry → visual diagrams**
+- **Integration with custom captions**
+- **Sync with video timeline**
+- **Estimate**: 3-4 days  
+- **Complexity**: Medium 
+- **APIs**: VexChords, ChordJS, or UberChord API
+- **API URL**: `https://api.uberchord.com/v1/chords/{chordName}`
+
+### **11. Song Name Detection** ⭐ ENHANCEMENT
+- **Parse YouTube titles for artist/song**
+- **Smart title cleaning algorithms**
+- **Auto-populate song search fields**
+- **Estimate**: 2-3 days
+- **Complexity**: Medium (text parsing + validation)
+
+### **12. Enhanced Search Features** ⭐ PREMIUM
+- **Advanced video filters and sorting**
+- **Saved search collections**
+- **Search history analytics**
+- **Estimate**: 2-3 days
+- **Complexity**: Medium
+
+## 🏆 Phase 3: Ultimate Platform (6-8 weeks)
+
+### **13. Ultimate Guitar Integration** ⭐ HOLY GRAIL
+- **Auto-fetch chord progressions by song name**  
+- **Multiple tab versions (acoustic, electric, etc.)**
+- **Green/Orange/Red light status system**
+- **Song matching with confidence scoring**
+- **Estimate**: 7-10 days
+- **Complexity**: High (scraper integration + matching logic)
+- **APIs**: Ultimate Guitar scraper endpoints
+- **GitHub**: `https://github.com/Pilfer/ultimate-guitar-scraper`
+
+### **14. Auto-Synchronized Chords** ⭐ REVOLUTIONARY
+- **Automatic chord timeline from UG database**
+- **Song structure detection (verse, chorus, bridge)**
+- **Pre-timed chord changes with video**
+- **Estimate**: 5-7 days
+- **Complexity**: High (data parsing + timeline sync)
+
+### **15. Advanced Practice Features** ⭐ PREMIUM
+- **Loop sections with chord displays**
+- **Slow-down playback with synchronized chords**
+- **Export practice sessions**
+- **Practice mode with metronome**
+- **Estimate**: 3-4 days
+- **Complexity**: Medium (YouTube Player API + UI)
+
+### **16. Creator Revenue Dashboard** ⭐ BUSINESS
+- **Creator portal for earnings tracking**
+- **Payment history and analytics**
+- **Creator onboarding and verification**
+- **Estimate**: 4-5 days
+- **Complexity**: Medium-High
+
+## 🚀 Phase 4: Platform Scale (8+ weeks)
+
+### **17. Advanced Tab Features** ⭐ ENTERPRISE
+- **Full guitar tablature display**
+- **Bass tabs, multiple instruments**
+- **GuitarPro-style playback with timing**
+- **Interactive tab following**
+- **Estimate**: 10-15 days
+- **Complexity**: Very High (complex rendering + sync)
+
+### **18. User-Generated Content** ⭐ COMMUNITY
+- **Share custom caption/chord sets**
+- **Community-contributed timings**
+- **Rating and review system**
+- **Content moderation tools**
+- **Estimate**: 8-12 days
+- **Complexity**: High (moderation + social features)
+
+### **19. Mobile Application** ⭐ EXPANSION
+- **React Native app with core features**
+- **Offline chord charts and saved content**
+- **Mobile-optimized video controls**
+- **Estimate**: 15-20 days
+- **Complexity**: Very High
+
+### **20. Video Hosting Platform** ⭐ FUTURE VISION
+- **Creator direct uploads**
+- **Multi-platform video hosting**
+- **Advanced monetization tools**
+- **Estimate**: 20-30 days
+- **Complexity**: Extremely High
+- **APIs**: Cloudflare Stream, Vimeo API, Wistia
+- **API URLs**: 
+  - Vimeo: `https://api.vimeo.com`
+  - Wistia: `https://wistia.com/support/developers`
+  - Cloudflare: `https://api.cloudflare.com/client/v4/accounts/{account_id}/stream`
+
+## 🔌 API Integration Summary
+
+### **Core Video APIs**
+- **YouTube Data API v3**: `https://googleapis.com/youtube/v3/`
+- **YouTube Player API**: `https://www.youtube.com/iframe_api`
+
+### **Music & Chord APIs**
+- **UberChord API**: `https://api.uberchord.com/v1/`
+- **Ultimate Guitar Scraper**: Various GitHub implementations
+- **VexChords**: JavaScript library (client-side)
+- **ChordJS**: JavaScript library (client-side)
+
+### **Business & Analytics APIs**
+- **Stripe Payments**: `https://api.stripe.com/v1/`
+- **Supabase**: Self-hosted database and auth
+
+### **Future Video Hosting APIs**
+- **Vimeo API**: `https://api.vimeo.com`
+- **Wistia API**: `https://wistia.com/support/developers`
+- **Cloudflare Stream**: `https://api.cloudflare.com/client/v4/`
+
+## 📊 Success Metrics by Phase
+
+### **MVP Success (Month 1)**
+- 1,000+ registered users
+- 100+ daily active users
+- Basic revenue from subscriptions
+- Creator leaderboard engagement
+
+### **Phase 2 Success (Month 3)**
+- 10,000+ registered users
+- 1,000+ daily active users
+- Custom caption usage > 50%
+- Chord diagram feature adoption
+
+### **Phase 3 Success (Month 6)**
+- 50,000+ registered users
+- 5,000+ daily active users
+- Ultimate Guitar integration driving growth
+- Creator revenue sharing program active
+
+### **Phase 4 Success (Year 1)**
+- 500,000+ registered users
+- Platform-hosted content library
+- Industry recognition as music learning leader
+- Sustainable creator economy
+
+## 🎯 Estimated Total Timeline
+- **MVP Launch**: 4 weeks
+- **Music Platform**: 3 months
+- **Industry Leader**: 6 months
+- **Platform Dominance**: 12 months
