@@ -47,19 +47,19 @@ export default function Home() {
 
   if (!mounted || (loading && !router.isReady)) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="h-screen bg-black flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
       </div>
     )
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Full-Screen Background - YOUR ACTUAL IMAGE */}
+    <div className="relative h-screen overflow-hidden">
+      {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `linear-gradient(135deg, rgba(88, 28, 135, 0.85), rgba(168, 85, 247, 0.85)), url('/images/gt_splashBG.png')`
+          backgroundImage: `linear-gradient(135deg, rgba(88, 28, 135, 0.85), rgba(168, 85, 247, 0.85)), url('/images/gt_splashBG_dark.png')`
         }}
       />
 
@@ -91,8 +91,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content - Only 3 Elements */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6 -mt-20">
+      {/* Main Content - Fixed Height, No Scroll */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ height: 'calc(100vh - 140px)' }}>
         
         {/* 1. Large Centered Tall Logo - YOUR ACTUAL IMAGE */}
         <div className="mb-8">
@@ -113,24 +113,30 @@ export default function Home() {
           </button>
         </div>
 
-        {/* 3. Stay Free + No Credit Card - YOUR ACTUAL IMAGE */}
-        <div className="flex items-center justify-center space-x-3">
-          <div className="text-green-400 font-bold text-xl">
+        {/* 3. Stay Free Button + No Credit Card - Centered Vertically */}
+        <div className="flex flex-col items-center space-y-3">
+          {/* Stay Free - Now Clickable Button */}
+          <button
+            onClick={() => setShowPricingModal(true)}
+            className="text-green-400 font-bold text-xl hover:text-green-300 transition-colors"
+          >
             STAY FREE
-          </div>
+          </button>
+          
+          {/* No Credit Card - Centered Below */}
           <div className="flex items-center space-x-2 text-white/70">
-            <span>no credit card</span>
             <img 
               src="/images/no_credit_card.png" 
               alt="No Credit Card" 
               className="w-8 h-6"
             />
+            <span>no credit card</span>
           </div>
         </div>
 
       </div>
 
-      {/* Footer */}
+      {/* Footer - Fixed at Bottom */}
       <footer className="relative z-10 px-6 py-6">
         <div className="flex justify-center items-center space-x-8 text-white/60 text-sm">
           <span>© 2025 VideoFlip</span>
