@@ -1,4 +1,4 @@
-// pages/index.js - Simple Homepage Design Following Exact Layout
+// pages/index.js - Homepage Using Your Actual Images
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
@@ -55,25 +55,27 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Full-Screen Background */}
+      {/* Full-Screen Background - YOUR ACTUAL IMAGE */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `linear-gradient(135deg, rgba(88, 28, 135, 0.85), rgba(168, 85, 247, 0.85)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><pattern id="guitar" patternUnits="userSpaceOnUse" width="100" height="100"><rect width="100" height="100" fill="%23451a3a"/><circle cx="50" cy="50" r="1" fill="%23f59e0b" opacity="0.3"/></pattern></defs><rect width="1200" height="800" fill="url(%23guitar)"/></svg>')`
+          backgroundImage: `linear-gradient(135deg, rgba(88, 28, 135, 0.85), rgba(168, 85, 247, 0.85)), url('/images/gt_splashBG.png')`
         }}
       />
 
       {/* Transparent Header */}
       <header className="relative z-10 px-6 py-4">
         <div className="flex justify-between items-center">
-          {/* Logo - Upper Left */}
+          {/* Logo - Upper Left - YOUR ACTUAL IMAGE */}
           <a 
             href="/?home=true" 
             className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 via-green-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-              <div className="w-0 h-0 border-l-[6px] border-l-transparent border-b-[10px] border-b-white border-r-[6px] border-r-transparent ml-1"></div>
-            </div>
+            <img 
+              src="/images/gt_logo_play_icon.png" 
+              alt="VideoFlip Logo" 
+              className="w-10 h-10"
+            />
             <span className="text-white font-bold text-lg hidden sm:block">VideoFlip</span>
           </a>
 
@@ -92,19 +94,13 @@ export default function Home() {
       {/* Main Content - Only 3 Elements */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6 -mt-20">
         
-        {/* 1. Large Centered Tall Logo */}
+        {/* 1. Large Centered Tall Logo - YOUR ACTUAL IMAGE */}
         <div className="mb-8">
-          <div className="flex flex-col items-center">
-            {/* Large Logo Icon */}
-            <div className="w-24 h-24 mb-6 bg-gradient-to-br from-yellow-400 via-green-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl">
-              <div className="w-0 h-0 border-l-[12px] border-l-transparent border-b-[20px] border-b-white border-r-[12px] border-r-transparent ml-2"></div>
-            </div>
-            
-            {/* Brand Name */}
-            <h1 className="text-6xl md:text-7xl font-bold text-white mb-2 tracking-tight">
-              VideoFlip
-            </h1>
-          </div>
+          <img 
+            src="/images/gt_logo_tall_on_black.png" 
+            alt="VideoFlip" 
+            className="mx-auto mb-6 h-48 w-auto"
+          />
         </div>
 
         {/* 2. "Guitar Wha?" Pill Button */}
@@ -117,20 +113,18 @@ export default function Home() {
           </button>
         </div>
 
-        {/* 3. Stay Free + No Credit Card */}
+        {/* 3. Stay Free + No Credit Card - YOUR ACTUAL IMAGE */}
         <div className="flex items-center justify-center space-x-3">
           <div className="text-green-400 font-bold text-xl">
             STAY FREE
           </div>
           <div className="flex items-center space-x-2 text-white/70">
             <span>no credit card</span>
-            {/* No Credit Card Icon Placeholder */}
-            <div className="w-8 h-6 bg-red-500 rounded border border-white/20 flex items-center justify-center relative">
-              <div className="w-1 h-3 bg-white rounded"></div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 border-2 border-red-500 bg-white rounded-full flex items-center justify-center">
-                <div className="w-1 h-1 bg-red-500 rounded-full"></div>
-              </div>
-            </div>
+            <img 
+              src="/images/no_credit_card.png" 
+              alt="No Credit Card" 
+              className="w-8 h-6"
+            />
           </div>
         </div>
 
@@ -157,94 +151,46 @@ export default function Home() {
         onClose={() => setShowAuthModal(false)}
       />
 
-      {/* "Guitar Wha?" Modal with Hotspots */}
+      {/* "Guitar Wha?" Modal - YOUR ACTUAL IMAGE with Hotspots */}
       {showWhatModal && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={(e) => handleModalBackdropClick(e, () => setShowWhatModal(false))}
         >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-4xl w-full relative">
+          <div className="bg-black rounded-2xl shadow-2xl max-w-5xl w-full relative">
             {/* Close Button */}
             <button
               onClick={() => setShowWhatModal(false)}
-              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 z-20 text-gray-400 hover:text-white transition-colors bg-black/50 rounded-full p-2"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
-            {/* Modal Content - Recreation of webUiExample__HomePage_modalWHAT.png */}
-            <div className="p-8 text-white">
-              {/* Top Row */}
-              <div className="flex justify-between items-start mb-8">
-                <div className="text-center">
-                  <h3 className="text-xl font-bold mb-4">lesson orientation</h3>
-                  <div className="w-64 h-36 bg-gray-800 rounded-lg border-2 border-white flex items-center justify-center relative">
-                    <div className="text-4xl">🎸</div>
-                    <div className="absolute bottom-2 left-2 w-8 h-6 bg-red-600 rounded flex items-center justify-center">
-                      <div className="w-0 h-0 border-l-[3px] border-l-transparent border-b-[5px] border-b-white border-r-[3px] border-r-transparent ml-0.5"></div>
-                    </div>
-                  </div>
-                </div>
+            {/* Modal Content - YOUR ACTUAL IMAGE */}
+            <div className="relative">
+              <img 
+                src="/images/webUiExample__HomePage_modalWHAT.png" 
+                alt="Features Overview" 
+                className="w-full rounded-2xl"
+              />
+              
+              {/* Invisible Hotspot Areas Positioned Over Your Image */}
+              
+              {/* Custom Loops Hotspot (Pink Infinity) - Bottom Right Area */}
+              <button
+                onClick={() => handleFeatureClick('loops')}
+                className="absolute bottom-[15%] right-[15%] w-[12%] h-[25%] hover:bg-pink-500/20 transition-colors rounded-lg"
+                title="Custom Loops"
+              />
 
-                <div className="text-center">
-                  <h3 className="text-xl font-bold mb-4">your brain</h3>
-                  <div className="text-6xl">🧠</div>
-                </div>
-
-                <div className="text-center">
-                  <h3 className="text-xl font-bold mb-4">your progress</h3>
-                  <div className="text-6xl">😊</div>
-                </div>
-
-                <div className="text-center">
-                  <h3 className="text-xl font-bold mb-4">and...</h3>
-                  <div className="text-4xl text-gray-500">zip -.001</div>
-                </div>
-
-                <div className="text-center">
-                  <h3 className="text-xl font-bold mb-4">plus...</h3>
-                </div>
-              </div>
-
-              {/* Bottom Row */}
-              <div className="flex justify-between items-center">
-                <div className="text-center">
-                  <div className="w-64 h-36 bg-gray-800 rounded-lg border-2 border-white flex items-center justify-center relative">
-                    <div className="text-4xl">🎸</div>
-                    <div className="absolute bottom-2 left-2 w-8 h-6 bg-gradient-to-br from-yellow-400 via-green-400 to-orange-500 rounded flex items-center justify-center">
-                      <div className="w-0 h-0 border-l-[3px] border-l-transparent border-b-[5px] border-b-white border-r-[3px] border-r-transparent ml-0.5"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-6xl text-yellow-400">💡</div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-6xl text-orange-400">🐆</div>
-                </div>
-
-                {/* Custom Loops Hotspot */}
-                <button
-                  onClick={() => handleFeatureClick('loops')}
-                  className="text-center hover:scale-105 transition-transform"
-                >
-                  <div className="text-6xl text-pink-400">∞</div>
-                  <div className="text-pink-400 font-bold mt-2">custom loops</div>
-                </button>
-
-                {/* Login Resume Hotspot */}
-                <button
-                  onClick={() => handleFeatureClick('resume')}
-                  className="text-center hover:scale-105 transition-transform"
-                >
-                  <div className="text-6xl text-green-400">⏻</div>
-                  <div className="text-green-400 font-bold mt-2">login - resume</div>
-                </button>
-              </div>
+              {/* Login Resume Hotspot (Green Power Button) - Bottom Far Right */}
+              <button
+                onClick={() => handleFeatureClick('resume')}
+                className="absolute bottom-[15%] right-[2%] w-[12%] h-[25%] hover:bg-green-500/20 transition-colors rounded-lg"
+                title="Login & Resume"
+              />
             </div>
           </div>
         </div>
@@ -289,6 +235,17 @@ export default function Home() {
                   <strong>Premium Feature:</strong> Custom loops require a subscription for unlimited use and saving capabilities.
                 </p>
               </div>
+              
+              {/* Back to Overview Button */}
+              <button
+                onClick={() => {
+                  setShowFeatureModal(null)
+                  setShowWhatModal(true)
+                }}
+                className="mt-6 bg-pink-500 text-white px-6 py-2 rounded-lg hover:bg-pink-600 transition-colors"
+              >
+                ← Back to Overview
+              </button>
             </div>
           </div>
         </div>
@@ -333,6 +290,17 @@ export default function Home() {
                   <strong>Premium Feature:</strong> Session resume is available for premium subscribers across all devices.
                 </p>
               </div>
+              
+              {/* Back to Overview Button */}
+              <button
+                onClick={() => {
+                  setShowFeatureModal(null)
+                  setShowWhatModal(true)
+                }}
+                className="mt-6 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
+              >
+                ← Back to Overview
+              </button>
             </div>
           </div>
         </div>
