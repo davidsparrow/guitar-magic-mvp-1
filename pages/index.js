@@ -133,7 +133,7 @@ export default function Home() {
         <div className="mb-8 mt-2.5">
           <button
             onClick={() => setShowWhatModal(true)}
-            className="bg-transparent border-2 border-white text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-[#f9a72b] hover:border-[#f9a72b] transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
+            className="bg-transparent border-2 border-white text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-black hover:text-white transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
           >
             <span>Guitar Wha?</span>
             <GiGuitar className="text-white text-xl" />
@@ -183,32 +183,32 @@ export default function Home() {
               />
 
               {/* Cheetah Hotspot (Duplicated from Custom Loops, moved 30px left, 5px down) */}
-              <button
-                onClick={() => handleFeatureClick('cheetah')}
-                className="absolute bottom-[14%] right-[41%] w-[15%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
-                title="Cheetah"
-              />
+                                  <button
+                      onClick={() => handleFeatureClick('cheetah')}
+                      className="absolute bottom-[14%] right-[41%] w-[15%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
+                      title="Wayyyy faster"
+                    />
 
               {/* Lightbulb Hotspot (Duplicated from Cheetah, moved 10px left) */}
-              <button
-                onClick={() => handleFeatureClick('lightbulb-brain')}
-                className="absolute bottom-[14%] right-[58%] w-[15%] h-[23%] hover:bg-yellow-500/20 transition-colors rounded-lg"
-                title="Lightbulb Brain"
-              />
+                                  <button
+                      onClick={() => handleFeatureClick('lightbulb-brain')}
+                      className="absolute bottom-[14%] right-[58%] w-[15%] h-[23%] hover:bg-yellow-500/20 transition-colors rounded-lg"
+                      title="Lightbulb session"
+                    />
 
               {/* Stringbrain Hotspot (Duplicated from Cheetah, moved 20px up) */}
-              <button
-                onClick={() => handleFeatureClick('sloth')}
-                className="absolute bottom-[47%] right-[41%] w-[15%] h-[23%] hover:bg-red-500/20 transition-colors rounded-lg"
-                title="Sloth"
-              />
+                                  <button
+                      onClick={() => handleFeatureClick('sloth')}
+                      className="absolute bottom-[47%] right-[41%] w-[15%] h-[23%] hover:bg-red-500/20 transition-colors rounded-lg"
+                      title="Brain fog"
+                    />
 
               {/* Sloth Hotspot (Duplicated from Lightbulb, moved 20px up) */}
-              <button
-                onClick={() => handleFeatureClick('scrambled-brain')}
-                className="absolute bottom-[47%] right-[58%] w-[15%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
-                title="Stringbrain"
-              />
+                                  <button
+                      onClick={() => handleFeatureClick('scrambled-brain')}
+                      className="absolute bottom-[47%] right-[58%] w-[15%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
+                      title="Sad. But cute!"
+                    />
               {/* Login Resume Hotspot (Green Power Button) - Now Stacked Below Custom Loops */}
               <button
                 onClick={() => handleFeatureClick('resume')}
@@ -627,6 +627,15 @@ export default function Home() {
           onClick={(e) => handleModalBackdropClick(e, () => setShowPricingModal(false))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-4xl w-full relative text-white">
+            {/* Logo in upper left corner */}
+            <div className="absolute top-4 left-4 z-10">
+              <img 
+                src="/images/gt_logoM_wide_on_black.png" 
+                alt="GuitarTube Logo" 
+                className="h-7 w-auto"
+              />
+            </div>
+            
             {/* Close Button */}
             <button
               onClick={() => setShowPricingModal(false)}
@@ -668,34 +677,34 @@ export default function Home() {
                 {/* Freebird */}
                 <div className="border border-gray-600 rounded-xl p-6">
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold mb-2">freebird</h3>
+                    <h3 className="text-2xl font-bold mb-2">Freebird</h3>
                     <div className="text-gray-400 font-bold text-base mb-4">free</div>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
-                      <span>flippin some vids</span>
+                      <span>Flippin some vids</span>
                     </div>
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
-                      <span>loopin some segments</span>
+                      <span>Loopin some segments</span>
                     </div>
                     <div className="flex items-center text-gray-500">
                       <span className="mr-3">✗</span>
-                      <span>resume on login</span>
+                      <span>Login Resume</span>
                     </div>
                     <div className="flex items-center text-gray-500">
                       <span className="mr-3">✗</span>
-                      <span>chords & captions</span>
+                      <span>Captions & Chords</span>
                     </div>
                     <div className="flex items-center text-gray-500">
                       <span className="mr-3">✗</span>
-                      <span>tabs (coming soon)</span>
+                      <span>Tabs (coming soon)</span>
                     </div>
                   </div>
                   <div className="mt-6 space-y-2 text-sm text-gray-400">
-                    <div>max savie favies: <span className="text-white">0</span></div>
-                    <div>max daily searches: <span className="text-white">20</span></div>
+                    <div>max faves: <span className="text-white">0</span></div>
+                    <div>max daily searches: <span className="text-white">12</span></div>
                     <div>max daily watch time: <span className="text-white">90 Min.</span></div>
                   </div>
                   <button 
@@ -711,15 +720,19 @@ export default function Home() {
                     POPULAR
                   </div>
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold mb-2">groupie</h3>
+                    <h3 className="text-2xl font-bold mb-2">Roadie</h3>
                     <div className="text-yellow-400 font-bold text-base mb-4">
-                      ${isAnnualBilling ? '8' : '10'} /mo.
+                      ${isAnnualBilling ? '8' : '10'}/mo.
                     </div>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
                       <span>Everything in Freebird</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-green-400 mr-3">✓</span>
+                      <span>Login Resume</span>
                     </div>
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
@@ -733,14 +746,10 @@ export default function Home() {
                       <span className="text-black mr-3">-</span>
                       <span className="text-black">-</span>
                     </div>
-                    <div className="flex items-center">
-                      <span className="text-black mr-3">-</span>
-                      <span className="text-black">-</span>
-                    </div>
                   </div>
                   <div className="mt-6 space-y-2 text-sm text-gray-400">
-                    <div>max savie favies: <span className="text-yellow-400">25</span></div>
-                    <div>max daily searches: <span className="text-yellow-400">60</span></div>
+                    <div>max faves: <span className="text-yellow-400">12</span></div>
+                    <div>max daily searches: <span className="text-yellow-400">36</span></div>
                     <div>max daily watch time: <span className="text-yellow-400">3 Hrs.</span></div>
                   </div>
                   <button 
@@ -753,9 +762,9 @@ export default function Home() {
                 {/* Hero */}
                 <div className="border border-green-500 rounded-xl p-6">
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold mb-2">hero</h3>
+                    <h3 className="text-2xl font-bold mb-2">Hero</h3>
                     <div className="text-green-400 font-bold text-base mb-4">
-                      ${isAnnualBilling ? '15' : '19'} /mo.
+                      ${isAnnualBilling ? '15' : '19'}/mo.
                     </div>
                   </div>
                   <div className="space-y-3 text-sm">
@@ -781,7 +790,7 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="mt-6 space-y-2 text-sm text-gray-400">
-                    <div>max savie favies: <span className="text-green-400">UNLIMITED</span></div>
+                    <div>max faves: <span className="text-green-400">UNLIMITED</span></div>
                     <div>max daily searches: <span className="text-green-400">UNLIMITED</span></div>
                     <div>max daily watch time: <span className="text-green-400">8 Hrs.</span></div>
                   </div>
