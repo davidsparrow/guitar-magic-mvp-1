@@ -11,6 +11,7 @@ export default function Home() {
   const [showWhatModal, setShowWhatModal] = useState(false)
   const [showFeatureModal, setShowFeatureModal] = useState(null) // 'loops' or 'resume'
   const [showPricingModal, setShowPricingModal] = useState(false)
+  const [isAnnualBilling, setIsAnnualBilling] = useState(true) // Default to annual billing
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
   // Prevent hydration issues
@@ -106,18 +107,8 @@ export default function Home() {
             Press Fast-Fwd on your Guitar Mastery
           </p>
         </div>
-        {/* 2. "Guitar Wha?" Pill Button */}
-        <div className="mb-8">
-          <button
-            onClick={() => setShowWhatModal(true)}
-            className="bg-transparent border-2 border-white text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-white/10 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
-          >
-            <span>Guitar Wha?</span>
-            <GiGuitar className="text-white text-xl" />
-          </button>
-        </div>
-        {/* 3. Stay Free Button + No Credit Card - Centered Vertically */}
-        <div className="flex flex-col items-center space-y-2">
+        {/* 2. Stay Free Button + No Credit Card - Centered Vertically */}
+        <div className="flex flex-col items-center space-y-2 mb-8">
           {/* Stay Free - Now Clickable Button with Shiny Effect */}
           <button
             onClick={() => setShowPricingModal(true)}
@@ -137,6 +128,16 @@ export default function Home() {
             />
             <span className="text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>no credit card</span>
           </div>
+        </div>
+        {/* 3. "Guitar Wha?" Pill Button */}
+        <div className="mb-8 mt-2.5">
+          <button
+            onClick={() => setShowWhatModal(true)}
+            className="bg-transparent border-2 border-white text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-[#f9a72b] hover:border-[#f9a72b] transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
+          >
+            <span>Guitar Wha?</span>
+            <GiGuitar className="text-white text-xl" />
+          </button>
         </div>
       </div>
       {/* Footer - Fixed at Bottom */}
@@ -629,22 +630,46 @@ export default function Home() {
             {/* Close Button */}
             <button
               onClick={() => setShowPricingModal(false)}
-              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 z-10 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
             >
+              ×
             </button>
             {/* Pricing Table */}
             <div className="p-8">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold mb-2">Choose Your Plan</h2>
-                <p className="text-gray-400">Start free, upgrade when you're ready</p>
+                <p className="text-gray-400">Guitars. You can't buy just one.</p>
               </div>
+              
+              {/* Billing Toggle */}
+              <div className="flex items-center justify-center mb-8 space-x-4 order-first md:order-none">
+                <span className={`text-sm font-medium ${isAnnualBilling ? 'text-gray-500' : 'text-orange-400'}`}>
+                  Billed Monthly
+                </span>
+                <button
+                  onClick={() => setIsAnnualBilling(!isAnnualBilling)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    isAnnualBilling ? 'bg-blue-600' : 'bg-orange-500'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isAnnualBilling ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-sm font-medium ${!isAnnualBilling ? 'text-gray-500' : 'text-blue-400'}`}>
+                  Billed Annually
+                </span>
+              </div>
+              
               {/* Pricing Tiers */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex flex-col md:grid md:grid-cols-3 gap-6">
                 {/* Freebird */}
                 <div className="border border-gray-600 rounded-xl p-6">
                   <div className="text-center mb-6">
                     <h3 className="text-2xl font-bold mb-2">freebird</h3>
-                    <div className="text-yellow-400 font-bold text-lg mb-4">zip</div>
+                    <div className="text-gray-400 font-bold text-base mb-4">free</div>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center">
@@ -671,7 +696,7 @@ export default function Home() {
                   <div className="mt-6 space-y-2 text-sm text-gray-400">
                     <div>max savie favies: <span className="text-white">0</span></div>
                     <div>max daily searches: <span className="text-white">20</span></div>
-                    <div>max daily watch time: <span className="text-white">2 hrs.</span></div>
+                    <div>max daily watch time: <span className="text-white">90 Min.</span></div>
                   </div>
                   <button 
                     onClick={() => setShowAuthModal(true)}
@@ -687,34 +712,36 @@ export default function Home() {
                   </div>
                   <div className="text-center mb-6">
                     <h3 className="text-2xl font-bold mb-2">groupie</h3>
-                    <div className="text-yellow-400 font-bold text-lg mb-4">8 bucks</div>
+                    <div className="text-yellow-400 font-bold text-base mb-4">
+                      ${isAnnualBilling ? '8' : '10'} /mo.
+                    </div>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
-                      <span>flippin some vids</span>
+                      <span>Everything in Freebird</span>
                     </div>
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
-                      <span>loopin some segments</span>
-                    </div>
-                    <div className="flex items-center text-gray-500">
-                      <span className="mr-3">✗</span>
-                      <span>resume on login</span>
+                      <span>Captions</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-green-400 mr-3">✓</span>
-                      <span>chords & captions</span>
+                      <span className="text-black mr-3">-</span>
+                      <span className="text-black">-</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-green-400 mr-3">✓</span>
-                      <span>tabs (coming soon)</span>
+                      <span className="text-black mr-3">-</span>
+                      <span className="text-black">-</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-black mr-3">-</span>
+                      <span className="text-black">-</span>
                     </div>
                   </div>
                   <div className="mt-6 space-y-2 text-sm text-gray-400">
                     <div>max savie favies: <span className="text-yellow-400">25</span></div>
                     <div>max daily searches: <span className="text-yellow-400">60</span></div>
-                    <div>max daily watch time: <span className="text-yellow-400">3 hrs.</span></div>
+                    <div>max daily watch time: <span className="text-yellow-400">3 Hrs.</span></div>
                   </div>
                   <button 
                     onClick={() => setShowAuthModal(true)}
@@ -723,44 +750,46 @@ export default function Home() {
                     Start Groupie
                   </button>
                 </div>
-                {/* Wonderwall */}
+                {/* Hero */}
                 <div className="border border-green-500 rounded-xl p-6">
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold mb-2">wonderwall</h3>
-                    <div className="text-green-400 font-bold text-lg mb-4">15 bucks</div>
+                    <h3 className="text-2xl font-bold mb-2">hero</h3>
+                    <div className="text-green-400 font-bold text-base mb-4">
+                      ${isAnnualBilling ? '15' : '19'} /mo.
+                    </div>
                   </div>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
-                      <span>flippin some vids</span>
+                      <span>Everything in Groupie</span>
                     </div>
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
-                      <span>loopin some segments</span>
+                      <span>Auto-Gen Chord Diagrams</span>
                     </div>
                     <div className="flex items-center">
                       <span className="text-green-400 mr-3">✓</span>
-                      <span>resume on login</span>
+                      <span>Auto-Gen Tabs</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-green-400 mr-3">✓</span>
-                      <span>chords & captions</span>
+                      <span className="text-black mr-3">-</span>
+                      <span className="text-black">-</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-green-400 mr-3">✓</span>
-                      <span>tabs (coming soon)</span>
+                      <span className="text-black mr-3">-</span>
+                      <span className="text-black">-</span>
                     </div>
                   </div>
                   <div className="mt-6 space-y-2 text-sm text-gray-400">
                     <div>max savie favies: <span className="text-green-400">UNLIMITED</span></div>
                     <div>max daily searches: <span className="text-green-400">UNLIMITED</span></div>
-                    <div>max daily watch time: <span className="text-green-400">8 hrs.</span></div>
+                    <div>max daily watch time: <span className="text-green-400">8 Hrs.</span></div>
                   </div>
                   <button 
                     onClick={() => setShowAuthModal(true)}
                     className="w-full mt-6 bg-green-500 text-black py-3 rounded-lg hover:bg-green-400 transition-colors font-bold"
                   >
-                    Go Wonderwall
+                    Go Hero
                   </button>
                 </div>
               </div>
