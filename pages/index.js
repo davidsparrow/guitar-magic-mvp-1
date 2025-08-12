@@ -5,14 +5,21 @@ import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
 import { GiGuitar } from "react-icons/gi"
 import { FaHamburger } from "react-icons/fa"
+import { IoMdPower } from "react-icons/io"
+import { RiLogoutCircleRLine } from "react-icons/ri"
 export default function Home() {
-  const { isAuthenticated, user, profile, loading } = useAuth()
+  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showWhatModal, setShowWhatModal] = useState(false)
   const [showFeatureModal, setShowFeatureModal] = useState(null) // 'loops' or 'resume'
   const [showPricingModal, setShowPricingModal] = useState(false)
   const [isAnnualBilling, setIsAnnualBilling] = useState(true) // Default to annual billing
   const [mounted, setMounted] = useState(false)
+  const [showRightMenuModal, setShowRightMenuModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showCaptionsModal, setShowCaptionsModal] = useState(false)
+  const [showChordDiagramsModal, setShowChordDiagramsModal] = useState(false)
   const router = useRouter()
   // Prevent hydration issues
   useEffect(() => {
@@ -39,8 +46,38 @@ export default function Home() {
   // Handle feature hotspot clicks
   const handleFeatureClick = (feature) => {
     setShowWhatModal(false)
-    setShowFeatureModal(feature)
+    
+    // Handle new modal types
+    if (feature === 'captions') {
+      setShowCaptionsModal(true)
+    } else if (feature === 'chord-diagrams') {
+      setShowChordDiagramsModal(true)
+    } else {
+      // Handle existing feature modals
+      setShowFeatureModal(feature)
+    }
   }
+
+  // Handle login/logout
+  const handleAuthClick = async () => {
+    if (isAuthenticated) {
+      // User is logged in, sign them out
+      try {
+        await signOut()
+        // Close any open modals
+        setShowAuthModal(false)
+        setShowPricingModal(false)
+        setShowWhatModal(false)
+        setShowFeatureModal(null)
+      } catch (error) {
+        console.error('Sign out failed:', error)
+      }
+    } else {
+      // User is not logged in, show auth modal
+      setShowAuthModal(true)
+    }
+  }
+
   if (!mounted || (loading && !router.isReady)) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
@@ -82,13 +119,32 @@ export default function Home() {
               className="h-10 w-auto"
             />
           </a>
-          {/* Menu Icon */}
-          <button 
-            onClick={() => setShowPricingModal(true)}
-            className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <FaHamburger className="w-6 h-6" />
-          </button>
+          {/* Right side buttons */}
+          <div className="flex items-center space-x-2">
+            {/* Login/Logout Icon */}
+            <button 
+              onClick={handleAuthClick}
+              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
+              title={isAuthenticated ? "End of the Party" : "Start Me Up"}
+            >
+              {isAuthenticated ? (
+                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              ) : (
+                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+              )}
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
+                {isAuthenticated ? "End of the Party" : "Start Me Up"}
+              </div>
+            </button>
+            {/* Menu Icon */}
+            <button 
+              onClick={() => setShowRightMenuModal(true)}
+              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+            >
+              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+            </button>
+          </div>
         </div>
       </header>
       {/* Main Content - Fixed Height, No Scroll */}
@@ -173,60 +229,76 @@ export default function Home() {
                 src="/images/webUiExample__HomePage_modalWHAT.png" 
                 alt="Features Overview" 
                 className="w-full rounded-2xl"
+                onError={(e) => {
+                  console.error('Image failed to load:', e.target.src);
+                  e.target.style.display = 'none';
+                }}
               />
               {/* Invisible Hotspot Areas Positioned Over Your Image */}
-              {/* Custom Loops Hotspot (Pink Infinity) - Now Stacked Above Login Resume */}
+              {/* Custom Loops Hotspot (Pink Infinity) - Moved 12px left */}
               <button
                 onClick={() => handleFeatureClick('loops')}
-                className="absolute bottom-[25%] right-[25%] w-[12%] h-[20%] hover:bg-pink-500/20 transition-colors rounded-lg"
+                className="absolute bottom-[25%] right-[34.5%] w-[12%] h-[20%] hover:bg-pink-500/20 transition-colors rounded-lg"
                 title="Custom Loops"
               />
 
               {/* Cheetah Hotspot (Duplicated from Custom Loops, moved 30px left, 5px down) */}
                                   <button
                       onClick={() => handleFeatureClick('cheetah')}
-                      className="absolute bottom-[14%] right-[41%] w-[15%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
+                      className="absolute bottom-[14%] right-[49%] w-[13%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
                       title="Wayyyy faster"
                     />
 
               {/* Lightbulb Hotspot (Duplicated from Cheetah, moved 10px left) */}
                                   <button
                       onClick={() => handleFeatureClick('lightbulb-brain')}
-                      className="absolute bottom-[14%] right-[58%] w-[15%] h-[23%] hover:bg-yellow-500/20 transition-colors rounded-lg"
+                      className="absolute bottom-[14%] right-[64%] w-[13%] h-[23%] hover:bg-yellow-500/20 transition-colors rounded-lg"
                       title="Lightbulb session"
                     />
 
-              {/* Stringbrain Hotspot (Duplicated from Cheetah, moved 20px up) */}
-                                  <button
-                      onClick={() => handleFeatureClick('sloth')}
-                      className="absolute bottom-[47%] right-[41%] w-[15%] h-[23%] hover:bg-red-500/20 transition-colors rounded-lg"
-                      title="Brain fog"
-                    />
+                              {/* Stringbrain Hotspot (Duplicated from Cheetah, moved 20px up) */}
+                <button
+                  onClick={() => handleFeatureClick('sloth')}
+                  className="absolute bottom-[47%] right-[49%] w-[13%] h-[23%] hover:bg-red-500/20 transition-colors rounded-lg"
+                  title="Sad. But cute!"
+                />
 
-              {/* Sloth Hotspot (Duplicated from Lightbulb, moved 20px up) */}
-                                  <button
-                      onClick={() => handleFeatureClick('scrambled-brain')}
-                      className="absolute bottom-[47%] right-[58%] w-[15%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
-                      title="Sad. But cute!"
-                    />
-              {/* Login Resume Hotspot (Green Power Button) - Now Stacked Below Custom Loops */}
+                {/* Sloth Hotspot (Duplicated from Lightbulb, moved 20px up) */}
+                <button
+                  onClick={() => handleFeatureClick('scrambled-brain')}
+                  className="absolute bottom-[47%] right-[64%] w-[13%] h-[23%] hover:bg-orange-500/20 transition-colors rounded-lg"
+                  title="Brain fog"
+                />
+              {/* Login Resume Hotspot (Green Power Button) - Moved 12px left */}
               <button
                 onClick={() => handleFeatureClick('resume')}
-                className="absolute bottom-[5%] right-[25%] w-[12%] h-[20%] hover:bg-green-500/20 transition-colors rounded-lg"
+                className="absolute bottom-[5%] right-[34.5%] w-[12%] h-[20%] hover:bg-green-500/20 transition-colors rounded-lg"
                 title="Login & Resume"
               />
               {/* Auto-gen Chords Hotspot (Light Blue Guitar Chord Diagram) - New Feature */}
               <button
                 onClick={() => handleFeatureClick('chords')}
-                className="absolute bottom-[25%] right-[7%] w-[12%] h-[20%] hover:bg-blue-500/20 transition-colors rounded-lg"
+                className="absolute bottom-[25%] right-[4.5%] w-[12%] h-[20%] hover:bg-blue-500/20 transition-colors rounded-lg"
                 title="Auto-gen Chords"
               />
               {/* Auto-gen Tabs Hotspot (Green Guitar Tablature) - New Feature */}
-              <button
-                onClick={() => handleFeatureClick('tabs')}
-                className="absolute bottom-[5%] right-[7%] w-[12%] h-[20%] hover:bg-green-500/20 transition-colors rounded-lg"
-                title="Auto-gen Tabs"
-              />
+                              <button
+                  onClick={() => handleFeatureClick('tabs')}
+                  className="absolute bottom-[5%] right-[4.5%] w-[12%] h-[20%] hover:bg-green-500/20 transition-colors rounded-lg"
+                  title="Auto-gen Tabs"
+                />
+                
+                {/* Duplicate hotspots moved 36 pixels left */}
+                <button
+                  onClick={() => handleFeatureClick('captions')}
+                  className="absolute bottom-[25%] right-[20%] w-[12%] h-[20%] hover:bg-purple-500/20 transition-colors rounded-lg"
+                  title="Custom Captions"
+                />
+                <button
+                  onClick={() => handleFeatureClick('chord-diagrams')}
+                  className="absolute bottom-[5%] right-[20%] w-[12%] h-[20%] hover:bg-orange-500/20 transition-colors rounded-lg"
+                  title="Select Chord Diagrams"
+                />
             </div>
           </div>
         </div>
@@ -801,6 +873,301 @@ export default function Home() {
                     Go Hero
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Right-Side Menu Modal */}
+      {showRightMenuModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowRightMenuModal(false)
+            }
+          }}
+        >
+          <div 
+            className="w-[300px] h-full relative"
+            style={{
+              marginTop: '5px', // Position just below hamburger
+              backgroundColor: 'rgba(255, 255, 255, 0.08)' // Ghost-white with 8% transparency
+            }}
+          >
+            {/* Close Button - Same style as other modals */}
+            <button
+              onClick={() => setShowRightMenuModal(false)}
+              className="absolute top-3 right-9 text-white hover:text-yellow-400 transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Menu Content */}
+            <div className="p-6 pt-16">
+              <div className="text-white text-center space-y-8">
+                {/* TOP OF MENU */}
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setShowProfileModal(true)}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    PROFILE
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowPlanModal(true)}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    PLAN DEETS
+                  </button>
+                </div>
+                
+                {/* BOTTOM OF MENU */}
+                <div className="space-y-4 mt-auto">
+                  <a 
+                    href="mailto:support@guitartube.net"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    SUPPORT
+                  </a>
+                  
+                  <a 
+                    href="/terms"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    TERMS
+                  </a>
+                  
+                  <a 
+                    href="/privacy"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    PRIVACY
+                  </a>
+                  
+                  <a 
+                    href="/community_guidelines"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    COMMUNITY GUIDELINES
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowProfileModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowProfileModal(false)}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Profile Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Profile</h2>
+              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-4 text-gray-300">
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Name</p>
+                <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Email</p>
+                <p className="font-medium">{user?.email || 'No email'}</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Subscription</p>
+                <p className="font-medium capitalize">{profile?.subscription_tier || 'Free'}</p>
+              </div>
+              
+              <div className="pt-4">
+                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Plan Modal */}
+      {showPlanModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowPlanModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowPlanModal(false)}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Plan Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Plan Details</h2>
+            </div>
+            
+            <div className="space-y-4 text-gray-300">
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Current Plan</p>
+                <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Free'}</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
+                <p className="font-medium">{isAnnualBilling ? 'Annual' : 'Monthly'}</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Amount</p>
+                <p className="font-medium text-xl">
+                  ${profile?.subscription_tier === 'premium' ? (isAnnualBilling ? '15' : '19') : 
+                    profile?.subscription_tier === 'groupie' ? (isAnnualBilling ? '8' : '10') : '0'}/mo
+                </p>
+              </div>
+              
+              <div className="pt-4 space-y-3">
+                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  Change Credit Card
+                </button>
+                
+                {profile?.subscription_tier !== 'hero' && (
+                  <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                    UPGRADE
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Custom Captions Modal */}
+      {showCaptionsModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCaptionsModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowCaptionsModal(false)}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Captions Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Custom Captions</h2>
+            </div>
+            
+            <div className="space-y-4 text-gray-300">
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Create Your Own Captions</p>
+                <p className="font-medium">Add personalized text overlays to your guitar videos with our easy-to-use caption editor.</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Features</p>
+                <ul className="text-sm space-y-1">
+                  <li>• Custom text and fonts</li>
+                  <li>• Multiple caption styles</li>
+                  <li>• Timing controls</li>
+                  <li>• Color customization</li>
+                </ul>
+              </div>
+              
+              <div className="pt-4">
+                <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors">
+                  Start Creating Captions
+                </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Select Chord Diagrams Modal */}
+      {showChordDiagramsModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowChordDiagramsModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowChordDiagramsModal(false)}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Chord Diagrams Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Select Chord Diagrams</h2>
+            </div>
+            
+            <div className="space-y-4 text-gray-300">
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Add Chords to your Captions!</p>
+                <p className="font-medium">Selected chords appear to the left of the captions in the same start/stop time segment.</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Available Options</p>
+                <ul className="text-sm space-y-1">
+                  <li>• Open chords (C, G, D, A, E)</li>
+                  <li>• Barre chords (F, B, Bb)</li>
+                  <li>• Power chords</li>
+                  <li>• Jazz chords</li>
+                </ul>
+              </div>
+              
+              <div className="pt-4">
+                <button className="w-full bg-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-orange-700 transition-colors">
+                  Browse Chord Library
+                </button>
               </div>
             </div>
           </div>
