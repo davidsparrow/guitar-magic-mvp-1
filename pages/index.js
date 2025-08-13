@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { GiGuitar } from "react-icons/gi"
+import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
@@ -121,6 +121,15 @@ export default function Home() {
           </a>
           {/* Right side buttons */}
           <div className="flex items-center space-x-2">
+            {/* Brain Icon Button - Now in right flex container */}
+            <button
+              onClick={() => setShowWhatModal(true)}
+              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
+              title="Guitar Wha?"
+            >
+              <LuBrain className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+            </button>
+            
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -140,9 +149,14 @@ export default function Home() {
             {/* Menu Icon */}
             <button 
               onClick={() => setShowRightMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
+              title="Yummy"
             >
               <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
+                Yummy
+              </div>
             </button>
           </div>
         </div>
@@ -185,20 +199,11 @@ export default function Home() {
             <span className="text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>no credit card</span>
           </div>
         </div>
-        {/* 3. "Guitar Wha?" Pill Button */}
-        <div className="mb-8 mt-2.5">
-          <button
-            onClick={() => setShowWhatModal(true)}
-            className="bg-transparent border-2 border-white text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-black hover:text-white transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
-          >
-            <span>Guitar Wha?</span>
-            <GiGuitar className="text-white text-xl" />
-          </button>
-        </div>
+
       </div>
       {/* Footer - Fixed at Bottom */}
       <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-center items-center space-x-8 text-white/60 text-sm">
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>

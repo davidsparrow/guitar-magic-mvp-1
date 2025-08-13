@@ -172,7 +172,7 @@ export default function CommunityGuidelines() {
 
       {/* Footer - Fixed at Bottom */}
       <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-center items-center space-x-8 text-white/60 text-sm">
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>

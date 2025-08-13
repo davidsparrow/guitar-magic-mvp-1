@@ -198,6 +198,9 @@ export default function Search() {
         }}
       />
       
+      {/* 75% Black Overlay */}
+      <div className="absolute inset-0 bg-black/75 z-0" />
+      
       {/* Header */}
       <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-between items-center">
