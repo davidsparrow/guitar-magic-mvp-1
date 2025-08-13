@@ -1,5 +1,5 @@
 // pages/search.js - Search Page with YouTube API Integration
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
@@ -16,6 +16,7 @@ export default function Search() {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const searchInputRef = useRef(null)
   const router = useRouter()
 
   // Search states
@@ -29,11 +30,51 @@ export default function Search() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [userFavorites, setUserFavorites] = useState([]) // This would be populated from your backend
+  const [pendingVideo, setPendingVideo] = useState(null) // Store video for post-login navigation
 
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Auto-search when page loads with query parameter
+  useEffect(() => {
+    if (mounted && router.isReady) {
+      const { q } = router.query
+      if (q && typeof q === 'string') {
+        setSearchQuery(q)
+        // Perform search directly with the URL query
+        performSearchWithQuery(q)
+      }
+    }
+  }, [mounted, router.isReady, router.query])
+
+  // Handle post-login navigation to pending video
+  useEffect(() => {
+    if (isAuthenticated && pendingVideo && !loading) {
+      // User just logged in and has a pending video
+      const video = pendingVideo
+      const videoId = video.id.videoId
+      
+      // Store video info for the player page
+      localStorage.setItem('currentVideo', JSON.stringify({
+        id: videoId,
+        title: video.snippet.title,
+        channelTitle: video.snippet.channelTitle,
+        description: video.snippet.description,
+        thumbnails: video.snippet.thumbnails,
+        publishedAt: video.snippet.publishedAt,
+        statistics: video.statistics,
+        contentDetails: video.contentDetails
+      }))
+      
+      // Navigate to video player
+      router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
+      
+      // Clear pending video
+      setPendingVideo(null)
+    }
+  }, [isAuthenticated, pendingVideo, loading, router])
 
   // Handle login/logout
   const handleAuthClick = async () => {
@@ -90,6 +131,32 @@ export default function Search() {
     }
   }
 
+  // Perform search with direct query string (for auto-search from URL)
+  const performSearchWithQuery = async (query) => {
+    if (!query.trim()) return
+
+    setIsSearching(true)
+    setSearchError('')
+
+    try {
+      const results = await searchVideos(query.trim(), {
+        maxResults: 12,
+        pageToken: null,
+        order: sortOrder
+      })
+
+      setSearchResults(results.videos)
+      setHasSearched(true)
+      setNextPageToken(results.nextPageToken)
+
+    } catch (error) {
+      console.error('Search error:', error)
+      setSearchError(error.message || 'Search failed. Please try again.')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
   // Handle search button click
   const handleSearchClick = () => {
     handleSearch()
@@ -109,6 +176,10 @@ export default function Search() {
     setHasSearched(false)
     setNextPageToken(null)
     setSearchError('')
+    if (searchInputRef.current) {
+      searchInputRef.current.focus()
+      searchInputRef.current.setSelectionRange(0, 0)
+    }
   }
 
   // Handle load more
@@ -120,6 +191,14 @@ export default function Search() {
 
   // Handle video click
   const handleVideoClick = (video) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Show login modal for unauthenticated users
+      setShowAuthModal(true)
+      setPendingVideo(video) // Store the video for post-login navigation
+      return
+    }
+
     const videoId = video.id.videoId
     
     // Store video info for the player page
@@ -242,6 +321,7 @@ export default function Search() {
                 placeholder="how to play guitar"
                 className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
                 style={{ borderRadius: '77px' }}
+                ref={searchInputRef}
               />
               
               {/* Clear button */}

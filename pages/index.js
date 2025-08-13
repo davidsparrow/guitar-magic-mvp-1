@@ -1,5 +1,5 @@
 // pages/index.js - Homepage Using Your Actual Images
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
@@ -8,14 +8,17 @@ import { FaHamburger } from "react-icons/fa"
 import { FaRegCreditCard } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
+import { FaTimes, FaSearch } from "react-icons/fa"
 export default function Home() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [isAnnualBilling, setIsAnnualBilling] = useState(true) // Default to annual billing
+  const [searchQuery, setSearchQuery] = useState('')
   const [mounted, setMounted] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const searchInputRef = useRef(null)
   const router = useRouter()
   // Prevent hydration issues
   useEffect(() => {
@@ -37,17 +40,45 @@ export default function Home() {
   // Handle login/logout
   const handleAuthClick = async () => {
     if (isAuthenticated) {
-      // User is logged in, sign them out
       try {
         await signOut()
-        // Close any open modals
         setShowAuthModal(false)
+        setShowRightMenuModal(false)
+        setShowProfileModal(false)
+        setShowPlanModal(false)
       } catch (error) {
         console.error('Sign out failed:', error)
       }
     } else {
-      // User is not logged in, show auth modal
       setShowAuthModal(true)
+    }
+  }
+
+  // Handle clear search
+  const handleClearSearch = () => {
+    setSearchQuery('')
+    if (searchInputRef.current) {
+      searchInputRef.current.focus()
+      searchInputRef.current.setSelectionRange(0, 0)
+    }
+  }
+
+  // Handle search
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return
+    // Navigate to search page with query
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+  }
+
+  // Handle search button click
+  const handleSearchClick = () => {
+    handleSearch()
+  }
+
+  // Handle enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch()
     }
   }
 
@@ -147,9 +178,74 @@ export default function Home() {
             className="mx-auto mb-2 h-48 w-auto"
           />
           <p className="text-center text-white font-medium text-lg" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Press, fast forward on your Video Guitar Learning
+            Press fast forward on your Video Guitar Learning
           </p>
         </div>
+
+        {/* Search and Sort Fields - Copied from search page */}
+        <div className="flex items-center justify-center space-x-4 mt-16">
+          {/* Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="how to play guitar"
+              className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
+              style={{ borderRadius: '77px' }}
+              ref={searchInputRef}
+              onKeyPress={handleKeyPress}
+            />
+            
+            {/* Clear button */}
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-11 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white hover:scale-110 transition-all duration-200 p-1 rounded-full hover:bg-white/10"
+            >
+              <FaTimes className="w-5 h-5" />
+            </button>
+            
+            {/* Vertical separator line */}
+            <div className="absolute right-10 top-1/2 transform -translate-y-1/2 w-px h-4 bg-white/30"></div>
+            
+            {/* Search button */}
+            <button
+              onClick={handleSearchClick}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105"
+            >
+              <FaSearch className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative group">
+            <select
+              className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
+              title="Sort affects new searches only"
+              style={{ borderRadius: '77px' }}
+            >
+              <option value="relevance" className="bg-black text-white">Relevance</option>
+              <option value="date" className="bg-black text-white">Date</option>
+              <option value="rating" className="bg-black text-white">Rating</option>
+              <option value="title" className="bg-black text-white">Title</option>
+              <option value="viewCount" className="bg-black text-white">Views</option>
+            </select>
+            
+            {/* Custom dropdown arrow */}
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
+              Sort affects new searches only
+            </div>
+          </div>
+        </div>
+
+        {/* Main Feature Graphic with Hotspots */}
         
         {/* 2. Stay Free Button - Moved to Bottom */}
         <div className="mt-auto mb-4">
