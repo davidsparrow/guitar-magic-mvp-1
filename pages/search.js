@@ -317,9 +317,9 @@ export default function Search() {
             {/* Menu Icon */}
             <button 
               onClick={() => setShowRightMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105 group"
+              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
             >
-              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         </div>

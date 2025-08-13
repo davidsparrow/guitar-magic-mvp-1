@@ -108,7 +108,7 @@ export default function Pricing() {
               onClick={() => setShowRightMenuModal(true)}
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
             >
-              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/router'
 import { FaHamburger } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
+import { LuBrain } from "react-icons/lu"
 
 export default function Features() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
@@ -110,6 +111,14 @@ export default function Features() {
           </a>
           {/* Right side buttons */}
           <div className="flex items-center space-x-2">
+            {/* Brain Icon Button - Same as homepage */}
+            <div
+              className="p-2 rounded-lg relative"
+              title="GuitarTube Features"
+            >
+              <LuBrain className="w-6 h-6 text-yellow-400" />
+            </div>
+            
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -131,7 +140,7 @@ export default function Features() {
               onClick={() => setShowRightMenuModal(true)}
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
             >
-              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         </div>
