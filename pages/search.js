@@ -172,10 +172,6 @@ export default function Search() {
   // Handle clear search
   const handleClearSearch = () => {
     setSearchQuery('')
-    setSearchResults([])
-    setHasSearched(false)
-    setNextPageToken(null)
-    setSearchError('')
     if (searchInputRef.current) {
       searchInputRef.current.focus()
       searchInputRef.current.setSelectionRange(0, 0)
@@ -546,9 +542,15 @@ export default function Search() {
                     <button
                       onClick={handleLoadMore}
                       disabled={isLoadingMore}
-                      className="bg-yellow-400 text-black px-8 py-3 rounded-xl font-medium hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="bg-yellow-400 text-black px-8 py-3 rounded-xl font-medium hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors relative group"
+                      title="This button click will be included in daily search totals"
                     >
                       {isLoadingMore ? 'Loading...' : 'LOAD MORE'}
+                      
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
+                        This button click will be included in daily search totals
+                      </div>
                     </button>
                   </div>
                 )}

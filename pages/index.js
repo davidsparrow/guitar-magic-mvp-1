@@ -175,15 +175,15 @@ export default function Home() {
           <img 
             src="/images/gt_logoM_PlayButton.png" 
             alt="GuitarTube" 
-            className="mx-auto mb-2 h-48 w-auto"
+            className="mx-auto mb-3 h-48 w-auto"
           />
-          <p className="text-center text-white font-medium text-lg" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Press fast forward on your Video Guitar Learning
+          <p className="text-center text-white font-bold text-xl" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Press fast forward on your Video Guitar Learning journey
           </p>
         </div>
 
         {/* Search and Sort Fields - Copied from search page */}
-        <div className="flex items-center justify-center space-x-4 mt-16">
+        <div className="flex items-center justify-center space-x-4 mt-11">
           {/* Search Bar */}
           <div className="relative">
             <input
