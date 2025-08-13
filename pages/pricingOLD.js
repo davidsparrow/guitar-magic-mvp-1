@@ -93,22 +93,24 @@ export default function Home() {
     <div className="relative h-screen overflow-hidden bg-black" style={{ 
       backgroundColor: '#000000',
       minHeight: '100vh',
+      minHeight: '100dvh',
       width: '100vw',
       overflow: 'hidden'
     }}>
       {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden md:block"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/images/gt_splashBG_dark.png')`,
           width: '100%',
           height: '100%',
           minWidth: '100vw',
           minHeight: '100vh',
+          minHeight: '100dvh'
         }}
       />
-            {/* Responsive Header - Mobile optimized, transparent on desktop */}
-      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
+      {/* Responsive Header - Mobile optimized, transparent on desktop */}
+      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 md:bg-transparent" style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
         <div className="flex justify-between items-center">
           {/* Logo - Upper Left - NEW WIDE LOGO */}
           <a 
@@ -165,10 +167,10 @@ export default function Home() {
       </header>
       {/* Main Content - Pricing */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
-        height: 'calc(100vh - 100px)',
+        height: 'calc(100vh - 140px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full">
           <h1 className="text-4xl font-bold text-center mb-2 text-yellow-400">Choose Your Plan</h1>
           <p className="text-gray-400 text-lg text-center mb-11">Subscriptions are like Guitars. New ones all the time.</p>
           
@@ -231,14 +233,9 @@ export default function Home() {
               </div>
               <button 
                 onClick={() => setShowAuthModal(true)}
-                className="w-full mt-6 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2"
+                className="w-full mt-6 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
               >
-                <span>Get Started Free</span>
-                <img 
-                  src="/images/no_credit_card2.png" 
-                  alt="No Credit Card" 
-                  className="w-5 h-5"
-                />
+                Get Started Free
               </button>
             </div>
 
@@ -334,8 +331,8 @@ export default function Home() {
         </div>
       </div>
       {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:text-sm md:-mt-5" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>

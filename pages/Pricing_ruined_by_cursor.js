@@ -1,47 +1,35 @@
-// pages/index.js - Homepage Using Your Actual Images
-import { useState, useEffect, useRef } from 'react'
+// pages/pricing.js - Pricing Page
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
-import { FaRegCreditCard } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
-import { FaTimes, FaSearch } from "react-icons/fa"
-export default function Home() {
+import { LuBrain } from "react-icons/lu"
+
+export default function Pricing() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [isAnnualBilling, setIsAnnualBilling] = useState(true) // Default to annual billing
-  const [searchQuery, setSearchQuery] = useState('')
-  const [mounted, setMounted] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
-  const searchInputRef = useRef(null)
+  const [isAnnualBilling, setIsAnnualBilling] = useState(true) // Default to annual billing
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
-  // Smart redirect logic for authenticated users
-  useEffect(() => {
-    if (mounted && isAuthenticated && !loading && router.isReady) {
-      const urlParams = new URLSearchParams(window.location.search)
-      const isIntentionalHomeVisit = urlParams.get('home') === 'true'
-      const referrer = document.referrer
-      const isDirectNavigation = !referrer || !referrer.includes(window.location.origin)
-      if (isDirectNavigation && !isIntentionalHomeVisit) {
-        router.replace('/search')
-      }
-    }
-  }, [mounted, isAuthenticated, loading, router])
 
   // Handle login/logout
   const handleAuthClick = async () => {
     if (isAuthenticated) {
+      // User is logged in, sign them out
       try {
         await signOut()
+        // Close any open modals
         setShowAuthModal(false)
         setShowRightMenuModal(false)
         setShowProfileModal(false)
@@ -50,35 +38,8 @@ export default function Home() {
         console.error('Sign out failed:', error)
       }
     } else {
+      // User is not logged in, show auth modal
       setShowAuthModal(true)
-    }
-  }
-
-  // Handle clear search
-  const handleClearSearch = () => {
-    setSearchQuery('')
-    if (searchInputRef.current) {
-      searchInputRef.current.focus()
-      searchInputRef.current.setSelectionRange(0, 0)
-    }
-  }
-
-  // Handle search
-  const handleSearch = () => {
-    if (!searchQuery.trim()) return
-    // Navigate to search page with query
-    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-  }
-
-  // Handle search button click
-  const handleSearchClick = () => {
-    handleSearch()
-  }
-
-  // Handle enter key press
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch()
     }
   }
 
@@ -89,28 +50,32 @@ export default function Home() {
       </div>
     )
   }
+
   return (
     <div className="relative h-screen overflow-hidden bg-black" style={{ 
       backgroundColor: '#000000',
       minHeight: '100vh',
+      minHeight: '100dvh',
       width: '100vw',
       overflow: 'hidden'
     }}>
       {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden md:block"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/images/gt_splashBG_dark.png')`,
           width: '100%',
           height: '100%',
           minWidth: '100vw',
           minHeight: '100vh',
+          minHeight: '100dvh'
         }}
       />
-            {/* Responsive Header - Mobile optimized, transparent on desktop */}
-      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
+      
+      {/* Responsive Header - Dark on mobile, transparent on desktop */}
+      <header className="relative z-10 px-6 py-4 md:bg-transparent" style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
         <div className="flex justify-between items-center">
-          {/* Logo - Upper Left - NEW WIDE LOGO */}
+          {/* Logo - Responsive sizing */}
           <a 
             href="/?home=true" 
             className="hover:opacity-80 transition-opacity"
@@ -121,9 +86,10 @@ export default function Home() {
               className="h-8 md:h-10 w-auto" // Mobile: h-8, Desktop: h-10
             />
           </a>
-          {/* Right side buttons */}
+          
+          {/* Right side buttons - Responsive sizing */}
           <div className="flex items-center space-x-1 md:space-x-2"> {/* Mobile: space-x-1, Desktop: space-x-2 */}
-            {/* Brain Icon Button - Now in right flex container */}
+            {/* Brain Icon Button */}
             <button
               onClick={() => router.push('/features')}
               className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
@@ -141,13 +107,10 @@ export default function Home() {
               {isAuthenticated ? (
                 <RiLogoutCircleRLine className="w-5 h-5 md:w-6 md:h-6 group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-5 h-5 md:w-6 md:h-6 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-5 h-5 md:w-6 md:h-6 group-hover:text-yellow-400 transition-colors" />
               )}
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                {isAuthenticated ? "End of the Party" : "Start Me Up"}
-              </div>
             </button>
+            
             {/* Menu Icon */}
             <button 
               onClick={() => setShowRightMenuModal(true)}
@@ -155,20 +118,17 @@ export default function Home() {
               title="Yummy"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                Yummy
-              </div>
             </button>
           </div>
         </div>
       </header>
+
       {/* Main Content - Pricing */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
-        height: 'calc(100vh - 100px)',
+        height: 'calc(100vh - 80px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full">
           <h1 className="text-4xl font-bold text-center mb-2 text-yellow-400">Choose Your Plan</h1>
           <p className="text-gray-400 text-lg text-center mb-11">Subscriptions are like Guitars. New ones all the time.</p>
           
@@ -224,21 +184,16 @@ export default function Home() {
                   <span>Tabs (coming soon)</span>
                 </div>
               </div>
-              <div className="mt-6 space-y-2 text-sm text-gray-400">
-                <div>max faves: <span className="text-white">0</span></div>
-                <div>max daily searches: <span className="text-white">12</span></div>
-                <div>max daily watch time: <span className="text-white">1 Hr.</span></div>
-              </div>
+                              <div className="mt-6 space-y-2 text-sm text-gray-400">
+                  <div>max faves: <span className="text-white">0</span></div>
+                  <div>max daily searches: <span className="text-white">12</span></div>
+                  <div>max daily watch time: <span className="text-white">1 Hr.</span></div>
+                </div>
               <button 
                 onClick={() => setShowAuthModal(true)}
-                className="w-full mt-6 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2"
+                className="w-full mt-6 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors"
               >
-                <span>Get Started Free</span>
-                <img 
-                  src="/images/no_credit_card2.png" 
-                  alt="No Credit Card" 
-                  className="w-5 h-5"
-                />
+                Get Started Free
               </button>
             </div>
 
@@ -333,19 +288,22 @@ export default function Home() {
           </div>
         </div>
       </div>
+
       {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:text-sm md:-mt-5" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <footer className="fixed bottom-0 left-0 right-0 z-10 px-6 py-3" style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
         </div>
       </footer>
+
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
+
       {/* Right-Side Menu Modal */}
       {showRightMenuModal && (
         <div 
@@ -426,7 +384,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      
+
       {/* Profile Modal */}
       {showProfileModal && (
         <div 
@@ -514,14 +472,14 @@ export default function Home() {
               
               <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
-                <p className="font-medium">{isAnnualBilling ? 'Annual' : 'Monthly'}</p>
+                <p className="font-medium">Monthly</p>
               </div>
               
               <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Amount</p>
                 <p className="font-medium text-xl">
-                  ${profile?.subscription_tier === 'premium' ? (isAnnualBilling ? '15' : '19') : 
-                    profile?.subscription_tier === 'groupie' ? (isAnnualBilling ? '8' : '10') : '0'}/mo
+                  ${profile?.subscription_tier === 'hero' ? '19' : 
+                    profile?.subscription_tier === 'roadie' ? '10' : '0'}/mo
                 </p>
               </div>
               
