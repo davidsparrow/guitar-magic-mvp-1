@@ -5,6 +5,7 @@ import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
 import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
+import { FaRegCreditCard } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 export default function Home() {
@@ -162,42 +163,40 @@ export default function Home() {
         </div>
       </header>
       {/* Main Content - Fixed Height, No Scroll */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
+      <div className="relative z-10 flex flex-col items-center px-6" style={{ 
         height: 'calc(100vh - 140px)',
         backgroundColor: 'transparent'
       }}>
         {/* 1. Large Centered Logo - YOUR ACTUAL IMAGE */}
-        <div className="mb-8">
+        <div className="mt-32 mb-8">
           <img 
             src="/images/gt_logoM_PlayButton.png" 
             alt="GuitarTube" 
             className="mx-auto mb-2 h-48 w-auto"
           />
-          <p className="text-center text-white font-medium text-base uppercase" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Press Fast-Fwd on your Guitar Mastery
+          <p className="text-center text-white font-medium text-lg" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Press fast-forward on Video Guitar Learning
           </p>
         </div>
-        {/* 2. Stay Free Button + No Credit Card - Centered Vertically */}
-        <div className="flex flex-col items-center space-y-2 mb-8">
+        
+        {/* 2. Stay Free Button - Moved to Bottom */}
+        <div className="mt-auto mb-4">
           {/* Stay Free - Now Clickable Button with Shiny Effect */}
           <button
             onClick={() => setShowPricingModal(true)}
             className="relative text-green-400 font-bold text-2xl hover:text-green-300 transition-all duration-500 transform hover:scale-105 overflow-hidden group px-6 py-2 rounded-full"
+            title="No credit card required to Join, only to Cancel. Fair right?"
           >
             <span className="relative z-10 bg-gradient-to-r from-green-400 via-emerald-300 to-green-400 bg-clip-text text-transparent animate-shine">
               STAY FREE
             </span>
+            <img 
+              src="/images/no_credit_card2.png" 
+              alt="No Credit Card" 
+              className="inline-block ml-3 -mt-0.5 w-7 h-7"
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 via-emerald-300/40 to-green-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm rounded-full"></div>
           </button>
-          {/* No Credit Card - Centered Below, Smaller and Closer */}
-          <div className="flex items-center space-x-2 text-white/70 -mt-1">
-            <img 
-              src="/images/no_credit_card.png" 
-              alt="No Credit Card" 
-              className="w-6 h-4"
-            />
-            <span className="text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>no credit card</span>
-          </div>
         </div>
 
       </div>
