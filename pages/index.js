@@ -9,6 +9,7 @@ import { FaRegCreditCard } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { FaTimes, FaSearch } from "react-icons/fa"
+import TopBanner from '../components/TopBanner'
 export default function Home() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -108,6 +109,10 @@ export default function Home() {
           minHeight: '100vh'
         }}
       />
+      
+      {/* Top Banner - Admin controlled */}
+      <TopBanner />
+      
       {/* Desktop Header */}
       <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-between items-center">

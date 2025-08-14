@@ -7,6 +7,7 @@ import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
+import TopBanner from '../components/TopBanner'
 export default function Features() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -90,6 +91,10 @@ export default function Features() {
           minHeight: '100vh',
         }}
       />
+      
+      {/* Top Banner - Admin controlled */}
+      <TopBanner />
+      
             {/* Responsive Header - Mobile optimized, transparent on desktop */}
       <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
         <div className="flex justify-between items-center">

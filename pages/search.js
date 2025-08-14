@@ -8,6 +8,7 @@ import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPick, TbGuitarPickFilled } from "react-icons/tb"
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
+import TopBanner from '../components/TopBanner'
 
 export default function Search() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
@@ -275,6 +276,9 @@ export default function Search() {
       
       {/* 75% Black Overlay */}
       <div className="absolute inset-0 bg-black/75 z-0" />
+      
+      {/* Top Banner - Admin controlled */}
+      <TopBanner />
       
       {/* Responsive Header - 3 rows on mobile, 1 row on desktop */}
       <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">

@@ -1,566 +1,745 @@
-// pages/watch.js - FIXED FOOTER VISIBILITY
+// pages/search.js - Search Page with YouTube API Integration
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import YouTube from 'react-youtube'
+import { FaHamburger, FaSearch, FaTimes, FaEllipsisV, FaCheck } from "react-icons/fa"
+import { IoMdPower } from "react-icons/io"
+import { RiLogoutCircleRLine } from "react-icons/ri"
+import { TbGuitarPick, TbGuitarPickFilled } from "react-icons/tb"
+import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
+import TopBanner from '../components/TopBanner'
 
-// React Icons
-import { FaPlay, FaPause } from "react-icons/fa"
-import { RiFlipHorizontal2Fill, RiFlipVertical2Fill } from "react-icons/ri"
-import { IoVolumeHigh, IoVolumeMute } from "react-icons/io5"
-import { HiOutlineArrowLeft } from "react-icons/hi2"
-
-export default function Watch() {
-  const { isAuthenticated, user, profile, loading, isPremium } = useAuth()
+export default function Search() {
+  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showRightMenuModal, setShowRightMenuModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showPlanModal, setShowPlanModal] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const searchInputRef = useRef(null)
   const router = useRouter()
-  const { v: videoId, title, channel } = router.query
-  const playerRef = useRef(null)
-  const intervalRef = useRef(null)
-  
-  // Video states
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [volume, setVolume] = useState(100)
-  const [isMuted, setIsMuted] = useState(false)
-  const [isPlayerReady, setIsPlayerReady] = useState(false)
-  
-  // Flip states
-  const [isFlippedH, setIsFlippedH] = useState(false)
-  const [isFlippedV, setIsFlippedV] = useState(false)
-  
-  // Loop states (Premium feature)
-  const [loopStart, setLoopStart] = useState(null)
-  const [loopEnd, setLoopEnd] = useState(null)
-  const [isLooping, setIsLooping] = useState(false)
-  
-  // UI states
-  const [showMenu, setShowMenu] = useState(false)
-  
-  // Video info
-  const [videoInfo, setVideoInfo] = useState({
-    title: 'Loading...',
-    channelTitle: 'Loading...'
-  })
 
-  // Load video info from URL params or localStorage
+  // Search states
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchError, setSearchError] = useState('')
+  const [hasSearched, setHasSearched] = useState(false)
+  const [nextPageToken, setNextPageToken] = useState(null)
+  const [sortOrder, setSortOrder] = useState('relevance')
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [userFavorites, setUserFavorites] = useState([]) // This would be populated from your backend
+  const [pendingVideo, setPendingVideo] = useState(null) // Store video for post-login navigation
+  const [showMobileSearch, setShowMobileSearch] = useState(false) // Control mobile search visibility
+
+  // Prevent hydration issues
   useEffect(() => {
-    if (title && channel) {
-      setVideoInfo({
-        title: decodeURIComponent(title),
-        channelTitle: decodeURIComponent(channel)
+    setMounted(true)
+  }, [])
+
+
+
+  // Auto-search when page loads with query parameter
+  useEffect(() => {
+    if (mounted && router.isReady) {
+      const { q } = router.query
+      if (q && typeof q === 'string') {
+        setSearchQuery(q)
+        // Perform search directly with the URL query
+        performSearchWithQuery(q)
+      }
+    }
+  }, [mounted, router.isReady, router.query])
+
+  // Handle post-login navigation to pending video
+  useEffect(() => {
+    if (isAuthenticated && pendingVideo && !loading) {
+      // User just logged in and has a pending video
+      const video = pendingVideo
+      const videoId = video.id.videoId
+      
+      // Store video info for the player page
+      localStorage.setItem('currentVideo', JSON.stringify({
+        id: videoId,
+        title: video.snippet.title,
+        channelTitle: video.snippet.channelTitle,
+        description: video.snippet.description,
+        thumbnails: video.snippet.thumbnails,
+        publishedAt: video.snippet.publishedAt,
+        statistics: video.statistics,
+        contentDetails: video.contentDetails
+      }))
+      
+      // Navigate to video player
+      router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
+      
+      // Clear pending video
+      setPendingVideo(null)
+    }
+  }, [isAuthenticated, pendingVideo, loading, router])
+
+  // Handle login/logout
+  const handleAuthClick = async () => {
+    if (isAuthenticated) {
+      try {
+        await signOut()
+        setShowAuthModal(false)
+        setShowRightMenuModal(false)
+        setShowProfileModal(false)
+        setShowPlanModal(false)
+      } catch (error) {
+        console.error('Sign out failed:', error)
+      }
+    } else {
+      setShowAuthModal(true)
+    }
+  }
+
+  // Handle search - Navigate to search page instead of searching here
+  const handleSearch = async (pageToken = null) => {
+    if (!searchQuery.trim()) return
+
+    // Navigate to search page with query
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    // Hide mobile search after navigation
+    setShowMobileSearch(false)
+  }
+
+  // Perform search with direct query string (for auto-search from URL)
+  const performSearchWithQuery = async (query) => {
+    if (!query.trim()) return
+
+    setIsSearching(true)
+    setSearchError('')
+
+    try {
+      const results = await searchVideos(query.trim(), {
+        maxResults: 12,
+        pageToken: null,
+        order: sortOrder
       })
-    } else {
-      const savedVideo = localStorage.getItem('currentVideo')
-      if (savedVideo) {
-        try {
-          const parsed = JSON.parse(savedVideo)
-          setVideoInfo({
-            title: parsed.title || 'Video',
-            channelTitle: parsed.channelTitle || 'Channel'
-          })
-        } catch (e) {
-          console.error('Error parsing saved video data:', e)
-        }
-      }
-    }
-  }, [title, channel])
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/')
+      setSearchResults(results.videos)
+      setHasSearched(true)
+      setNextPageToken(results.nextPageToken)
+
+    } catch (error) {
+      console.error('Search error:', error)
+      setSearchError(error.message || 'Search failed. Please try again.')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Handle search button click
+  const handleSearchClick = () => {
+    if (searchQuery.trim()) {
+      // Navigate to search page with query
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      // Hide mobile search after navigation
+      setShowMobileSearch(false)
+    }
+  }
+
+  // Handle enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearchClick()
+    }
+  }
+
+  // Handle clear search
+  const handleClearSearch = () => {
+    setSearchQuery('')
+    if (searchInputRef.current) {
+      searchInputRef.current.focus()
+      searchInputRef.current.setSelectionRange(0, 0)
+    }
+  }
+
+  // Handle load more
+  const handleLoadMore = () => {
+    if (nextPageToken && !isLoadingMore) {
+      handleSearch(nextPageToken)
+    }
+  }
+
+  // Handle video click
+  const handleVideoClick = (video) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Show login modal for unauthenticated users
+      setShowAuthModal(true)
+      setPendingVideo(video) // Store the video for post-login navigation
       return
     }
-  }, [isAuthenticated, loading, router])
 
-  // YouTube player event handlers
-  const onPlayerReady = (event) => {
-    playerRef.current = event.target
-    setIsPlayerReady(true)
-    setDuration(event.target.getDuration())
-    setVolume(event.target.getVolume())
-
-    // Start time tracking
-    intervalRef.current = setInterval(() => {
-      if (event.target && event.target.getCurrentTime) {
-        const time = event.target.getCurrentTime()
-        setCurrentTime(time)
-        
-        // Handle A-B looping
-        if (isLooping && loopStart !== null && loopEnd !== null && time >= loopEnd) {
-          event.target.seekTo(loopStart)
-        }
-      }
-    }, 100)
-  }
-
-  const onPlayerStateChange = (event) => {
-    setIsPlaying(event.data === 1)
-  }
-
-  const onPlayerError = (event) => {
-    console.error('YouTube player error:', event.data)
-  }
-
-  // Control functions
-  const handlePlayPause = () => {
-    if (!playerRef.current) return
+    const videoId = video.id.videoId
     
-    if (isPlaying) {
-      playerRef.current.pauseVideo()
+    // Store video info for the player page
+    localStorage.setItem('currentVideo', JSON.stringify({
+      id: videoId,
+      title: video.snippet.title,
+      channelTitle: video.snippet.channelTitle,
+      description: video.snippet.description,
+      thumbnails: video.snippet.thumbnails,
+      publishedAt: video.snippet.publishedAt,
+      statistics: video.statistics,
+      contentDetails: video.contentDetails
+    }))
+    
+    // Navigate to video player
+    router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
+  }
+
+  // Handle sort order change
+  const handleSortChange = (newOrder) => {
+    setSortOrder(newOrder)
+    // Note: Sort only affects new searches, not existing results
+  }
+
+  // Handle favorites toggle
+  const handleFavoritesToggle = () => {
+    setShowFavoritesOnly(!showFavoritesOnly)
+    // Here you would filter results to show only favorites
+    // For now, just toggle the state
+  }
+
+  // Handle video favorite toggle
+  const handleVideoFavoriteToggle = (video, isFavorited) => {
+    if (isFavorited) {
+      // Remove from favorites
+      setUserFavorites(prev => prev.filter(fav => fav.id.videoId !== video.id.videoId))
+      // Here you would also call your backend to remove from favorites
     } else {
-      playerRef.current.playVideo()
+      // Add to favorites
+      setUserFavorites(prev => [...prev, video])
+      // Here you would also call your backend to add to favorites
     }
   }
 
-  const handleSeekTo = (seconds) => {
-    if (!playerRef.current) return
-    playerRef.current.seekTo(seconds)
+  // Check if video is favorited
+  const isVideoFavorited = (video) => {
+    return userFavorites.some(fav => fav.id.videoId === video.id.videoId)
   }
 
-  const handleVolumeChange = (newVolume) => {
-    if (!playerRef.current) return
-    
-    setVolume(newVolume)
-    playerRef.current.setVolume(newVolume)
-    setIsMuted(newVolume === 0)
-  }
-
-  const toggleMute = () => {
-    if (!playerRef.current) return
-    
-    if (isMuted) {
-      playerRef.current.unMute()
-      setIsMuted(false)
-    } else {
-      playerRef.current.mute()
-      setIsMuted(true)
-    }
-  }
-
-  const toggleFlipH = () => {
-    setIsFlippedH(!isFlippedH)
-  }
-
-  const toggleFlipV = () => {
-    setIsFlippedV(!isFlippedV)
-  }
-
-  const setLoopPoint = (type) => {
-    if (!isPremium) {
-      alert('Loop controls are a Premium feature!')
-      return
-    }
-    
-    if (type === 'start') {
-      setLoopStart(currentTime)
-    } else {
-      setLoopEnd(currentTime)
-    }
-  }
-
-  const toggleLoop = () => {
-    if (!isPremium) {
-      alert('Loop controls are a Premium feature!')
-      return
-    }
-    
-    if (loopStart === null || loopEnd === null) {
-      alert('Please set both loop start [A] and end [B] points first!')
-      return
-    }
-    
-    setIsLooping(!isLooping)
-  }
-
-  const clearLoop = () => {
-    setLoopStart(null)
-    setLoopEnd(null)
-    setIsLooping(false)
-  }
-
-  const goBack = () => {
-    router.back()
-  }
-
-  const goHome = () => {
-    router.push('/search')
-  }
-
-  // Utility functions
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const formatTimeMs = (seconds) => {
-    const ms = Math.floor((seconds % 1) * 1000)
-    return `${formatTime(seconds)}.${ms.toString().padStart(3, '0')}`
-  }
-
-  // YouTube player options
-  const playerOpts = {
-    height: '100%',
-    width: '100%',
-    playerVars: {
-      controls: 0,           // Hide YouTube controls completely
-      disablekb: 1,         // Disable keyboard controls
-      fs: 0,                // Disable fullscreen button
-      modestbranding: 1,    // Minimal YouTube branding
-      rel: 0,               // No related videos at end
-      showinfo: 0,          // No video info
-      iv_load_policy: 3,    // No annotations
-      cc_load_policy: 0,    // No captions by default
-      playsinline: 1,       // Play inline on mobile
-      autoplay: 0,          // Don't autoplay
-    }
-  }
-
-  if (loading) {
+  if (!mounted || (loading && !router.isReady)) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return null
-  }
-
-  if (!videoId) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-white">
-        <div className="text-center">
-          <h1 className="text-2xl mb-4">No Video Selected</h1>
-          <button 
-            onClick={goHome}
-            className="bg-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Go to Search
-          </button>
-        </div>
+      <div className="h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
-      {/* Header - FIXED HEIGHT */}
-      <header className="bg-black/95 backdrop-blur-md p-4 flex items-center justify-between z-40 border-b border-white/10 h-20 flex-shrink-0">
-        <div className="w-full flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">YV</span>
+    <div className="relative h-screen overflow-hidden bg-black" style={{ 
+      backgroundColor: '#000000',
+      minHeight: '100vh',
+      minHeight: '100dvh',
+      width: '100vw',
+      overflow: 'hidden'
+    }}>
+      {/* Full-Screen Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('/images/gt_splashBG_dark.png')`,
+          width: '100%',
+          height: '100%',
+          minWidth: '100vw',
+          minHeight: '100vh',
+          minHeight: '100dvh'
+        }}
+      />
+      
+      {/* 75% Black Overlay */}
+      <div className="absolute inset-0 bg-black/75 z-0" />
+      
+      {/* Top Banner - Admin controlled */}
+      <TopBanner />
+      
+      {/* Responsive Header - 3 rows on mobile, 1 row on desktop */}
+      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0">
+          {/* Row 1: Logo + Favorites (Left) + Auth Buttons (Right) - Mobile Only */}
+          <div className="flex md:hidden justify-between items-center w-full">
+            {/* Left side: Logo + Favorites */}
+            <div className="flex items-center space-x-2">
+              <a 
+                href="/?home=true" 
+                className="hover:opacity-80 transition-opacity"
+              >
+                <img 
+                  src="/images/gt_logoM_PlayButton.png" 
+                  alt="VideoFlip Logo" 
+                  className="h-8 w-auto"
+                />
+              </a>
+              
+              {/* Favorites Icon */}
+              <button
+                onClick={handleFavoritesToggle}
+                className={`p-2 rounded-lg transition-colors duration-300 ${
+                  showFavoritesOnly 
+                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
+                    : 'hover:bg-white/10'
+                }`}
+                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
+              >
+                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+              </button>
             </div>
-            <h1 className="text-xl font-semibold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              VideoFlip
-            </h1>
+
+            {/* Right side: Auth buttons */}
+            <div className="flex items-center space-x-2">
+              {/* Search Icon - Mobile Only */}
+              <button 
+                onClick={() => setShowMobileSearch(!showMobileSearch)}
+                className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
+                title="Search for videos"
+              >
+                <FaSearch className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              </button>
+              
+              {/* Login/Logout Icon */}
+              <button 
+                onClick={handleAuthClick}
+                className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
+                title={isAuthenticated ? "End of the Party" : "Start Me Up"}
+              >
+                {isAuthenticated ? (
+                  <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                ) : (
+                  <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+                )}
+              </button>
+              
+              {/* Menu Icon */}
+              <button 
+                onClick={() => setShowRightMenuModal(true)}
+                className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+              >
+                <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              </button>
+            </div>
           </div>
 
-          {/* Video Title (center) */}
-          <div className="text-center max-w-md mx-4">
-            <h2 className="text-lg font-medium truncate text-white">
-              {videoInfo.title}
-            </h2>
-            <p className="text-sm text-gray-400">
-              {videoInfo.channelTitle}
-            </p>
+          {/* Row 2: Search Bar - Mobile Only (Hidden by default) */}
+          <div className={`flex md:hidden w-full transition-all duration-300 ease-in-out ${showMobileSearch ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="how to play guitar"
+                  className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
+                  style={{ borderRadius: '77px' }}
+                  ref={searchInputRef}
+                />
+                
+                {/* Clear button */}
+                {searchQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-11 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white hover:scale-110 transition-all duration-200 p-1 rounded-full hover:bg-white/10"
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Vertical separator line */}
+                {searchQuery && (
+                  <div className="absolute right-10 top-1/2 transform -translate-y-1/2 w-px h-4 bg-white/30"></div>
+                )}
+                
+                {/* Search button - Closes fields if no query, performs search if query exists */}
+                <button
+                  onClick={() => {
+                    if (searchQuery.trim()) {
+                      // If there's a search query, perform the search
+                      handleSearchClick()
+                    } else {
+                      // If no query, close the search fields
+                      setShowMobileSearch(false)
+                    }
+                  }}
+                  disabled={isSearching}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  <FaSearch className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+          {/* Row 3: Sort Dropdown - Mobile Only (Hidden by default) */}
+          <div className={`flex md:hidden w-full transition-all duration-300 ease-in-out ${showMobileSearch ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+              <div className="relative group w-full">
+                <select
+                  value={sortOrder}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="w-full bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
+                  title="Sort affects new searches only"
+                  style={{ borderRadius: '77px' }}
+                >
+                  <option value="relevance" className="bg-black text-white">Relevance</option>
+                  <option value="date" className="bg-black text-white">Date</option>
+                  <option value="rating" className="bg-black text-white">Rating</option>
+                  <option value="title" className="bg-black text-white">Title</option>
+                  <option value="viewCount" className="bg-black text-white">Views</option>
+                </select>
+                
+                {/* Custom dropdown arrow */}
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+          {/* Desktop Layout - Hidden on Mobile */}
+          <div className="hidden md:flex items-center space-x-4">
+            {/* Logo and Favorites Icon */}
+            <div className="flex items-center space-x-4">
+              <a 
+                href="/?home=true" 
+                className="hover:opacity-80 transition-opacity"
+              >
+                <img 
+                  src="/images/gt_logoM_PlayButton.png" 
+                  alt="VideoFlip Logo" 
+                  className="h-10 w-auto"
+                />
+              </a>
+              
+              {/* Favorites Icon */}
+              <button
+                onClick={handleFavoritesToggle}
+                className={`p-2 rounded-lg transition-colors duration-300 ${
+                  showFavoritesOnly 
+                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
+                    : 'hover:bg-white/10'
+                }`}
+                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
+              >
+                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+              </button>
+
+              {/* Search Bar - Positioned BETWEEN logo/favorites and sort dropdown */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="how to play guitar"
+                  className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
+                  style={{ borderRadius: '77px' }}
+                  ref={searchInputRef}
+                />
+                
+                {/* Clear button */}
+                {searchQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-11 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white hover:scale-110 transition-all duration-200 p-1 rounded-full hover:bg-white/10"
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Vertical separator line */}
+                {searchQuery && (
+                  <div className="absolute right-10 top-1/2 transform -translate-y-1/2 w-px h-4 bg-white/30"></div>
+                )}
+                
+                {/* Search button */}
+                <button
+                  onClick={handleSearchClick}
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  <FaSearch className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="relative group">
+                <select
+                  value={sortOrder}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
+                  title="Sort affects new searches only"
+                  style={{ borderRadius: '77px' }}
+                >
+                  <option value="relevance" className="bg-black text-white">Relevance</option>
+                  <option value="date" className="bg-black text-white">Date</option>
+                  <option value="rating" className="bg-black text-white">Rating</option>
+                  <option value="title" className="bg-black text-white">Title</option>
+                  <option value="viewCount" className="bg-black text-white">Views</option>
+                </select>
+                
+                {/* Custom dropdown arrow */}
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
+                  Sort affects new searches only
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Hamburger Menu */}
-          <button 
-            onClick={() => setShowMenu(true)}
-            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200"
-          >
-            <div className="w-6 h-6 flex flex-col justify-center items-center">
-              <span className="bg-white block h-0.5 w-6 rounded-full mb-1.5"></span>
-              <span className="bg-white block h-0.5 w-6 rounded-full mb-1.5"></span>
-              <span className="bg-white block h-0.5 w-6 rounded-full"></span>
-            </div>
-          </button>
+          {/* Desktop Right side buttons */}
+          <div className="hidden md:flex items-center space-x-2">
+            {/* Login/Logout Icon */}
+            <button 
+              onClick={handleAuthClick}
+              className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
+              title={isAuthenticated ? "End of the Party" : "Start Me Up"}
+            >
+              {isAuthenticated ? (
+                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              ) : (
+                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+              )}
+            </button>
+            
+            {/* Menu Icon */}
+            <button 
+              onClick={() => setShowRightMenuModal(true)}
+              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+            >
+              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Video Container - CALCULATED HEIGHT */}
+      {/* Main Content Area - Watch Page */}
       <div 
-        className="relative bg-black flex items-center justify-center"
-        style={{ height: 'calc(100vh - 80px - 160px)' }} // Total height minus header (80px) minus footer (160px)
+        className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" 
+        style={{ 
+          height: 'calc(100vh - 140px)',
+          backgroundColor: 'transparent'
+        }}
       >
-        {/* YouTube Player - Properly Sized */}
-        <div 
-          className="w-full h-full flex items-center justify-center p-4"
-          style={{
-            transform: `scale${isFlippedH ? 'X' : ''}(-1) scale${isFlippedV ? 'Y' : ''}(-1)`,
-            transition: 'transform 0.3s ease'
-          }}
-        >
-          <div 
-            className="relative bg-black shadow-2xl rounded-lg overflow-hidden"
-            style={{ 
-              width: 'min(100%, calc((100vh - 240px) * 16/9))', // Account for header + footer space
-              height: 'min(calc(100vw * 9/16), calc(100vh - 240px))', // Account for header + footer space
-              aspectRatio: '16/9'
-            }}
-          >
-            <YouTube
-              videoId={videoId}
-              opts={playerOpts}
-              onReady={onPlayerReady}
-              onStateChange={onPlayerStateChange}
-              onError={onPlayerError}
-              className="w-full h-full"
-              iframeClassName="w-full h-full"
-            />
+        {/* Watch Page Content - Coming Soon */}
+        <div className="flex flex-col items-center justify-center h-full text-center text-white">
+          <div className="text-6xl mb-6">📺</div>
+          <h1 className="text-4xl font-bold mb-4">Watch Page</h1>
+          <p className="text-xl text-white/60 mb-8">Video player and learning tools</p>
+          <div className="text-lg text-white/40">
+            Content coming soon...
           </div>
         </div>
       </div>
 
-      {/* Footer Controls - FIXED HEIGHT, ALWAYS VISIBLE */}
-      <footer className="bg-black/95 backdrop-blur-xl border-t border-white/20 p-4 h-40 flex-shrink-0 flex flex-col justify-center">
-        {/* Timeline Section */}
-        <div className="mb-4">
-          {/* Time Display */}
-          <div className="flex items-center justify-between text-sm font-medium text-white/90 mb-2">
-            <span className="font-mono text-blue-400">{formatTimeMs(currentTime)}</span>
-            <span className="font-mono text-gray-400">{formatTime(duration)}</span>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="relative group">
-            <input
-              type="range"
-              min="0"
-              max={duration}
-              value={currentTime}
-              onChange={(e) => handleSeekTo(parseFloat(e.target.value))}
-              className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer 
-                        group-hover:h-3 transition-all duration-200
-                        [&::-webkit-slider-thumb]:appearance-none 
-                        [&::-webkit-slider-thumb]:w-5 
-                        [&::-webkit-slider-thumb]:h-5 
-                        [&::-webkit-slider-thumb]:rounded-full 
-                        [&::-webkit-slider-thumb]:bg-white 
-                        [&::-webkit-slider-thumb]:shadow-xl
-                        [&::-webkit-slider-thumb]:border-2
-                        [&::-webkit-slider-thumb]:border-blue-500
-                        [&::-webkit-slider-thumb]:transition-all
-                        [&::-webkit-slider-thumb]:duration-200
-                        group-hover:[&::-webkit-slider-thumb]:scale-125"
-              style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentTime / duration) * 100}%, rgba(255,255,255,0.2) ${(currentTime / duration) * 100}%, rgba(255,255,255,0.2) 100%)`
-              }}
-            />
-            
-            {/* Loop markers - Premium */}
-            {isPremium && loopStart !== null && (
-              <div 
-                className="absolute top-1/2 transform -translate-y-1/2 w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg border border-yellow-300"
-                style={{ left: `${(loopStart / duration) * 100}%` }}
-              />
-            )}
-            {isPremium && loopEnd !== null && (
-              <div 
-                className="absolute top-1/2 transform -translate-y-1/2 w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg border border-yellow-300"
-                style={{ left: `${(loopEnd / duration) * 100}%` }}
-              />
-            )}
-          </div>
-        </div>
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
 
-        {/* Controls Row - COMPACT DESIGN */}
-        <div className="flex items-center justify-between">
-          {/* Left: Primary Controls */}
-          <div className="flex items-center space-x-4">
-            {/* Play/Pause */}
-            <button 
-              onClick={handlePlayPause}
-              disabled={!isPlayerReady}
-              className="p-3 hover:scale-110 transition-all duration-200 disabled:opacity-50 bg-white/10 rounded-full backdrop-blur-sm hover:bg-white/20"
+      {/* Right-Side Menu Modal */}
+      {showRightMenuModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowRightMenuModal(false)
+            }
+          }}
+        >
+          <div 
+            className="w-[300px] h-full relative"
+            style={{
+              marginTop: '5px',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)'
+            }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowRightMenuModal(false)}
+              className="absolute top-3 right-9 text-white hover:text-yellow-400 transition-colors text-2xl font-bold"
             >
-              {isPlaying ? (
-                <FaPause className="w-6 h-6 text-white drop-shadow-lg" />
-              ) : (
-                <FaPlay className="w-6 h-6 text-white drop-shadow-lg ml-1" />
-              )}
+              ×
             </button>
-
-            {/* Volume Control - COMPACT */}
-            <div className="flex items-center space-x-2">
-              <button 
-                onClick={toggleMute}
-                className="p-2 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg"
-              >
-                {isMuted || volume === 0 ? (
-                  <IoVolumeMute className="w-5 h-5 text-white drop-shadow-lg" />
-                ) : (
-                  <IoVolumeHigh className="w-5 h-5 text-white drop-shadow-lg" />
-                )}
-              </button>
-              
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={isMuted ? 0 : volume}
-                onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
-                className="w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer
-                          [&::-webkit-slider-thumb]:appearance-none 
-                          [&::-webkit-slider-thumb]:w-3 
-                          [&::-webkit-slider-thumb]:h-3 
-                          [&::-webkit-slider-thumb]:rounded-full 
-                          [&::-webkit-slider-thumb]:bg-white 
-                          [&::-webkit-slider-thumb]:shadow-lg"
-              />
+            
+            {/* Menu Content */}
+            <div className="p-6 pt-16">
+              <div className="text-white text-center space-y-8">
+                {/* TOP OF MENU */}
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setShowProfileModal(true)}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    PROFILE
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowPlanModal(true)}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    PLAN DEETS
+                  </button>
+                </div>
+                
+                {/* BOTTOM OF MENU */}
+                <div className="space-y-4 mt-auto">
+                  <a 
+                    href="mailto:support@guitartube.net"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    SUPPORT
+                  </a>
+                  
+                  <a 
+                    href="/terms"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    TERMS
+                  </a>
+                  
+                  <a 
+                    href="/privacy"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    PRIVACY
+                  </a>
+                  
+                  <a 
+                    href="/community_guidelines"
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  >
+                    COMMUNITY GUIDELINES
+                  </a>
+                </div>
+              </div>
             </div>
-
-            {/* Back Button */}
-            <button 
-              onClick={goBack}
-              className="p-2 hover:scale-110 transition-all duration-200 hover:bg-white/10 rounded-lg flex items-center space-x-1"
-            >
-              <HiOutlineArrowLeft className="w-5 h-5 text-white drop-shadow-lg" />
-              <span className="text-sm text-white">Back</span>
-            </button>
-          </div>
-
-          {/* Center: Flip Controls */}
-          <div className="flex items-center space-x-3">
-            <button 
-              onClick={toggleFlipH}
-              className={`p-3 rounded-xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
-                isFlippedH 
-                  ? 'bg-blue-500 shadow-lg shadow-blue-500/25' 
-                  : 'bg-white/20 hover:bg-white/30'
-              }`}
-              title="Flip Horizontal"
-            >
-              <RiFlipHorizontal2Fill className="w-5 h-5 text-white drop-shadow-lg" />
-            </button>
-            
-            <button 
-              onClick={toggleFlipV}
-              className={`p-3 rounded-xl transition-all duration-200 hover:scale-110 backdrop-blur-sm ${
-                isFlippedV 
-                  ? 'bg-blue-500 shadow-lg shadow-blue-500/25' 
-                  : 'bg-white/20 hover:bg-white/30'
-              }`}
-              title="Flip Vertical"
-            >
-              <RiFlipVertical2Fill className="w-5 h-5 text-white drop-shadow-lg" />
-            </button>
-          </div>
-
-          {/* Right: Premium Loop Controls - COMPACT */}
-          <div className="flex items-center space-x-2">
-            {isPremium ? (
-              <>
-                <button 
-                  onClick={() => setLoopPoint('start')}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
-                    loopStart !== null 
-                      ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' 
-                      : 'bg-white/20 text-white hover:bg-white/30'
-                  }`}
-                  title="Set Loop Start"
-                >
-                  [A
-                </button>
-                <button 
-                  onClick={() => setLoopPoint('end')}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 backdrop-blur-sm ${
-                    loopEnd !== null 
-                      ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/25' 
-                      : 'bg-white/20 text-white hover:bg-white/30'
-                  }`}
-                  title="Set Loop End"
-                >
-                  B]
-                </button>
-                <button 
-                  onClick={toggleLoop}
-                  disabled={loopStart === null || loopEnd === null}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm ${
-                    isLooping 
-                      ? 'bg-green-500 shadow-lg shadow-green-500/25 text-white' 
-                      : 'bg-white/20 hover:bg-white/30 text-white'
-                  }`}
-                  title="Toggle Loop"
-                >
-                  🔁 {isLooping ? 'ON' : 'OFF'}
-                </button>
-                <button 
-                  onClick={clearLoop}
-                  className="px-3 py-2 text-sm font-medium rounded-lg bg-white/20 text-white hover:bg-red-500 transition-all duration-200 hover:scale-105 backdrop-blur-sm"
-                  title="Clear Loop"
-                >
-                  ✕
-                </button>
-              </>
-            ) : (
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20">
-                <span className="text-xs text-white/70">Loop: </span>
-                <span className="text-xs text-yellow-400 font-medium">Premium</span>
-              </div>
-            )}
           </div>
         </div>
-      </footer>
+      )}
 
-      {/* Hamburger Menu Overlay */}
-      {showMenu && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex">
-          <div className="bg-gray-900/90 backdrop-blur-xl w-80 h-full shadow-2xl">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-semibold text-white">Menu</h2>
-                <button 
-                  onClick={() => setShowMenu(false)}
-                  className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200 text-white"
-                >
-                  ✕
-                </button>
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowProfileModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowProfileModal(false)}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Profile Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Profile</h2>
+              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-4 text-gray-300">
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Name</p>
+                <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
               </div>
               
-              <nav className="space-y-2">
-                <button 
-                  onClick={goBack}
-                  className="w-full text-left py-3 px-4 hover:bg-white/10 rounded-xl transition-all duration-200 text-white flex items-center space-x-3"
-                >
-                  <HiOutlineArrowLeft className="w-5 h-5" />
-                  <span>Back to Search</span>
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Email</p>
+                <p className="font-medium">{user?.email || 'No email'}</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Subscription</p>
+                <p className="font-medium capitalize">{profile?.subscription_tier || 'Free'}</p>
+              </div>
+              
+              <div className="pt-4">
+                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  Settings
                 </button>
-                <button 
-                  onClick={goHome}
-                  className="w-full text-left py-3 px-4 hover:bg-white/10 rounded-xl transition-all duration-200 text-white flex items-center space-x-3"
-                >
-                  <span>🏠</span>
-                  <span>Search Videos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Plan Modal */}
+      {showPlanModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowPlanModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowPlanModal(false)}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Plan Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Plan Details</h2>
+            </div>
+            
+            <div className="space-y-4 text-gray-300">
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Current Plan</p>
+                <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Free'}</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
+                <p className="font-medium">Monthly</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Amount</p>
+                <p className="font-medium text-xl">
+                  ${profile?.subscription_tier === 'hero' ? '19' : 
+                    profile?.subscription_tier === 'roadie' ? '10' : '0'}/mo
+                </p>
+              </div>
+              
+              <div className="pt-4 space-y-3">
+                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  Change Credit Card
                 </button>
-                <button className="w-full text-left py-3 px-4 hover:bg-white/10 rounded-xl transition-all duration-200 text-white flex items-center space-x-3">
-                  <span>⚙️</span>
-                  <span>Settings</span>
-                </button>
-                <button className="w-full text-left py-3 px-4 hover:bg-white/10 rounded-xl transition-all duration-200 text-white flex items-center space-x-3">
-                  <span>📜</span>
-                  <span>About</span>
-                </button>
-                {!isPremium && (
-                  <button className="w-full text-left py-3 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 rounded-xl transition-all duration-200 text-black font-medium flex items-center space-x-3">
-                    <span>⭐</span>
-                    <span>Upgrade to Premium</span>
+                
+                {profile?.subscription_tier !== 'hero' && (
+                  <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                    UPGRADE
                   </button>
                 )}
-              </nav>
+              </div>
             </div>
           </div>
-          <div 
-            className="flex-1"
-            onClick={() => setShowMenu(false)}
-          ></div>
         </div>
       )}
     </div>

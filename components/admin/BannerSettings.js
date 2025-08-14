@@ -22,7 +22,9 @@ const BannerSettings = () => {
     buttonHoverTextColor: "#1e40af",
     buttonUrl: "/search",
     dismissible: true,
-    boldWords: ["VideoFlip", "YouTube"]
+    boldWords: ["VideoFlip", "YouTube"],
+    startTime: "",
+    stopTime: ""
   })
   
   const [loading, setLoading] = useState(true)
@@ -181,6 +183,38 @@ const BannerSettings = () => {
                 />
                 <span className="text-sm font-medium">Allow Dismissal</span>
               </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Timing Settings */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Timing</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Time (Optional)
+              </label>
+              <input
+                type="datetime-local"
+                value={config.startTime || ''}
+                onChange={(e) => handleChange('startTime', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Leave empty for immediate start</p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Stop Time (Optional)
+              </label>
+              <input
+                type="datetime-local"
+                value={config.stopTime || ''}
+                onChange={(e) => handleChange('stopTime', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Leave empty for no end time</p>
             </div>
           </div>
         </div>

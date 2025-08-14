@@ -108,6 +108,20 @@ a {
   display: none;             /* Chrome, Safari, Opera */
 }
 
+/* Banner scrolling animation */
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll linear infinite;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }

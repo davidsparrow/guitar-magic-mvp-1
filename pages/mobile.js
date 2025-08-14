@@ -7,6 +7,7 @@ import { FaHamburger, FaTimes, FaSearch } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { LuBrain } from "react-icons/lu"
+import TopBanner from '../components/TopBanner'
 
 export default function MobileHome() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
@@ -90,6 +91,9 @@ export default function MobileHome() {
     >
       {/* 75% Black Overlay */}
       <div className="absolute inset-0 bg-black/75 z-0" />
+      
+      {/* Top Banner - Admin controlled */}
+      <TopBanner />
       
       {/* Transparent Header - Mobile Optimized */}
       <header className="relative z-10 px-4 py-3" style={{ backgroundColor: 'transparent' }}>
