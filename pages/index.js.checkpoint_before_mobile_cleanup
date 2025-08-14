@@ -105,10 +105,11 @@ export default function Home() {
           width: '100%',
           height: '100%',
           minWidth: '100vw',
-          minHeight: '100vh'
+          minHeight: '100vh',
+          minHeight: '100dvh'
         }}
       />
-      {/* Desktop Header */}
+      {/* Transparent Header */}
       <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-between items-center">
           {/* Logo - Upper Left - NEW WIDE LOGO */}
@@ -117,9 +118,9 @@ export default function Home() {
             className="hover:opacity-80 transition-opacity"
           >
             <img 
-              src="/images/gt_logoM_PlayButton.png" 
+              src="/images/gt_logoM_wide_on_black.png" 
               alt="VideoFlip Logo" 
-              className="h-12 w-auto"
+              className="h-10 w-auto"
             />
           </a>
           {/* Right side buttons */}
@@ -130,7 +131,7 @@ export default function Home() {
               className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
               title="GuitarTube Features"
             >
-              <LuBrain className="w-7 h-7 group-hover:text-yellow-400 transition-colors" />
+              <LuBrain className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
             </button>
             
             {/* Login/Logout Icon */}
@@ -140,9 +141,9 @@ export default function Home() {
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-7 h-7 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-7 h-7 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
               )}
               {/* Tooltip */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
@@ -164,24 +165,24 @@ export default function Home() {
           </div>
         </div>
       </header>
-      {/* Main Content - Desktop Optimized */}
+      {/* Main Content - Fixed Height, No Scroll */}
       <div className="relative z-10 flex flex-col items-center px-6" style={{ 
         height: 'calc(100vh - 140px)',
         backgroundColor: 'transparent'
       }}>
-        {/* 1. Large Centered Logo - Desktop Optimized */}
+        {/* 1. Large Centered Logo - YOUR ACTUAL IMAGE */}
         <div className="mt-32 mb-8">
-                      <img 
-              src="/images/gt_logoM_wide_on_black.png" 
-              alt="GuitarTube" 
-              className="mx-auto mb-3 h-28 w-auto"
-            />
+          <img 
+            src="/images/gt_logoM_PlayButton.png" 
+            alt="GuitarTube" 
+            className="mx-auto mb-3 h-48 w-auto"
+          />
           <p className="text-center text-white font-bold text-xl" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Press fast forward on your Video Guitar Learning journey
           </p>
         </div>
 
-        {/* Search and Sort Fields - Desktop Optimized */}
+        {/* Search and Sort Fields - Copied from search page */}
         <div className="flex items-center justify-center space-x-4 mt-11">
           {/* Search Bar */}
           <div className="relative">
@@ -189,8 +190,8 @@ export default function Home() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="How to learn guitar faster"
-              className="w-[500px] px-6 py-3 bg-white/35 backdrop-blur-sm text-white placeholder-white border border-white/20 focus:bg-white/10 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all text-lg"
+              placeholder="how to play guitar"
+              className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
               style={{ borderRadius: '77px' }}
               ref={searchInputRef}
               onKeyPress={handleKeyPress}
@@ -216,17 +217,42 @@ export default function Home() {
             </button>
           </div>
 
-
+          {/* Sort Dropdown */}
+          <div className="relative group">
+            <select
+              className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
+              title="Sort affects new searches only"
+              style={{ borderRadius: '77px' }}
+            >
+              <option value="relevance" className="bg-black text-white">Relevance</option>
+              <option value="date" className="bg-black text-white">Date</option>
+              <option value="rating" className="bg-black text-white">Rating</option>
+              <option value="title" className="bg-black text-white">Title</option>
+              <option value="viewCount" className="bg-black text-white">Views</option>
+            </select>
+            
+            {/* Custom dropdown arrow */}
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
+              Sort affects new searches only
+            </div>
+          </div>
         </div>
 
         {/* Main Feature Graphic with Hotspots */}
         
-        {/* 2. Stay Free Button - Desktop Optimized */}
+        {/* 2. Stay Free Button - Moved to Bottom */}
         <div className="mt-auto mb-4">
           {/* Stay Free - Now Clickable Button with Shiny Effect */}
           <button
             onClick={() => router.push('/pricing')}
-            className="relative text-green-400 font-bold text-3xl hover:text-green-300 transition-all duration-500 transform hover:scale-105 overflow-hidden group px-8 py-3 rounded-full"
+            className="relative text-green-400 font-bold text-2xl hover:text-green-300 transition-all duration-500 transform hover:scale-105 overflow-hidden group px-6 py-2 rounded-full"
             title="No credit card required to Join"
           >
             <span className="relative z-10 bg-gradient-to-r from-green-400 via-emerald-300 to-green-400 bg-clip-text text-transparent animate-shine">
@@ -242,7 +268,7 @@ export default function Home() {
         </div>
 
       </div>
-      {/* Footer - Desktop Optimized */}
+      {/* Footer - Fixed at Bottom */}
       <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
           <span>© 2025 GuitarTube</span>

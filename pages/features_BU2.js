@@ -3,14 +3,14 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
+import { LuBrain } from "react-icons/lu"
+
 export default function Features() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
@@ -18,25 +18,18 @@ export default function Features() {
   const [showCaptionsModal, setShowCaptionsModal] = useState(false)
   const [showChordDiagramsModal, setShowChordDiagramsModal] = useState(false)
   const [currentCarouselPage, setCurrentCarouselPage] = useState(0)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
-  // Handle login/logout
-  const handleAuthClick = async () => {
-    if (isAuthenticated) {
-      try {
-        await signOut()
-        setShowAuthModal(false)
-        setShowRightMenuModal(false)
-        setShowProfileModal(false)
-        setShowPlanModal(false)
-      } catch (error) {
-        console.error('Sign out failed:', error)
-      }
-    } else {
-      setShowAuthModal(true)
+
+  // Close modals when clicking outside
+  const handleModalBackdropClick = (e, closeFunction) => {
+    if (e.target === e.currentTarget) {
+      closeFunction()
     }
   }
 
@@ -53,6 +46,26 @@ export default function Features() {
     }
   }
 
+  // Handle login/logout
+  const handleAuthClick = async () => {
+    if (isAuthenticated) {
+      // User is logged in, sign them out
+      try {
+        await signOut()
+        // Close any open modals
+        setShowAuthModal(false)
+        setShowFeatureModal(null)
+        setShowCaptionsModal(false)
+        setShowChordDiagramsModal(false)
+      } catch (error) {
+        console.error('Sign out failed:', error)
+      }
+    } else {
+      // User is not logged in, show auth modal
+      setShowAuthModal(true)
+    }
+  }
+
   if (!mounted || (loading && !router.isReady)) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
@@ -60,26 +73,30 @@ export default function Features() {
       </div>
     )
   }
+
   return (
     <div className="relative h-screen overflow-hidden bg-black" style={{ 
       backgroundColor: '#000000',
       minHeight: '100vh',
+      minHeight: '100dvh',
       width: '100vw',
       overflow: 'hidden'
     }}>
       {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden md:block"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/images/gt_splashBG_dark.png')`,
           width: '100%',
           height: '100%',
           minWidth: '100vw',
           minHeight: '100vh',
+          minHeight: '100dvh'
         }}
       />
-            {/* Responsive Header - Mobile optimized, transparent on desktop */}
-      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
+      
+      {/* Transparent Header */}
+      <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-between items-center">
           {/* Logo - Upper Left - NEW WIDE LOGO */}
           <a 
@@ -89,19 +106,18 @@ export default function Features() {
             <img 
               src="/images/gt_logoM_wide_on_black.png" 
               alt="VideoFlip Logo" 
-              className="h-8 md:h-10 w-auto" // Mobile: h-8, Desktop: h-10
+              className="h-10 w-auto"
             />
           </a>
           {/* Right side buttons */}
-          <div className="flex items-center space-x-1 md:space-x-2"> {/* Mobile: space-x-1, Desktop: space-x-2 */}
-            {/* Brain Icon Button - Now in right flex container */}
-            <button
-              onClick={() => router.push('/features')}
-              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
+          <div className="flex items-center space-x-2">
+            {/* Brain Icon Button - Same as homepage */}
+            <div
+              className="p-2 rounded-lg relative"
               title="GuitarTube Features"
             >
-              <LuBrain className="w-5 h-5 md:w-6 md:h-6 group-hover:text-yellow-400 transition-colors" />
-            </button>
+              <LuBrain className="w-6 h-6 text-yellow-400" />
+            </div>
             
             {/* Login/Logout Icon */}
             <button 
@@ -110,9 +126,9 @@ export default function Features() {
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-5 h-5 md:w-6 md:h-6 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-5 h-5 md:w-6 md:h-6 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
               )}
               {/* Tooltip */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
@@ -122,26 +138,22 @@ export default function Features() {
             {/* Menu Icon */}
             <button 
               onClick={() => setShowRightMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
-              title="Yummy"
+              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                Yummy
-              </div>
             </button>
           </div>
         </div>
       </header>
+
       {/* Main Content - Pricing */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
-        height: 'calc(100vh - 100px)',
+        height: 'calc(100vh - 140px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full pb-24" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full pb-24">
           <h1 className="text-4xl font-bold text-center mb-2 text-yellow-400">Addictive features. Astounding results</h1>
-          <p className="text-gray-400 text-lg text-center mb-6">Flippin', Loopin', Resumin', Captionin' Text & Chords, Auto-generatin' Chords and Tabs</p>
+          <p className="text-gray-400 text-lg text-center mb-6">Flippin', Loopin', Resumin', Captinonin', Addin' Chord Diagrams, Auto-generatin' Chord diagrams and Tabs</p>
           
           {/* Main Feature Graphic with Hotspots */}
           <div className="relative max-w-4xl mx-auto">
@@ -222,7 +234,7 @@ export default function Features() {
           </div>
           
           {/* Review Cards Carousel */}
-          <div className="mt-6">
+          <div className="mt-12">
             
             {/* Carousel Container */}
             <div className="relative">
@@ -230,208 +242,72 @@ export default function Features() {
               {currentCarouselPage === 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Review Card 1 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
+                  <div className="p-6 text-center">
+                    <div className="flex justify-center mb-4">
                       <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
                       </div>
                     </div>
                     <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
+                      <p className="text-white text-sm leading-relaxed px-4">
                         GuitarTube completely changed how I learn guitar. The video flipping feature is a game-changer!
                       </p>
                     </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Sarah - Guitar Student</p>
+                    <div className="mt-4 text-right">
+                      <p className="text-white/70 text-sm italic">Sarah - Guitar Student</p>
                     </div>
                   </div>
 
                   {/* Review Card 2 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
+                  <div className="p-6 text-center">
+                    <div className="flex justify-center mb-4">
                       <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
                       </div>
                     </div>
                     <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
+                      <p className="text-white text-sm leading-relaxed px-4">
                         The loop feature helped me master that difficult solo in just a week!
                       </p>
                     </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Mike - Rock Guitarist</p>
+                    <div className="mt-4 text-right">
+                      <p className="text-white/70 text-sm italic">Mike - Rock Guitarist</p>
                     </div>
                   </div>
 
                   {/* Review Card 3 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
+                  <div className="p-6 text-center">
+                    <div className="flex justify-center mb-4">
                       <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
+                        <span className="text-yellow-400 text-xl">★</span>
                       </div>
                     </div>
                     <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
+                      <p className="text-white text-sm leading-relaxed px-4">
                         Finally, I can see guitar videos from my perspective. No more mental gymnastics!
                       </p>
                     </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Alex - Beginner Guitarist</p>
+                    <div className="mt-4 text-right">
+                      <p className="text-white/70 text-sm italic">Emma - Music Teacher</p>
                     </div>
                   </div>
                 </div>
               )}
-
-              {/* Review Cards - Page 2 of 3 */}
-              {currentCarouselPage === 1 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Review Card 4 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
-                        The auto-generated chord diagrams are incredible. Saves me so much time!
-                      </p>
-                    </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Emma - Folk Guitarist</p>
-                    </div>
-                  </div>
-
-                  {/* Review Card 5 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
-                        I love how I can resume exactly where I left off. Perfect for busy schedules!
-                      </p>
-                    </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">David - Working Professional</p>
-                    </div>
-                  </div>
-
-                  {/* Review Card 6 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
-                        The custom captions feature makes learning so much easier. Brilliant idea!
-                      </p>
-                    </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Lisa - Visual Learner</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Review Cards - Page 3 of 3 */}
-              {currentCarouselPage === 2 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Review Card 7 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
-                        Auto-generated tabs are a lifesaver. No more struggling to figure out fingerings!
-                      </p>
-                    </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Tom - Tab Reader</p>
-                    </div>
-                  </div>
-
-                  {/* Review Card 8 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
-                        The chord diagram selection tool is genius. I can see exactly which chords to play!
-                      </p>
-                    </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Rachel - Chord Learner</p>
-                    </div>
-                  </div>
-
-                  {/* Review Card 9 */}
-                  <div className="p-4 text-center">
-                    <div className="flex justify-center mb-2">
-                      <div className="flex space-x-1">
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                        <span className="text-yellow-400 text-lg">★</span>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <p className="text-white text-sm leading-relaxed px-2">
-                        GuitarTube has everything I need to learn guitar effectively. Highly recommend!
-                      </p>
-                    </div>
-                    <div className="mt-2 text-right">
-                      <p className="text-white/70 text-xs italic">Chris - Guitar Enthusiast</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+              
               {/* Carousel Navigation */}
-              <div className="flex justify-center mt-4 space-x-2">
+              <div className="flex justify-center mt-8 space-x-2">
                 <button
                   onClick={() => setCurrentCarouselPage(0)}
                   className={`w-3 h-3 rounded-full transition-colors ${
@@ -455,17 +331,13 @@ export default function Features() {
           </div>
         </div>
       </div>
-      
+
       {/* Feature Detail Modals */}
       {/* Feature Detail Modal (Custom Loops) */}
       {showFeatureModal === 'loops' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -505,11 +377,7 @@ export default function Features() {
       {showFeatureModal === 'resume' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -549,11 +417,7 @@ export default function Features() {
       {showFeatureModal === 'chords' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -565,7 +429,7 @@ export default function Features() {
             </button>
             {/* Feature Icon */}
             <div className="text-center mb-6">
-              <div className="text-8xl text-blue-400 mb-4">⚙️</div>
+              <div className="text-8xl text-blue-400 mb-4">🎸</div>
               <h2 className="text-3xl font-bold">Auto-gen Chords</h2>
             </div>
             {/* Feature Description */}
@@ -581,7 +445,7 @@ export default function Features() {
               </ul>
               <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/30 mt-6">
                 <p className="text-blue-300 text-sm">
-                  <strong>Coming Soon for Premium Members only:</strong> Auto-generated chords will be available for premium subscribers with unlimited access.
+                  <strong>Premium Feature:</strong> Auto-generated chords are available for premium subscribers with unlimited access.
                 </p>
               </div>
             </div>
@@ -593,11 +457,7 @@ export default function Features() {
       {showFeatureModal === 'tabs' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -609,7 +469,7 @@ export default function Features() {
             </button>
             {/* Feature Icon */}
             <div className="text-center mb-6">
-              <div className="text-8xl text-green-400 mb-4">🤖</div>
+              <div className="text-8xl text-green-400 mb-4">📝</div>
               <h2 className="text-3xl font-bold">Auto-gen Tabs</h2>
             </div>
             {/* Feature Description */}
@@ -625,7 +485,7 @@ export default function Features() {
               </ul>
               <div className="bg-green-900/30 p-4 rounded-lg border border-green-500/30 mt-6">
                 <p className="text-green-300 text-sm">
-                  <strong>Coming Soon for Premium Members only:</strong> Auto-generated tabs will be available for premium subscribers with unlimited access.
+                  <strong>Premium Feature:</strong> Auto-generated tabs are available for premium subscribers with unlimited access.
                 </p>
               </div>
             </div>
@@ -637,11 +497,7 @@ export default function Features() {
       {showFeatureModal === 'scrambled-brain' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -654,7 +510,7 @@ export default function Features() {
             {/* Feature Icon */}
             <div className="text-center mb-6">
               <div className="text-8xl text-red-400 mb-4">🧠</div>
-              <h2 className="text-3xl font-bold">Why Learning Guitar face-on is Hard</h2>
+              <h2 className="text-3xl font-bold">Why Video Flipping is Hard</h2>
             </div>
             {/* Feature Description */}
             <div className="space-y-4 text-gray-300">
@@ -681,11 +537,7 @@ export default function Features() {
       {showFeatureModal === 'lightbulb-brain' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -725,11 +577,7 @@ export default function Features() {
       {showFeatureModal === 'sloth' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -769,11 +617,7 @@ export default function Features() {
       {showFeatureModal === 'cheetah' && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowFeatureModal(null)
-            }
-          }}
+          onClick={(e) => handleModalBackdropClick(e, () => setShowFeatureModal(null))}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-2xl w-full relative text-white p-8">
             {/* Close Button */}
@@ -809,7 +653,7 @@ export default function Features() {
         </div>
       )}
 
-      {/* Feature Detail Modal (Custom Captions) */}
+      {/* Custom Captions Modal */}
       {showCaptionsModal && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -827,33 +671,39 @@ export default function Features() {
             >
               ×
             </button>
-            {/* Feature Icon */}
+            
+            {/* Captions Content */}
             <div className="text-center mb-6">
-              <div className="text-8xl text-purple-400 mb-4">📝</div>
-              <h2 className="text-3xl font-bold">Custom Captions</h2>
+              <h2 className="text-3xl font-bold mb-4">Custom Captions</h2>
             </div>
-            {/* Feature Description */}
+            
             <div className="space-y-4 text-gray-300">
-              <p>
-                Add 2 lines (stacked) of your own custom captions to any guitar video. Perfect for:
-              </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>Chord Names above Lyrics</li>
-                <li>Chord Names above Strumming Patterns</li>
-                <li>Highlighting key techniques and tips</li>
-                <li>Adding song structure markers</li>
-              </ul>
-              <div className="bg-purple-900/30 p-4 rounded-lg border border-purple-500/30 mt-6">
-                <p className="text-purple-300 text-sm">
-                  <strong>Premium Feature:</strong> Custom captions are available for premium subscribers with unlimited access.
-                </p>
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Create Your Own Captions</p>
+                <p className="font-medium">Add personalized text overlays to your guitar videos with our easy-to-use caption editor.</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Features</p>
+                <ul className="text-sm space-y-1">
+                  <li>• Custom text and fonts</li>
+                  <li>• Multiple caption styles</li>
+                  <li>• Timing controls</li>
+                  <li>• Color customization</li>
+                </ul>
+              </div>
+              
+              <div className="pt-4">
+                <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors">
+                  Start Creating Captions
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Feature Detail Modal (Select Chord Diagrams) */}
+      
+      {/* Select Chord Diagrams Modal */}
       {showChordDiagramsModal && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -871,38 +721,53 @@ export default function Features() {
             >
               ×
             </button>
-            {/* Feature Icon */}
+            
+            {/* Chord Diagrams Content */}
             <div className="text-center mb-6">
-              <div className="text-8xl text-orange-400 mb-4">🎸</div>
-              <h2 className="text-3xl font-bold">Select Chord Diagrams</h2>
+              <h2 className="text-3xl font-bold mb-4">Select Chord Diagrams</h2>
             </div>
-            {/* Feature Description */}
+            
             <div className="space-y-4 text-gray-300">
-              <p>
-                Choose from a library of chord diagrams and place them directly on your video timeline. Perfect for:
-              </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>Placing chord diagrams next to custom captions</li>
-                <li>Visual chord reference during practice</li>
-                <li>Saved preferences for future sessions</li>
-                <li>Consistent chord display across videos</li>
-              </ul>
-              <div className="bg-orange-900/30 p-4 rounded-lg border border-orange-500/30 mt-6">
-                <p className="text-orange-300 text-sm">
-                  <strong>Premium Feature:</strong> Chord diagram selection is available for premium subscribers with unlimited access.
-                </p>
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Add Chords to your Captions!</p>
+                <p className="font-medium">Selected chords appear to the left of the captions in the same start/stop time segment.</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Available Options</p>
+                <ul className="text-sm space-y-1">
+                  <li>• Open chords (C, G, D, A, E)</li>
+                  <li>• Barre chords (F, B, Bb)</li>
+                  <li>• Power chords</li>
+                  <li>• Jazz chords</li>
+                </ul>
+              </div>
+              
+              <div className="pt-4">
+                <button className="w-full bg-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-orange-600 transition-colors">
+                  Browse Chord Library
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Footer - Fixed at Bottom */}
+      <footer className="fixed bottom-0 left-0 right-0 z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <span>© 2025 GuitarTube</span>
+          <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
+          <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
+        </div>
+      </footer>
 
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
-      
+
       {/* Right-Side Menu Modal */}
       {showRightMenuModal && (
         <div 
@@ -984,209 +849,6 @@ export default function Features() {
         </div>
       )}
 
-      {/* Profile Modal */}
-      {showProfileModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowProfileModal(false)
-            }
-          }}
-        >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowProfileModal(false)}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Profile Content */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-4">Profile</h2>
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="space-y-4 text-gray-300">
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Name</p>
-                <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Email</p>
-                <p className="font-medium">{user?.email || 'No email'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Subscription</p>
-                <p className="font-medium capitalize">{profile?.subscription_tier || 'Free'}</p>
-              </div>
-              
-              <div className="pt-4">
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Settings
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Plan Modal */}
-      {showPlanModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowPlanModal(false)
-            }
-          }}
-        >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowPlanModal(false)}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Plan Content */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-4">Plan Details</h2>
-            </div>
-            
-            <div className="space-y-4 text-gray-300">
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Current Plan</p>
-                <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Free'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
-                <p className="font-medium">Monthly</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Amount</p>
-                <p className="font-medium text-xl">
-                  ${profile?.subscription_tier === 'hero' ? '19' : 
-                    profile?.subscription_tier === 'roadie' ? '10' : '0'}/mo
-                </p>
-              </div>
-              
-              <div className="pt-4 space-y-3">
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Change Credit Card
-                </button>
-                
-                {profile?.subscription_tier !== 'hero' && (
-                  <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                    UPGRADE
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:text-sm md:-mt-5" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          <span>© 2025 GuitarTube</span>
-          <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
-          <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
-        </div>
-      </footer>
-      {/* Right-Side Menu Modal */}
-      {showRightMenuModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowRightMenuModal(false)
-            }
-          }}
-        >
-          <div 
-            className="w-[300px] h-full relative"
-            style={{
-              marginTop: '5px', // Position just below hamburger
-              backgroundColor: 'rgba(255, 255, 255, 0.08)' // Ghost-white with 8% transparency
-            }}
-          >
-            {/* Close Button - Same style as other modals */}
-            <button
-              onClick={() => setShowRightMenuModal(false)}
-              className="absolute top-3 right-9 text-white hover:text-yellow-400 transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Menu Content */}
-            <div className="p-6 pt-16">
-              <div className="text-white text-center space-y-8">
-                {/* TOP OF MENU */}
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setShowProfileModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PROFILE
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowPlanModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PLAN DEETS
-                  </button>
-                </div>
-                
-                {/* BOTTOM OF MENU */}
-                <div className="space-y-4 mt-auto">
-                  <a 
-                    href="mailto:support@guitartube.net"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    SUPPORT
-                  </a>
-                  
-                  <a 
-                    href="/terms"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    TERMS
-                  </a>
-                  
-                  <a 
-                    href="/privacy"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PRIVACY
-                  </a>
-                  
-                  <a 
-                    href="/community_guidelines"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    COMMUNITY GUIDELINES
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
       {/* Profile Modal */}
       {showProfileModal && (
         <div 

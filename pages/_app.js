@@ -17,7 +17,7 @@ function MyApp({ Component, pageProps, router }) {
       const isMobileDevice = mobileRegex.test(userAgent.toLowerCase())
       
       // Also check screen width for additional mobile detection
-      const isMobileScreen = window.innerWidth <= 768
+      const isMobileScreen = window.innerWidth < 768
       
       return isMobileDevice || isMobileScreen
     }
