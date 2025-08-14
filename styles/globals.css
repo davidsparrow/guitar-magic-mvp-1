@@ -98,6 +98,16 @@ a {
   border-radius: 4px;
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }

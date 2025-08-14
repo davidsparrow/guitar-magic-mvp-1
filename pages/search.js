@@ -276,46 +276,73 @@ export default function Search() {
       {/* 75% Black Overlay */}
       <div className="absolute inset-0 bg-black/75 z-0" />
       
-      {/* Header */}
-      <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-between items-center">
-          {/* Logo and Favorites Icon - Upper Left */}
-          <div className="flex items-center space-x-4">
-            <a 
-              href="/?home=true" 
-              className="hover:opacity-80 transition-opacity"
-            >
-              <img 
-                src="/images/gt_logoM_PlayButton.png" 
-                alt="VideoFlip Logo" 
-                className="h-10 w-auto"
-              />
-            </a>
-            
-            {/* Favorites Icon */}
-            <button
-              onClick={handleFavoritesToggle}
-              className={`p-2 rounded-lg transition-colors duration-300 ${
-                showFavoritesOnly 
-                  ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
-                  : 'hover:bg-white/10'
-              }`}
-              title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
-            >
-              <TbGuitarPickFilled className={`w-8 h-8 ${
-                showFavoritesOnly ? 'text-[#8dc641]' : 'text-[#8dc641]'
-              }`} />
-            </button>
+      {/* Responsive Header - 3 rows on mobile, 1 row on desktop */}
+      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0">
+          {/* Row 1: Logo + Favorites (Left) + Auth Buttons (Right) - Mobile Only */}
+          <div className="flex md:hidden justify-between items-center w-full">
+            {/* Left side: Logo + Favorites */}
+            <div className="flex items-center space-x-2">
+              <a 
+                href="/?home=true" 
+                className="hover:opacity-80 transition-opacity"
+              >
+                <img 
+                  src="/images/gt_logoM_PlayButton.png" 
+                  alt="VideoFlip Logo" 
+                  className="h-8 w-auto"
+                />
+              </a>
+              
+              {/* Favorites Icon */}
+              <button
+                onClick={handleFavoritesToggle}
+                className={`p-2 rounded-lg transition-colors duration-300 ${
+                  showFavoritesOnly 
+                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
+                    : 'hover:bg-white/10'
+                }`}
+                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
+              >
+                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+              </button>
+            </div>
 
-            {/* Search Bar */}
-            <div className="relative">
+            {/* Right side: Auth buttons */}
+            <div className="flex items-center space-x-2">
+              {/* Login/Logout Icon */}
+              <button 
+                onClick={handleAuthClick}
+                className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
+                title={isAuthenticated ? "End of the Party" : "Start Me Up"}
+              >
+                {isAuthenticated ? (
+                  <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                ) : (
+                  <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+                )}
+              </button>
+              
+              {/* Menu Icon */}
+              <button 
+                onClick={() => setShowRightMenuModal(true)}
+                className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+              >
+                <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              </button>
+            </div>
+          </div>
+
+          {/* Row 2: Search Bar - Mobile Only */}
+          <div className="flex md:hidden w-full">
+            <div className="relative w-full">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="how to play guitar"
-                className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
+                className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
                 style={{ borderRadius: '77px' }}
                 ref={searchInputRef}
               />
@@ -344,13 +371,15 @@ export default function Search() {
                 <FaSearch className="w-4 h-4" />
               </button>
             </div>
+          </div>
 
-            {/* Sort Dropdown */}
-            <div className="relative group">
+          {/* Row 3: Sort Dropdown - Mobile Only */}
+          <div className="flex md:hidden w-full">
+            <div className="relative group w-full">
               <select
                 value={sortOrder}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
+                className="w-full bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
                 title="Sort affects new searches only"
                 style={{ borderRadius: '77px' }}
               >
@@ -367,16 +396,108 @@ export default function Search() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
+            </div>
+          </div>
+
+          {/* Desktop Layout - Hidden on Mobile */}
+          <div className="hidden md:flex items-center space-x-4">
+            {/* Logo and Favorites Icon */}
+            <div className="flex items-center space-x-4">
+              <a 
+                href="/?home=true" 
+                className="hover:opacity-80 transition-opacity"
+              >
+                <img 
+                  src="/images/gt_logoM_PlayButton.png" 
+                  alt="VideoFlip Logo" 
+                  className="h-10 w-auto"
+                />
+              </a>
               
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                Sort affects new searches only
+              {/* Favorites Icon */}
+              <button
+                onClick={handleFavoritesToggle}
+                className={`p-2 rounded-lg transition-colors duration-300 ${
+                  showFavoritesOnly 
+                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
+                    : 'hover:bg-white/10'
+                }`}
+                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
+              >
+                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+              </button>
+
+              {/* Search Bar - Positioned BETWEEN logo/favorites and sort dropdown */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="how to play guitar"
+                  className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
+                  style={{ borderRadius: '77px' }}
+                  ref={searchInputRef}
+                />
+                
+                {/* Clear button */}
+                {searchQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-11 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white hover:scale-110 transition-all duration-200 p-1 rounded-full hover:bg-white/10"
+                  >
+                    <FaTimes className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Vertical separator line */}
+                {searchQuery && (
+                  <div className="absolute right-10 top-1/2 transform -translate-y-1/2 w-px h-4 bg-white/30"></div>
+                )}
+                
+                {/* Search button */}
+                <button
+                  onClick={handleSearchClick}
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                  <FaSearch className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="relative group">
+                <select
+                  value={sortOrder}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
+                  title="Sort affects new searches only"
+                  style={{ borderRadius: '77px' }}
+                >
+                  <option value="relevance" className="bg-black text-white">Relevance</option>
+                  <option value="date" className="bg-black text-white">Date</option>
+                  <option value="rating" className="bg-black text-white">Rating</option>
+                  <option value="title" className="bg-black text-white">Title</option>
+                  <option value="viewCount" className="bg-black text-white">Views</option>
+                </select>
+                
+                {/* Custom dropdown arrow */}
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
+                  Sort affects new searches only
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right side buttons */}
-          <div className="flex items-center space-x-2 ml-4">
+          {/* Desktop Right side buttons */}
+          <div className="hidden md:flex items-center space-x-2">
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -395,17 +516,20 @@ export default function Search() {
               onClick={() => setShowRightMenuModal(true)}
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
             >
-              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content Area - Video Grid */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6" style={{ 
-        height: 'calc(100vh - 140px)',
-        backgroundColor: 'transparent'
-      }}>
+      <div 
+        className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" 
+        style={{ 
+          height: 'calc(100vh - 140px)',
+          backgroundColor: 'transparent'
+        }}
+      >
         {/* Search Error */}
         {searchError && (
           <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-center">
@@ -538,7 +662,7 @@ export default function Search() {
 
                 {/* Load More Button */}
                 {nextPageToken && (
-                  <div className="text-center mt-8">
+                  <div className="text-center mt-8 mb-12">
                     <button
                       onClick={handleLoadMore}
                       disabled={isLoadingMore}
