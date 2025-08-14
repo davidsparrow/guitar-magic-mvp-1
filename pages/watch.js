@@ -24,10 +24,8 @@ export default function Watch() {
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [player, setPlayer] = useState(null)
   
-  // Control strip states
+  // Control strip states - SIMPLIFIED
   const [showControlStrips, setShowControlStrips] = useState(false)
-  const [controlStripsHeight, setControlStripsHeight] = useState(0)
-  const [videoFrameHeight, setVideoFrameHeight] = useState('auto')
 
   // Prevent hydration issues
   useEffect(() => {
@@ -138,30 +136,12 @@ export default function Watch() {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [player, isVideoReady])
 
-  // Handle control strips toggle
+  // Handle control strips toggle - SIMPLIFIED
   const handleControlStripsToggle = () => {
     const newState = !showControlStrips
     console.log('🔘 Toggle clicked! Current state:', showControlStrips, 'New state:', newState)
     setShowControlStrips(newState)
   }
-
-  // Calculate video frame height based on control strips visibility
-  useEffect(() => {
-    console.log('📏 Height calculation triggered. showControlStrips:', showControlStrips)
-    if (showControlStrips) {
-      // When control strips are visible, video frame height adjusts
-      const newHeight = 'calc(100vh - 140px - 128px)'
-      console.log('📏 Setting video height to:', newHeight)
-      setVideoFrameHeight(newHeight)
-      setControlStripsHeight(128)
-    } else {
-      // When control strips are hidden, video frame takes full height
-      const newHeight = 'calc(100vh - 140px)'
-      console.log('📏 Setting video height to:', newHeight)
-      setVideoFrameHeight(newHeight)
-      setControlStripsHeight(0)
-    }
-  }, [showControlStrips])
 
   if (!mounted || (loading && !router.isReady)) {
     return (
@@ -273,7 +253,7 @@ export default function Watch() {
       </header>
 
       {/* Main Content Area - Theatre Mode Layout */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" style={{ height: videoFrameHeight, backgroundColor: 'transparent' }}>
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" style={{ height: 'calc(100vh - 140px)' }}>
         {/* Video Player Container - Edge-to-Edge Width */}
         <div className="w-full max-w-none -mt-6">
           {/* YouTube Video Player - Theatre Mode */}
@@ -299,59 +279,36 @@ export default function Watch() {
             </div>
           )}
           
-          {/* Control Strips Toggle Button */}
-          <div className="mt-6 flex justify-center items-center space-x-4">
-            {/* View All Strips Eye Icon - Only visible when control strips are active */}
-            {showControlStrips && (
-              <button
-                className="p-3 rounded-lg transition-all duration-300 bg-white/10 border border-white/20 text-white hover:bg-white/20"
-                title="View All Strips"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
-              </button>
-            )}
-            
-            {/* Main Control Strips Toggle Button - ALWAYS VISIBLE */}
+          {/* SIMPLE CONTROL STRIPS TOGGLE - STARTING FROM SCRATCH */}
+          <div className="mt-6 flex justify-center">
             <button
               onClick={handleControlStripsToggle}
-              className={`p-3 rounded-lg transition-all duration-300 ${
-                showControlStrips 
-                  ? 'bg-[#8dc641]/20 border border-[#8dc641]/30 text-[#8dc641]' 
-                  : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
-              }`}
+              className="p-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors"
               title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
             >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-              </svg>
+              {showControlStrips ? "HIDE STRIPS" : "SHOW STRIPS"}
             </button>
           </div>
 
-          {/* Control Strips Area */}
+          {/* SIMPLE CONTROL STRIPS AREA */}
           {showControlStrips && (
-            <div 
-              className="mt-4 transition-all duration-300 ease-in-out"
-              style={{ height: `${controlStripsHeight}px` }}
-            >
-              {/* BRIGHT TEST OBJECT - This should be very visible! */}
-              <div className="bg-yellow-500 rounded-lg border-4 border-red-500 p-6 shadow-2xl">
-                <div className="text-center text-black font-bold">
-                  <p className="text-2xl mb-2">🎉 CONTROL STRIPS ARE WORKING! 🎉</p>
-                  <p className="text-lg">Toggle button successfully showed this area!</p>
-                  <div className="mt-4 flex justify-center space-x-4">
-                    <div className="w-20 h-10 bg-blue-500 rounded border-2 border-white flex items-center justify-center text-white font-bold text-sm">
-                      📝 Captions
-                    </div>
-                    <div className="w-20 h-10 bg-green-500 rounded border-2 border-white flex items-center justify-center text-white font-bold text-sm">
-                      🔄 Loops
-                    </div>
-                    <div className="w-20 h-10 bg-purple-500 rounded border-2 border-white flex items-center justify-center text-white font-bold text-sm">
-                      🎸 Chords
-                    </div>
+            <div className="mt-4 p-6 bg-red-500 border-4 border-yellow-400 rounded-lg">
+              <div className="text-center text-white font-bold">
+                <p className="text-3xl mb-4">🎉 FOOTER CONTROL STRIPS WORKING! 🎉</p>
+                <p className="text-xl">This is a simple test - no complex logic!</p>
+                <div className="mt-4 grid grid-cols-3 gap-4">
+                  <div className="bg-blue-600 p-4 rounded border-2 border-white">
+                    <p className="text-lg">📝</p>
+                    <p className="text-sm">Captions</p>
                   </div>
-                  <p className="text-sm mt-4 text-gray-800">Click the square button again to hide this area</p>
+                  <div className="bg-green-600 p-4 rounded border-2 border-white">
+                    <p className="text-lg">🔄</p>
+                    <p className="text-sm">Loops</p>
+                  </div>
+                  <div className="bg-purple-600 p-4 rounded border-2 border-white">
+                    <p className="text-lg">🎸</p>
+                    <p className="text-sm">Chords</p>
+                  </div>
                 </div>
               </div>
             </div>
