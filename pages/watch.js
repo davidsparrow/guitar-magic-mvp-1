@@ -140,18 +140,25 @@ export default function Watch() {
 
   // Handle control strips toggle
   const handleControlStripsToggle = () => {
-    setShowControlStrips(!showControlStrips)
+    const newState = !showControlStrips
+    console.log('🔘 Toggle clicked! Current state:', showControlStrips, 'New state:', newState)
+    setShowControlStrips(newState)
   }
 
   // Calculate video frame height based on control strips visibility
   useEffect(() => {
+    console.log('📏 Height calculation triggered. showControlStrips:', showControlStrips)
     if (showControlStrips) {
       // When control strips are visible, video frame height adjusts
-      setVideoFrameHeight('calc(100vh - 140px - 128px)') // 128px = control strips height
+      const newHeight = 'calc(100vh - 140px - 128px)'
+      console.log('📏 Setting video height to:', newHeight)
+      setVideoFrameHeight(newHeight)
       setControlStripsHeight(128)
     } else {
-      // When control strips are hidden, video frame frame takes full height
-      setVideoFrameHeight('calc(100vh - 140px)')
+      // When control strips are hidden, video frame takes full height
+      const newHeight = 'calc(100vh - 140px)'
+      console.log('📏 Setting video height to:', newHeight)
+      setVideoFrameHeight(newHeight)
       setControlStripsHeight(0)
     }
   }, [showControlStrips])
@@ -328,21 +335,23 @@ export default function Watch() {
               className="mt-4 transition-all duration-300 ease-in-out"
               style={{ height: `${controlStripsHeight}px` }}
             >
-              <div className="bg-white/5 rounded-lg border border-white/10 p-4">
-                <div className="text-center text-white/60">
-                  <p className="text-lg font-medium">Control Strips Area</p>
-                  <p className="text-sm">Phase 2: Individual strip management coming next</p>
-                  <div className="mt-2 flex justify-center space-x-4">
-                    <div className="w-16 h-8 bg-white/10 rounded border border-white/20 flex items-center justify-center text-xs">
-                      Captions
+              {/* BRIGHT TEST OBJECT - This should be very visible! */}
+              <div className="bg-yellow-500 rounded-lg border-4 border-red-500 p-6 shadow-2xl">
+                <div className="text-center text-black font-bold">
+                  <p className="text-2xl mb-2">🎉 CONTROL STRIPS ARE WORKING! 🎉</p>
+                  <p className="text-lg">Toggle button successfully showed this area!</p>
+                  <div className="mt-4 flex justify-center space-x-4">
+                    <div className="w-20 h-10 bg-blue-500 rounded border-2 border-white flex items-center justify-center text-white font-bold text-sm">
+                      📝 Captions
                     </div>
-                    <div className="w-16 h-8 bg-white/10 rounded border border-white/20 flex items-center justify-center text-xs">
-                      Loops
+                    <div className="w-20 h-10 bg-green-500 rounded border-2 border-white flex items-center justify-center text-white font-bold text-sm">
+                      🔄 Loops
                     </div>
-                    <div className="w-16 h-8 bg-white/10 rounded border border-white/20 flex items-center justify-center text-xs">
-                      Chords
+                    <div className="w-20 h-10 bg-purple-500 rounded border-2 border-white flex items-center justify-center text-white font-bold text-sm">
+                      🎸 Chords
                     </div>
                   </div>
+                  <p className="text-sm mt-4 text-gray-800">Click the square button again to hide this area</p>
                 </div>
               </div>
             </div>
