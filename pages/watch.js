@@ -46,29 +46,35 @@ export default function Watch() {
 
   // Initialize YouTube player when API is ready
   useEffect(() => {
-    if (mounted && window.YT && videoId) {
-      window.onYouTubeIframeAPIReady = () => {
-        const newPlayer = new window.YT.Player('youtube-player', {
-          height: '100%',
-          width: '100%',
-          videoId: videoId,
-          playerVars: {
-            controls: 1,
-            modestbranding: 1,
-            rel: 0,
-            showinfo: 0,
-            origin: window.location.origin
-          },
-          events: {
-            onReady: handleVideoReady,
-            onError: handleVideoError
-          }
-        })
-        setPlayer(newPlayer)
+    if (mounted && videoId) {
+      const initPlayer = () => {
+        if (window.YT && window.YT.Player) {
+          const newPlayer = new window.YT.Player('youtube-player', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: {
+              controls: 1,
+              modestbranding: 1,
+              rel: 0,
+              showinfo: 0,
+              origin: window.location.origin
+            },
+            events: {
+              onReady: handleVideoReady,
+              onError: handleVideoError
+            }
+          })
+          setPlayer(newPlayer)
+        }
       }
-      
-      if (window.YT.Player) {
-        window.onYouTubeIframeAPIReady()
+
+      // Check if API is already loaded
+      if (window.YT && window.YT.Player) {
+        initPlayer()
+      } else {
+        // Wait for API to be ready
+        window.onYouTubeIframeAPIReady = initPlayer
       }
     }
   }, [mounted, videoId])
@@ -268,7 +274,20 @@ export default function Watch() {
             <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl">
               {/* Video Container - Maintains edge-to-edge width */}
               <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                {/* YouTube API Player */}
                 <div id="youtube-player" className="w-full h-full" />
+                
+                {/* Fallback iframe if API fails */}
+                {!player && (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${videoId}?controls=1&modestbranding=1&rel=0&showinfo=0&origin=${window.location.origin}`}
+                    title={videoTitle}
+                    className="w-full h-full absolute inset-0"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                )}
               </div>
             </div>
           )}
@@ -287,7 +306,7 @@ export default function Watch() {
               </button>
             )}
             
-            {/* Main Control Strips Toggle Button */}
+            {/* Main Control Strips Toggle Button - ALWAYS VISIBLE */}
             <button
               onClick={handleControlStripsToggle}
               className={`p-3 rounded-lg transition-all duration-300 ${
