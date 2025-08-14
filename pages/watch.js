@@ -23,6 +23,11 @@ export default function Watch() {
   const [isVideoReady, setIsVideoReady] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [player, setPlayer] = useState(null)
+  
+  // Control strip states
+  const [showControlStrips, setShowControlStrips] = useState(false)
+  const [controlStripsHeight, setControlStripsHeight] = useState(0)
+  const [videoFrameHeight, setVideoFrameHeight] = useState('auto')
 
   // Prevent hydration issues
   useEffect(() => {
@@ -126,6 +131,24 @@ export default function Watch() {
     document.addEventListener('keydown', handleKeyPress)
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [player, isVideoReady])
+
+  // Handle control strips toggle
+  const handleControlStripsToggle = () => {
+    setShowControlStrips(!showControlStrips)
+  }
+
+  // Calculate video frame height based on control strips visibility
+  useEffect(() => {
+    if (showControlStrips) {
+      // When control strips are visible, video frame height adjusts
+      setVideoFrameHeight('calc(100vh - 140px - 128px)') // 128px = control strips height
+      setControlStripsHeight(128)
+    } else {
+      // When control strips are hidden, video frame frame takes full height
+      setVideoFrameHeight('calc(100vh - 140px)')
+      setControlStripsHeight(0)
+    }
+  }, [showControlStrips])
 
   if (!mounted || (loading && !router.isReady)) {
     return (
@@ -237,7 +260,7 @@ export default function Watch() {
       </header>
 
       {/* Main Content Area - Theatre Mode Layout */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" style={{ height: 'calc(100vh - 140px)', backgroundColor: 'transparent' }}>
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" style={{ height: videoFrameHeight, backgroundColor: 'transparent' }}>
         {/* Video Player Container - Edge-to-Edge Width */}
         <div className="w-full max-w-none -mt-6">
           {/* YouTube Video Player - Theatre Mode */}
@@ -250,13 +273,61 @@ export default function Watch() {
             </div>
           )}
           
-          {/* Placeholder for Control Strips Area */}
-          <div className="mt-6 h-32 bg-white/5 rounded-lg border border-white/10 flex items-center justify-center">
-            <div className="text-center text-white/60">
-              <p className="text-lg font-medium">Control Strips Area</p>
-              <p className="text-sm">Coming in Phase 2</p>
-            </div>
+          {/* Control Strips Toggle Button */}
+          <div className="mt-6 flex justify-center items-center space-x-4">
+            {/* View All Strips Eye Icon - Only visible when control strips are active */}
+            {showControlStrips && (
+              <button
+                className="p-3 rounded-lg transition-all duration-300 bg-white/10 border border-white/20 text-white hover:bg-white/20"
+                title="View All Strips"
+              >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+              </button>
+            )}
+            
+            {/* Main Control Strips Toggle Button */}
+            <button
+              onClick={handleControlStripsToggle}
+              className={`p-3 rounded-lg transition-all duration-300 ${
+                showControlStrips 
+                  ? 'bg-[#8dc641]/20 border border-[#8dc641]/30 text-[#8dc641]' 
+                  : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+              }`}
+              title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+              </svg>
+            </button>
           </div>
+
+          {/* Control Strips Area */}
+          {showControlStrips && (
+            <div 
+              className="mt-4 transition-all duration-300 ease-in-out"
+              style={{ height: `${controlStripsHeight}px` }}
+            >
+              <div className="bg-white/5 rounded-lg border border-white/10 p-4">
+                <div className="text-center text-white/60">
+                  <p className="text-lg font-medium">Control Strips Area</p>
+                  <p className="text-sm">Phase 2: Individual strip management coming next</p>
+                  <div className="mt-2 flex justify-center space-x-4">
+                    <div className="w-16 h-8 bg-white/10 rounded border border-white/20 flex items-center justify-center text-xs">
+                      Captions
+                    </div>
+                    <div className="w-16 h-8 bg-white/10 rounded border border-white/20 flex items-center justify-center text-xs">
+                      Loops
+                    </div>
+                    <div className="w-16 h-8 bg-white/10 rounded border border-white/20 flex items-center justify-center text-xs">
+                      Chords
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
