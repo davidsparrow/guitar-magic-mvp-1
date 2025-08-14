@@ -22,11 +22,51 @@ export default function Watch() {
   const [videoChannel, setVideoChannel] = useState('')
   const [isVideoReady, setIsVideoReady] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
+  const [player, setPlayer] = useState(null)
 
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Load YouTube API script
+  useEffect(() => {
+    if (mounted && !window.YT) {
+      const tag = document.createElement('script')
+      tag.src = 'https://www.youtube.com/iframe_api'
+      const firstScriptTag = document.getElementsByTagName('script')[0]
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
+    }
+  }, [mounted])
+
+  // Initialize YouTube player when API is ready
+  useEffect(() => {
+    if (mounted && window.YT && videoId) {
+      window.onYouTubeIframeAPIReady = () => {
+        const newPlayer = new window.YT.Player('youtube-player', {
+          height: '100%',
+          width: '100%',
+          videoId: videoId,
+          playerVars: {
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            showinfo: 0,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: handleVideoReady,
+            onError: handleVideoError
+          }
+        })
+        setPlayer(newPlayer)
+      }
+      
+      if (window.YT.Player) {
+        window.onYouTubeIframeAPIReady()
+      }
+    }
+  }, [mounted, videoId])
 
   // Load video from URL parameters when page loads
   useEffect(() => {
@@ -68,6 +108,24 @@ export default function Watch() {
     console.error('Video error:', error)
     // Handle video loading errors
   }
+
+  // Handle spacebar for play/pause
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.code === 'Space' && player && isVideoReady) {
+        e.preventDefault()
+        const playerState = player.getPlayerState()
+        if (playerState === 1) { // Playing
+          player.pauseVideo()
+        } else { // Paused or other states
+          player.playVideo()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyPress)
+    return () => document.removeEventListener('keydown', handleKeyPress)
+  }, [player, isVideoReady])
 
   if (!mounted || (loading && !router.isReady)) {
     return (
@@ -181,66 +239,13 @@ export default function Watch() {
       {/* Main Content Area - Theatre Mode Layout */}
       <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" style={{ height: 'calc(100vh - 140px)', backgroundColor: 'transparent' }}>
         {/* Video Player Container - Edge-to-Edge Width */}
-        <div className="w-full max-w-none">
-          {/* Video Title and Channel Info */}
-          <div className="mb-4 text-white">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">{videoTitle || 'Loading...'}</h1>
-            <p className="text-lg text-white/70">{videoChannel || 'Loading...'}</p>
-          </div>
-          
+        <div className="w-full max-w-none -mt-6">
           {/* YouTube Video Player - Theatre Mode */}
           {videoId && (
             <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl">
               {/* Video Container - Maintains edge-to-edge width */}
               <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                <iframe
-                  src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${window.location.origin}`}
-                  title={videoTitle}
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  onLoad={handleVideoReady}
-                  onError={handleVideoError}
-                />
-              </div>
-              
-              {/* Video Controls Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                <div className="flex items-center justify-between text-white">
-                  <div className="flex items-center space-x-4">
-                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </button>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm">0:00</span>
-                      <div className="w-64 h-1 bg-white/30 rounded-full">
-                        <div className="w-0 h-full bg-white rounded-full"></div>
-                      </div>
-                      <span className="text-sm">0:00</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                      </svg>
-                    </button>
-                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-                      </svg>
-                    </button>
-                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                <div id="youtube-player" className="w-full h-full" />
               </div>
             </div>
           )}
