@@ -1,84 +1,48 @@
-// pages/search.js - Search Page with YouTube API Integration
+// pages/watch.js - Watch Page with YouTube Video Player
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { FaHamburger, FaSearch, FaTimes, FaEllipsisV, FaCheck } from "react-icons/fa"
+import { FaHamburger, FaSearch, FaTimes } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
-import { TbGuitarPick, TbGuitarPickFilled } from "react-icons/tb"
-import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
+import { TbGuitarPickFilled } from "react-icons/tb"
 import TopBanner from '../components/TopBanner'
 
-export default function Search() {
+export default function Watch() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
-  const [showProfileModal, setShowProfileModal] = useState(false)
-  const [showPlanModal, setShowPlanModal] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const searchInputRef = useRef(null)
   const router = useRouter()
 
-  // Search states
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [searchError, setSearchError] = useState('')
-  const [hasSearched, setHasSearched] = useState(false)
-  const [nextPageToken, setNextPageToken] = useState(null)
-  const [sortOrder, setSortOrder] = useState('relevance')
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
-  const [userFavorites, setUserFavorites] = useState([]) // This would be populated from your backend
-  const [pendingVideo, setPendingVideo] = useState(null) // Store video for post-login navigation
-  const [showMobileSearch, setShowMobileSearch] = useState(false) // Control mobile search visibility
+  // Video player states
+  const [videoId, setVideoId] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
+  const [videoChannel, setVideoChannel] = useState('')
+  const [isVideoReady, setIsVideoReady] = useState(false)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
 
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
 
-
-
-  // Auto-search when page loads with query parameter
+  // Load video from URL parameters when page loads
   useEffect(() => {
     if (mounted && router.isReady) {
-      const { q } = router.query
-      if (q && typeof q === 'string') {
-        setSearchQuery(q)
-        // Perform search directly with the URL query
-        performSearchWithQuery(q)
+      const { v, title, channel } = router.query
+      if (v && typeof v === 'string') {
+        setVideoId(v)
+        setVideoTitle(title ? decodeURIComponent(title) : '')
+        setVideoChannel(channel ? decodeURIComponent(channel) : '')
+        setIsVideoReady(true)
+      } else {
+        // No video ID provided, redirect to home
+        router.push('/')
       }
     }
-  }, [mounted, router.isReady, router.query])
-
-  // Handle post-login navigation to pending video
-  useEffect(() => {
-    if (isAuthenticated && pendingVideo && !loading) {
-      // User just logged in and has a pending video
-      const video = pendingVideo
-      const videoId = video.id.videoId
-      
-      // Store video info for the player page
-      localStorage.setItem('currentVideo', JSON.stringify({
-        id: videoId,
-        title: video.snippet.title,
-        channelTitle: video.snippet.channelTitle,
-        description: video.snippet.description,
-        thumbnails: video.snippet.thumbnails,
-        publishedAt: video.snippet.publishedAt,
-        statistics: video.statistics,
-        contentDetails: video.contentDetails
-      }))
-      
-      // Navigate to video player
-      router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
-      
-      // Clear pending video
-      setPendingVideo(null)
-    }
-  }, [isAuthenticated, pendingVideo, loading, router])
+  }, [mounted, router.isReady, router.query, router])
 
   // Handle login/logout
   const handleAuthClick = async () => {
@@ -87,8 +51,6 @@ export default function Search() {
         await signOut()
         setShowAuthModal(false)
         setShowRightMenuModal(false)
-        setShowProfileModal(false)
-        setShowPlanModal(false)
       } catch (error) {
         console.error('Sign out failed:', error)
       }
@@ -97,132 +59,14 @@ export default function Search() {
     }
   }
 
-  // Handle search - Navigate to search page instead of searching here
-  const handleSearch = async (pageToken = null) => {
-    if (!searchQuery.trim()) return
-
-    // Navigate to search page with query
-    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-    // Hide mobile search after navigation
-    setShowMobileSearch(false)
+  // Video player functions
+  const handleVideoReady = () => {
+    setIsVideoReady(true)
   }
 
-  // Perform search with direct query string (for auto-search from URL)
-  const performSearchWithQuery = async (query) => {
-    if (!query.trim()) return
-
-    setIsSearching(true)
-    setSearchError('')
-
-    try {
-      const results = await searchVideos(query.trim(), {
-        maxResults: 12,
-        pageToken: null,
-        order: sortOrder
-      })
-
-      setSearchResults(results.videos)
-      setHasSearched(true)
-      setNextPageToken(results.nextPageToken)
-
-    } catch (error) {
-      console.error('Search error:', error)
-      setSearchError(error.message || 'Search failed. Please try again.')
-    } finally {
-      setIsSearching(false)
-    }
-  }
-
-  // Handle search button click
-  const handleSearchClick = () => {
-    if (searchQuery.trim()) {
-      // Navigate to search page with query
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      // Hide mobile search after navigation
-      setShowMobileSearch(false)
-    }
-  }
-
-  // Handle enter key press
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearchClick()
-    }
-  }
-
-  // Handle clear search
-  const handleClearSearch = () => {
-    setSearchQuery('')
-    if (searchInputRef.current) {
-      searchInputRef.current.focus()
-      searchInputRef.current.setSelectionRange(0, 0)
-    }
-  }
-
-  // Handle load more
-  const handleLoadMore = () => {
-    if (nextPageToken && !isLoadingMore) {
-      handleSearch(nextPageToken)
-    }
-  }
-
-  // Handle video click
-  const handleVideoClick = (video) => {
-    // Check if user is authenticated
-    if (!isAuthenticated) {
-      // Show login modal for unauthenticated users
-      setShowAuthModal(true)
-      setPendingVideo(video) // Store the video for post-login navigation
-      return
-    }
-
-    const videoId = video.id.videoId
-    
-    // Store video info for the player page
-    localStorage.setItem('currentVideo', JSON.stringify({
-      id: videoId,
-      title: video.snippet.title,
-      channelTitle: video.snippet.channelTitle,
-      description: video.snippet.description,
-      thumbnails: video.snippet.thumbnails,
-      publishedAt: video.snippet.publishedAt,
-      statistics: video.statistics,
-      contentDetails: video.contentDetails
-    }))
-    
-    // Navigate to video player
-    router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
-  }
-
-  // Handle sort order change
-  const handleSortChange = (newOrder) => {
-    setSortOrder(newOrder)
-    // Note: Sort only affects new searches, not existing results
-  }
-
-  // Handle favorites toggle
-  const handleFavoritesToggle = () => {
-    setShowFavoritesOnly(!showFavoritesOnly)
-    // Here you would filter results to show only favorites
-    // For now, just toggle the state
-  }
-
-  // Handle video favorite toggle
-  const handleVideoFavoriteToggle = (video, isFavorited) => {
-    if (isFavorited) {
-      // Remove from favorites
-      setUserFavorites(prev => prev.filter(fav => fav.id.videoId !== video.id.videoId))
-      // Here you would also call your backend to remove from favorites
-    } else {
-      // Add to favorites
-      setUserFavorites(prev => [...prev, video])
-      // Here you would also call your backend to add to favorites
-    }
-  }
-
-  // Check if video is favorited
-  const isVideoFavorited = (video) => {
-    return userFavorites.some(fav => fav.id.videoId === video.id.videoId)
+  const handleVideoError = (error) => {
+    console.error('Video error:', error)
+    // Handle video loading errors
   }
 
   if (!mounted || (loading && !router.isReady)) {
@@ -234,13 +78,7 @@ export default function Search() {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-black" style={{ 
-      backgroundColor: '#000000',
-      minHeight: '100vh',
-      minHeight: '100dvh',
-      width: '100vw',
-      overflow: 'hidden'
-    }}>
+    <div className="relative h-screen overflow-hidden bg-black">
       {/* Full-Screen Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -249,8 +87,7 @@ export default function Search() {
           width: '100%',
           height: '100%',
           minWidth: '100vw',
-          minHeight: '100vh',
-          minHeight: '100dvh'
+          minHeight: '100vh'
         }}
       />
       
@@ -267,480 +104,202 @@ export default function Search() {
           <div className="flex md:hidden justify-between items-center w-full">
             {/* Left side: Logo + Favorites */}
             <div className="flex items-center space-x-2">
-              <a 
-                href="/?home=true" 
-                className="hover:opacity-80 transition-opacity"
-              >
-                <img 
-                  src="/images/gt_logoM_PlayButton.png" 
-                  alt="VideoFlip Logo" 
-                  className="h-8 w-auto"
-                />
+              <a href="/?home=true" className="hover:opacity-80 transition-opacity">
+                <img src="/images/gt_logoM_PlayButton.png" alt="VideoFlip Logo" className="h-8 w-auto" />
               </a>
-              
-              {/* Favorites Icon */}
-              <button
-                onClick={handleFavoritesToggle}
-                className={`p-2 rounded-lg transition-colors duration-300 ${
-                  showFavoritesOnly 
-                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
-                    : 'hover:bg-white/10'
-                }`}
-                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
-              >
+              <button className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10" title="Show Favorites Only">
                 <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
               </button>
             </div>
-
-            {/* Right side: Auth buttons */}
+            {/* Right side: Auth buttons + Search icon */}
             <div className="flex items-center space-x-2">
-              {/* Search Icon - Mobile Only */}
-              <button 
-                onClick={() => setShowMobileSearch(!showMobileSearch)}
-                className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
-                title="Search for videos"
-              >
+              <button onClick={handleAuthClick} className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
+                {isAuthenticated ? (<RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />) : (<IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />)}
+              </button>
+              <button onClick={() => setShowMobileSearch(!showMobileSearch)} className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105" title="Search for videos">
                 <FaSearch className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
               </button>
-              
-              {/* Login/Logout Icon */}
-              <button 
-                onClick={handleAuthClick}
-                className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
-                title={isAuthenticated ? "End of the Party" : "Start Me Up"}
-              >
-                {isAuthenticated ? (
-                  <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
-                ) : (
-                  <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
-                )}
-              </button>
-              
-              {/* Menu Icon */}
-              <button 
-                onClick={() => setShowRightMenuModal(true)}
-                className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
-              >
+              <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group">
                 <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
               </button>
             </div>
           </div>
-
+          
           {/* Row 2: Search Bar - Mobile Only (Hidden by default) */}
           <div className={`flex md:hidden w-full transition-all duration-300 ease-in-out ${showMobileSearch ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="how to play guitar"
-                  className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
-                  style={{ borderRadius: '77px' }}
-                  ref={searchInputRef}
-                />
-                
-                {/* Clear button */}
-                {searchQuery && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="absolute right-11 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white hover:scale-110 transition-all duration-200 p-1 rounded-full hover:bg-white/10"
-                  >
-                    <FaTimes className="w-5 h-5" />
-                  </button>
-                )}
-                
-                {/* Vertical separator line */}
-                {searchQuery && (
-                  <div className="absolute right-10 top-1/2 transform -translate-y-1/2 w-px h-4 bg-white/30"></div>
-                )}
-                
-                {/* Search button - Closes fields if no query, performs search if query exists */}
-                <button
-                  onClick={() => {
-                    if (searchQuery.trim()) {
-                      // If there's a search query, perform the search
-                      handleSearchClick()
-                    } else {
-                      // If no query, close the search fields
-                      setShowMobileSearch(false)
-                    }
-                  }}
-                  disabled={isSearching}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105"
-                >
-                  <FaSearch className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="relative w-full">
+              <input 
+                type="text" 
+                placeholder="how to play guitar" 
+                className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all" 
+                style={{ borderRadius: '77px' }}
+              />
+              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105">
+                <FaSearch className="w-4 h-4" />
+              </button>
             </div>
-
-          {/* Row 3: Sort Dropdown - Mobile Only (Hidden by default) */}
-          <div className={`flex md:hidden w-full transition-all duration-300 ease-in-out ${showMobileSearch ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-              <div className="relative group w-full">
-                <select
-                  value={sortOrder}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  className="w-full bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
-                  title="Sort affects new searches only"
-                  style={{ borderRadius: '77px' }}
-                >
-                  <option value="relevance" className="bg-black text-white">Relevance</option>
-                  <option value="date" className="bg-black text-white">Date</option>
-                  <option value="rating" className="bg-black text-white">Rating</option>
-                  <option value="title" className="bg-black text-white">Title</option>
-                  <option value="viewCount" className="bg-black text-white">Views</option>
-                </select>
-                
-                {/* Custom dropdown arrow */}
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
+          </div>
+          
           {/* Desktop Layout - Hidden on Mobile */}
           <div className="hidden md:flex items-center space-x-4">
             {/* Logo and Favorites Icon */}
             <div className="flex items-center space-x-4">
-              <a 
-                href="/?home=true" 
-                className="hover:opacity-80 transition-opacity"
-              >
-                <img 
-                  src="/images/gt_logoM_PlayButton.png" 
-                  alt="VideoFlip Logo" 
-                  className="h-10 w-auto"
-                />
+              <a href="/?home=true" className="hover:opacity-80 transition-opacity">
+                <img src="/images/gt_logoM_PlayButton.png" alt="VideoFlip Logo" className="h-10 w-auto" />
               </a>
-              
-              {/* Favorites Icon */}
-              <button
-                onClick={handleFavoritesToggle}
-                className={`p-2 rounded-lg transition-colors duration-300 ${
-                  showFavoritesOnly 
-                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
-                    : 'hover:bg-white/10'
-                }`}
-                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
-              >
+              <button className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10" title="Show Favorites Only">
                 <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
               </button>
-
-              {/* Search Bar - Positioned BETWEEN logo/favorites and sort dropdown */}
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="how to play guitar"
-                  className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all"
-                  style={{ borderRadius: '77px' }}
-                  ref={searchInputRef}
-                />
-                
-                {/* Clear button */}
-                {searchQuery && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="absolute right-11 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white hover:scale-110 transition-all duration-200 p-1 rounded-full hover:bg-white/10"
-                  >
-                    <FaTimes className="w-5 h-5" />
-                  </button>
-                )}
-                
-                {/* Vertical separator line */}
-                {searchQuery && (
-                  <div className="absolute right-10 top-1/2 transform -translate-y-1/2 w-px h-4 bg-white/30"></div>
-                )}
-                
-                {/* Search button */}
-                <button
-                  onClick={handleSearchClick}
-                  disabled={isSearching || !searchQuery.trim()}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105"
-                >
-                  <FaSearch className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Sort Dropdown */}
-              <div className="relative group">
-                <select
-                  value={sortOrder}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-4 py-2 appearance-none cursor-pointer hover:border-yellow-400 hover:bg-white/15 transition-all duration-200 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 text-sm"
-                  title="Sort affects new searches only"
-                  style={{ borderRadius: '77px' }}
-                >
-                  <option value="relevance" className="bg-black text-white">Relevance</option>
-                  <option value="date" className="bg-black text-white">Date</option>
-                  <option value="rating" className="bg-black text-white">Rating</option>
-                  <option value="title" className="bg-black text-white">Title</option>
-                  <option value="viewCount" className="bg-black text-white">Views</option>
-                </select>
-                
-                {/* Custom dropdown arrow */}
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-                
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                  Sort affects new searches only
-                </div>
-              </div>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="how to play guitar" 
+                className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all" 
+                style={{ borderRadius: '77px' }}
+              />
+              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105">
+                <FaSearch className="w-4 h-4" />
+              </button>
             </div>
           </div>
-
+          
           {/* Desktop Right side buttons */}
           <div className="hidden md:flex items-center space-x-2">
-            {/* Login/Logout Icon */}
-            <button 
-              onClick={handleAuthClick}
-              className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
-              title={isAuthenticated ? "End of the Party" : "Start Me Up"}
-            >
-              {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
-              ) : (
-                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
-              )}
+            <button onClick={handleAuthClick} className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
+              {isAuthenticated ? (<RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />) : (<IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />)}
             </button>
-            
-            {/* Menu Icon */}
-            <button 
-              onClick={() => setShowRightMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
-            >
+            <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group">
               <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area - Watch Page */}
-      <div 
-        className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" 
-        style={{ 
-          height: 'calc(100vh - 140px)',
-          backgroundColor: 'transparent'
-        }}
-      >
-        {/* Watch Page Content - Coming Soon */}
-        <div className="flex flex-col items-center justify-center h-full text-center text-white">
-          <div className="text-6xl mb-6">📺</div>
-          <h1 className="text-4xl font-bold mb-4">Watch Page</h1>
-          <p className="text-xl text-white/60 mb-8">Video player and learning tools</p>
-          <div className="text-lg text-white/40">
-            Content coming soon...
+      {/* Main Content Area - Theatre Mode Layout */}
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" style={{ height: 'calc(100vh - 140px)', backgroundColor: 'transparent' }}>
+        {/* Video Player Container - Edge-to-Edge Width */}
+        <div className="w-full max-w-none">
+          {/* Video Title and Channel Info */}
+          <div className="mb-4 text-white">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">{videoTitle || 'Loading...'}</h1>
+            <p className="text-lg text-white/70">{videoChannel || 'Loading...'}</p>
+          </div>
+          
+          {/* YouTube Video Player - Theatre Mode */}
+          {videoId && (
+            <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl">
+              {/* Video Container - Maintains edge-to-edge width */}
+              <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${window.location.origin}`}
+                  title={videoTitle}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  onLoad={handleVideoReady}
+                  onError={handleVideoError}
+                />
+              </div>
+              
+              {/* Video Controls Overlay */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                <div className="flex items-center justify-between text-white">
+                  <div className="flex items-center space-x-4">
+                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </button>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">0:00</span>
+                      <div className="w-64 h-1 bg-white/30 rounded-full">
+                        <div className="w-0 h-full bg-white rounded-full"></div>
+                      </div>
+                      <span className="text-sm">0:00</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                      </svg>
+                    </button>
+                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                      </svg>
+                    </button>
+                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Placeholder for Control Strips Area */}
+          <div className="mt-6 h-32 bg-white/5 rounded-lg border border-white/10 flex items-center justify-center">
+            <div className="text-center text-white/60">
+              <p className="text-lg font-medium">Control Strips Area</p>
+              <p className="text-sm">Coming in Phase 2</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-      />
-
-      {/* Right-Side Menu Modal */}
+      {/* Right Menu Modal */}
       {showRightMenuModal && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowRightMenuModal(false)
             }
           }}
         >
-          <div 
-            className="w-[300px] h-full relative"
-            style={{
-              marginTop: '5px',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)'
-            }}
-          >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
             {/* Close Button */}
             <button
               onClick={() => setShowRightMenuModal(false)}
-              className="absolute top-3 right-9 text-white hover:text-yellow-400 transition-colors text-2xl font-bold"
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
             >
               ×
             </button>
             
             {/* Menu Content */}
-            <div className="p-6 pt-16">
-              <div className="text-white text-center space-y-8">
-                {/* TOP OF MENU */}
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setShowProfileModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PROFILE
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowPlanModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PLAN DEETS
-                  </button>
-                </div>
-                
-                {/* BOTTOM OF MENU */}
-                <div className="space-y-4 mt-auto">
-                  <a 
-                    href="mailto:support@guitartube.net"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    SUPPORT
-                  </a>
-                  
-                  <a 
-                    href="/terms"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    TERMS
-                  </a>
-                  
-                  <a 
-                    href="/privacy"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PRIVACY
-                  </a>
-                  
-                  <a 
-                    href="/community_guidelines"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    COMMUNITY GUIDELINES
-                  </a>
-                </div>
-              </div>
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Menu</h2>
+            </div>
+            
+            <div className="space-y-4 text-gray-300">
+              <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                Go to Search
+              </button>
+              <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                Go to Features
+              </button>
+              <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors">
+                Go to Pricing
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Profile Modal */}
-      {showProfileModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowProfileModal(false)
-            }
-          }}
-        >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowProfileModal(false)}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Profile Content */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-4">Profile</h2>
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="space-y-4 text-gray-300">
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Name</p>
-                <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Email</p>
-                <p className="font-medium">{user?.email || 'No email'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Subscription</p>
-                <p className="font-medium capitalize">{profile?.subscription_tier || 'Free'}</p>
-              </div>
-              
-              <div className="pt-4">
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Settings
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Plan Modal */}
-      {showPlanModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowPlanModal(false)
-            }
-          }}
-        >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowPlanModal(false)}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Plan Content */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-4">Plan Details</h2>
-            </div>
-            
-            <div className="space-y-4 text-gray-300">
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Current Plan</p>
-                <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Free'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
-                <p className="font-medium">Monthly</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Amount</p>
-                <p className="font-medium text-xl">
-                  ${profile?.subscription_tier === 'hero' ? '19' : 
-                    profile?.subscription_tier === 'roadie' ? '10' : '0'}/mo
-                </p>
-              </div>
-              
-              <div className="pt-4 space-y-3">
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Change Credit Card
-                </button>
-                
-                {profile?.subscription_tier !== 'hero' && (
-                  <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                    UPGRADE
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal 
+          isOpen={showAuthModal} 
+          onClose={() => setShowAuthModal(false)} 
+        />
       )}
     </div>
   )
