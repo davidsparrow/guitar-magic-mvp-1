@@ -168,9 +168,13 @@ export default function Home() {
         height: 'calc(100vh - 100px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          <h1 className="text-4xl font-bold text-center mb-2 text-yellow-400">Choose Your Plan</h1>
-          <p className="text-gray-400 text-lg text-center mb-11">Subscriptions are like Guitars. New ones all the time.</p>
+        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full" style={{ 
+          fontFamily: 'Poppins, sans-serif',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
+        }}>
+          <h1 className="text-2xl md:text-4xl font-bold text-center mb-2 text-yellow-400">Choose Your Plan</h1>
+          <p className="text-gray-400 text-base md:text-lg text-center mb-11">Subscriptions are like Guitars. New ones all the time.</p>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center mb-8 space-x-4">
@@ -299,11 +303,11 @@ export default function Home() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center">
                   <span className="text-green-400 mr-3">✓</span>
-                  <span>Captioned Chord Diagrams</span>
+                  <span>Everything in Roadie</span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-green-400 mr-3">✓</span>
-                  <span>Everything in Roadie</span>
+                  <span>Captioned Chord Diagrams</span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-green-400 mr-3">✓</span>

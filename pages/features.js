@@ -19,10 +19,22 @@ export default function Features() {
   const [showChordDiagramsModal, setShowChordDiagramsModal] = useState(false)
   const [currentCarouselPage, setCurrentCarouselPage] = useState(0)
   const router = useRouter()
+  
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
+  
+  // Auto-advance carousel every 20 seconds
+  useEffect(() => {
+    if (!mounted) return
+    
+    const interval = setInterval(() => {
+      setCurrentCarouselPage((prevPage) => (prevPage + 1) % 3)
+    }, 20000) // 20 seconds
+    
+    return () => clearInterval(interval)
+  }, [mounted])
   // Handle login/logout
   const handleAuthClick = async () => {
     if (isAuthenticated) {
@@ -139,9 +151,13 @@ export default function Features() {
         height: 'calc(100vh - 100px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full pb-24" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          <h1 className="text-4xl font-bold text-center mb-2 text-yellow-400">Addictive features. Astounding results</h1>
-          <p className="text-gray-400 text-lg text-center mb-6">Flippin', Loopin', Resumin', Captionin' Text & Chords, Auto-generatin' Chords and Tabs</p>
+        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full pb-24" style={{ 
+          fontFamily: 'Poppins, sans-serif',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
+        }}>
+          <h1 className="text-2xl md:text-4xl font-bold text-center mb-2 text-yellow-400">Addictive features. Astounding results</h1>
+          <p className="text-gray-400 text-base md:text-lg text-center mb-6">Flippin', Loopin', Resumin', Captionin' Text & Chords, Auto-generatin' Chords and Tabs</p>
           
           {/* Main Feature Graphic with Hotspots */}
           <div className="relative max-w-4xl mx-auto">
@@ -430,8 +446,8 @@ export default function Features() {
                 </div>
               )}
 
-              {/* Carousel Navigation */}
-              <div className="flex justify-center mt-4 space-x-2">
+              {/* Carousel Navigation - Hidden on Mobile */}
+              <div className="hidden md:flex justify-center mt-4 space-x-2">
                 <button
                   onClick={() => setCurrentCarouselPage(0)}
                   className={`w-3 h-3 rounded-full transition-colors ${

@@ -100,7 +100,7 @@ export default function MobileHome() {
             className="hover:opacity-80 transition-opacity"
           >
             <img 
-              src="/images/gt_logoM_wide_on_black.png" 
+              src="/images/gt_logoM_PlayButton.png" 
               alt="VideoFlip Logo" 
               className="h-8 w-auto" // Smaller for mobile
             />
@@ -150,12 +150,18 @@ export default function MobileHome() {
         {/* Logo and Subtitle Section - Mobile Optimized */}
         <div className="text-center mb-8 mt-14"> {/* Reduced to 56px top margin for spacing from header */}
           <img 
-            src="/images/gt_logoM_PlayButton.png" 
+            src="/images/gt_logoM_wide_on_black.png" 
             alt="GuitarTube" 
-            className="mx-auto mb-3 h-32 w-auto" // Smaller logo for mobile
+            className="mx-auto mb-3" 
+            style={{ 
+              width: '75%', 
+              height: 'auto',
+              maxWidth: '100%'
+            }}
           />
-          <p className="text-center text-white font-bold text-lg px-4" style={{ fontFamily: 'Poppins, sans-serif' }}> {/* Mobile text size */}
-            Press fast forward on your Video Guitar Learning journey
+          <p className="text-center text-white font-bold text-base px-4" style={{ fontFamily: 'Poppins, sans-serif' }}> {/* Mobile text size */}
+            Press fast forward on your <br />
+            Video Guitar Learning journey
           </p>
         </div>
 
@@ -168,7 +174,7 @@ export default function MobileHome() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="How to learn guitar faster"
-              className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all text-base" // Mobile sizing
+              className="w-full px-4 py-3 bg-white/35 backdrop-blur-sm text-white placeholder-white border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all text-base" // Mobile sizing
               style={{ borderRadius: '77px' }}
               ref={searchInputRef}
               onKeyPress={handleKeyPress}
