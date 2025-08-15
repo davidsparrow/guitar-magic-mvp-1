@@ -39,6 +39,9 @@ export default function Watch() {
   const [isLoopActive, setIsLoopActive] = useState(false)
   const [loopStartTime, setLoopStartTime] = useState('0:00')
   const [loopEndTime, setLoopEndTime] = useState('0:00')
+  const [showLoopModal, setShowLoopModal] = useState(false)
+  const [tempLoopStart, setTempLoopStart] = useState('0:00')
+  const [tempLoopEnd, setTempLoopEnd] = useState('0:00')
   
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -266,18 +269,104 @@ export default function Watch() {
     }
   }
 
-  // Loop toggle handler
-  const handleLoopToggle = () => {
-    setIsLoopActive(!isLoopActive)
+  // Loop modal handlers
+  const handleLoopClick = () => {
+    if (isLoopActive) {
+      // Stop the loop
+      setIsLoopActive(false)
+      console.log('🔄 Loop stopped')
+    } else {
+      // Open modal for configuration
+      setTempLoopStart(loopStartTime)
+      setTempLoopEnd(loopEndTime)
+      setShowLoopModal(true)
+    }
   }
 
-  // Save loop times handler
-  const handleSaveLoopTimes = () => {
-    // TODO: Implement loop time validation and saving
-    console.log('Loop times saved:', { start: loopStartTime, end: loopEndTime })
-    // Here you would typically validate the time format and save to state
-    // For now, just log the values
+  const handleLoopTimesClick = () => {
+    // Open modal directly when clicking on time display
+    setTempLoopStart(loopStartTime)
+    setTempLoopEnd(loopEndTime)
+    setShowLoopModal(true)
   }
+
+  const handleSaveLoop = () => {
+    // Update the actual loop times
+    setLoopStartTime(tempLoopStart)
+    setLoopEndTime(tempLoopEnd)
+    
+    // Start the loop
+    setIsLoopActive(true)
+    
+    // Close modal
+    setShowLoopModal(false)
+    
+    console.log('🔄 Loop started:', { start: tempLoopStart, end: tempLoopEnd })
+    
+    // Debug: Log the converted seconds
+    const startSeconds = timeToSeconds(tempLoopStart)
+    const endSeconds = timeToSeconds(tempLoopEnd)
+    console.log('🔄 Loop seconds:', { start: startSeconds, end: endSeconds })
+    
+    // CRITICAL: Jump to start time immediately when loop starts
+    if (player && player.seekTo && typeof player.seekTo === 'function') {
+      try {
+        player.seekTo(startSeconds, true)
+        console.log('🚀 Initial jump to start time:', startSeconds)
+      } catch (error) {
+        console.error('Initial seek error:', error)
+      }
+    }
+  }
+
+  const handleCancelLoop = () => {
+    // Just close modal, don't start loop or update times
+    setShowLoopModal(false)
+    console.log('❌ Loop configuration cancelled')
+  }
+
+  // Convert time string (e.g., "1:23") to seconds
+  const timeToSeconds = (timeStr) => {
+    const parts = timeStr.split(':').map(Number)
+    if (parts.length === 2) {
+      return parts[0] * 60 + parts[1]
+    } else if (parts.length === 3) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    }
+    return 0
+  }
+
+  // Check if video should loop (runs every second when loop is active)
+  useEffect(() => {
+    if (!isLoopActive || !player || !isPlayerReady()) return
+
+    const loopInterval = setInterval(() => {
+      try {
+        if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
+          const currentTime = player.getCurrentTime()
+          const startSeconds = timeToSeconds(loopStartTime)
+          const endSeconds = timeToSeconds(loopEndTime)
+          
+          // Debug: Log current loop status every 5 seconds
+          if (Math.floor(currentTime) % 5 === 0) {
+            console.log('🔄 Loop check:', { current: Math.floor(currentTime), start: startSeconds, end: endSeconds })
+          }
+          
+          // If we've reached or passed the end time, loop back to start
+          if (currentTime >= endSeconds) {
+            if (player.seekTo && typeof player.seekTo === 'function') {
+              player.seekTo(startSeconds, true)
+              console.log('🔄 Looping back to:', startSeconds)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Loop check error:', error)
+      }
+    }, 1000) // Check every second
+
+    return () => clearInterval(loopInterval)
+  }, [isLoopActive, player, loopStartTime, loopEndTime])
 
   // Fullscreen toggle handler
   const handleFullscreenToggle = async () => {
@@ -586,55 +675,28 @@ export default function Watch() {
 
             {/* Loop Segment Button */}
             <button
-              onClick={handleLoopToggle}
+              onClick={handleLoopClick}
               className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
                 isLoopActive 
-                  ? 'bg-blue-500/20 border border-blue-400/50 text-blue-400' 
+                  ? 'bg-blue-600 text-white shadow-lg' 
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
-              title={isLoopActive ? "Loop Active - Click to Deactivate" : "Activate Loop Segment"}
+              title={isLoopActive ? "Stop loop" : "Configure loop segment"}
             >
               <ImLoop className="w-5 h-5" />
             </button>
 
-            {/* Loop Time Fields */}
+            {/* Loop Time Display (Read-only, clickable) */}
             <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={loopStartTime}
-                onChange={(e) => setLoopStartTime(e.target.value)}
-                disabled={!isLoopActive}
-                placeholder="0:00"
-                className={`w-16 px-2 py-1 text-sm rounded border transition-all duration-200 ${
-                  isLoopActive 
-                    ? 'bg-white/20 text-white border-white/30 focus:border-blue-400' 
-                    : 'bg-gray-600/50 text-gray-400 border-gray-500/50 cursor-not-allowed'
+              <button
+                onClick={handleLoopTimesClick}
+                className={`text-sm font-mono transition-colors cursor-pointer hover:opacity-80 ${
+                  isLoopActive ? 'text-blue-400' : 'text-gray-300'
                 }`}
-                title="Loop Start Time"
-              />
-              <span className={`text-sm ${isLoopActive ? 'text-white' : 'text-gray-500'}`}>to</span>
-              <input
-                type="text"
-                value={loopEndTime}
-                onChange={(e) => setLoopEndTime(e.target.value)}
-                disabled={!isLoopActive}
-                placeholder="0:00"
-                className={`w-16 px-2 py-1 text-sm rounded border transition-all duration-200 ${
-                  isLoopActive 
-                    ? 'bg-white/20 text-white border-white/30 focus:border-blue-400' 
-                    : 'bg-gray-600/50 text-gray-400 border-gray-500/50 cursor-not-allowed'
-                }`}
-                title="Loop End Time"
-              />
-              {isLoopActive && (
-                <button
-                  onClick={handleSaveLoopTimes}
-                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                  title="Save Loop Times"
-                >
-                  Save
-                </button>
-              )}
+                title="Click to edit loop times"
+              >
+                {loopStartTime} to {loopEndTime}
+              </button>
             </div>
           </div>
 
@@ -729,6 +791,76 @@ export default function Watch() {
               </button>
               <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors">
                 Go to Pricing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loop Configuration Modal */}
+      {showLoopModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLoopModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-sm w-full relative text-white p-6">
+            {/* Close Button */}
+            <button
+              onClick={handleCancelLoop}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Modal Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-4">
+                {isLoopActive ? 'Edit Loop Segment' : 'Configure Loop Segment'}
+              </h2>
+            </div>
+            
+            {/* Loop Time Inputs */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-gray-300 text-sm font-medium">Start Time:</label>
+                <input
+                  type="text"
+                  value={tempLoopStart}
+                  onChange={(e) => setTempLoopStart(e.target.value)}
+                  placeholder="0:00"
+                  className="w-20 px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <label className="text-gray-300 text-sm font-medium">End Time:</label>
+                <input
+                  type="text"
+                  value={tempLoopEnd}
+                  onChange={(e) => setTempLoopEnd(e.target.value)}
+                  placeholder="0:00"
+                  className="w-20 px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleCancelLoop}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveLoop}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                {isLoopActive ? 'Update & Restart Loop' : 'Save & Start Loop'}
               </button>
             </div>
           </div>
