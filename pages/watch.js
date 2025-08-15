@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { FaHamburger, FaSearch, FaTimes, FaRegEye } from "react-icons/fa"
+import { FaHamburger, FaSearch, FaTimes, FaRegEye, FaRegEdit } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPickFilled } from "react-icons/tb"
@@ -28,9 +28,9 @@ export default function Watch() {
   
   // Control strip states - Individual row visibility
   const [showControlStrips, setShowControlStrips] = useState(false)
-  const [showRow1, setShowRow1] = useState(true)
-  const [showRow2, setShowRow2] = useState(true)
-  const [showRow3, setShowRow3] = useState(true)
+  const [showRow1, setShowRow1] = useState(false)
+  const [showRow2, setShowRow2] = useState(false)
+  const [showRow3, setShowRow3] = useState(false)
 
   // Video flip states
   const [flipState, setFlipState] = useState('normal') // 'normal', 'horizontal', 'vertical'
@@ -214,6 +214,14 @@ export default function Watch() {
   const handleControlStripsToggle = () => {
     const newState = !showControlStrips
     console.log('🔘 Toggle clicked! Current state:', showControlStrips, 'New state:', newState)
+    
+    if (newState) {
+      // When showing control strips, ensure ALL rows are visible for smallest video size
+      setShowRow1(true)
+      setShowRow2(true)
+      setShowRow3(true)
+    }
+    
     setShowControlStrips(newState)
   }
 
@@ -415,8 +423,8 @@ export default function Watch() {
       </header>
 
       {/* Main Content Area - Theatre Mode Layout with Dynamic Height */}
-      <div className="relative z-10 flex-1 overflow-hidden px-6" style={{ 
-        height: `calc(100vh - ${showControlStrips ? '400px' : '140px'})`,
+      <div className="relative z-10 overflow-hidden px-6" style={{ 
+        height: showControlStrips ? `calc(100vh - ${140 + (showRow1 ? 51.2 : 0) + (showRow2 ? 102.4 : 0) + (showRow3 ? 102.4 : 0)}px)` : 'calc(100vh - 135px)',
         transition: 'height 0.3s ease-in-out'
       }}>
         {/* Video Player Container - Edge-to-Edge Width with Dynamic Height */}
@@ -463,63 +471,93 @@ export default function Watch() {
 
       {/* STICKY CONTROL STRIPS FOOTER */}
       {showControlStrips && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 p-3 bg-transparent">
-          {/* Control Strips Container - 3 Rows, 2 Columns */}
-          <div className="space-y-2">
+        <div className="fixed bottom-16 left-0 right-0 z-40 h-64 bg-transparent">
+          {/* Control Strips Container - Dynamic positioning from bottom */}
+          <div className="h-full relative">
             
-            {/* Row 1: Captions/Text Content */}
-            <div className={`flex border-2 border-white rounded-lg overflow-hidden h-16 transition-all duration-300 ${showRow1 ? 'opacity-100 max-h-16' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+            {/* Row 1: Text Captions - 20% height, positioned from bottom */}
+            {showRow1 && (
+              <div className={`absolute left-0 right-0 flex border-2 border-white rounded-t-lg overflow-hidden h-[20%] transition-all duration-300 ${
+                showRow2 && showRow3 ? 'bottom-[80%]' : 
+                showRow2 ? 'bottom-[40%]' : 
+                showRow3 ? 'bottom-[40%]' : 'bottom-0'
+              }`}>
               {/* Left Column - Main Content (93% width) */}
               <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
-                {/* Content will go here - currently empty */}
+                <span className="text-white text-sm font-medium">Text Captions</span>
               </div>
               {/* Right Column - Hide Button (7% width) */}
-              <div className="w-[7%] p-2 bg-transparent flex items-center justify-center">
+              <div className="w-[7%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
                 <button 
                   onClick={() => handleRowToggle(1)}
                   className="hover:opacity-70 transition-opacity cursor-pointer"
                   title="Hide this row"
                 >
-                  <FaRegEye className="w-4 h-4 text-white" />
+                  <FaRegEye className="w-5 h-5 text-white" />
+                </button>
+                <button 
+                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                  title="Edit this row"
+                >
+                  <FaRegEdit className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
+            )}
 
-            {/* Row 2: Guitar Chord Diagrams */}
-            <div className={`flex border-2 border-white rounded-lg overflow-hidden h-16 transition-all duration-300 ${showRow2 ? 'opacity-100 max-h-16' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+            {/* Row 2: Chords Captions - 40% height, positioned from bottom */}
+            {showRow2 && (
+              <div className={`absolute left-0 right-0 flex border-l-2 border-r-2 border-white overflow-hidden h-[40%] transition-all duration-300 ${
+                showRow3 ? 'bottom-[40%]' : 'bottom-0'
+              }`}>
               {/* Left Column - Main Content (93% width) */}
               <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
-                {/* Content will go here - currently empty */}
+                <span className="text-white text-sm font-medium">Chords Captions</span>
               </div>
               {/* Right Column - Hide Button (7% width) */}
-              <div className="w-[7%] p-2 bg-transparent flex items-center justify-center">
+              <div className="w-[7%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
                 <button 
                   onClick={() => handleRowToggle(2)}
                   className="hover:opacity-70 transition-opacity cursor-pointer"
                   title="Hide this row"
                 >
-                  <FaRegEye className="w-4 h-4 text-white" />
+                  <FaRegEye className="w-5 h-5 text-white" />
+                </button>
+                <button 
+                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                  title="Edit this row"
+                >
+                  <FaRegEdit className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
+            )}
 
-            {/* Row 3: Guitar Tablature */}
-            <div className={`flex border-2 border-white rounded-lg overflow-hidden h-16 transition-all duration-300 ${showRow3 ? 'opacity-100 max-h-16' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+            {/* Row 3: Auto-Gen - 40% height, always at bottom */}
+            {showRow3 && (
+              <div className="absolute bottom-0 left-0 right-0 flex border-2 border-white rounded-b-lg overflow-hidden h-[40%] transition-all duration-300">
               {/* Left Column - Main Content (93% width) */}
               <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
-                {/* Content will go here - currently empty */}
+                <span className="text-white text-sm font-medium">Auto-Gen</span>
               </div>
               {/* Right Column - Hide Button (7% width) */}
-              <div className="w-[7%] p-2 bg-transparent flex items-center justify-center">
+              <div className="w-[7%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
                 <button 
                   onClick={() => handleRowToggle(3)}
                   className="hover:opacity-70 transition-opacity cursor-pointer"
                   title="Hide this row"
                 >
-                  <FaRegEye className="w-4 h-4 text-white" />
+                  <FaRegEye className="w-5 h-5 text-white" />
+                </button>
+                <button 
+                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                  title="Edit this row"
+                >
+                  <FaRegEdit className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
+            )}
 
           </div>
         </div>
