@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { FaHamburger, FaSearch, FaTimes } from "react-icons/fa"
+import { FaHamburger, FaSearch, FaTimes, FaRegEye } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPickFilled } from "react-icons/tb"
@@ -24,8 +24,11 @@ export default function Watch() {
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [player, setPlayer] = useState(null)
   
-  // Control strip states - SIMPLIFIED
+  // Control strip states - Individual row visibility
   const [showControlStrips, setShowControlStrips] = useState(false)
+  const [showRow1, setShowRow1] = useState(true)
+  const [showRow2, setShowRow2] = useState(true)
+  const [showRow3, setShowRow3] = useState(true)
 
   // Prevent hydration issues
   useEffect(() => {
@@ -63,7 +66,11 @@ export default function Watch() {
               onError: handleVideoError
             }
           })
-          setPlayer(newPlayer)
+          
+          // Wait a bit for the player to fully initialize before setting it
+          setTimeout(() => {
+            setPlayer(newPlayer)
+          }, 100)
         }
       }
 
@@ -111,6 +118,7 @@ export default function Watch() {
   // Video player functions
   const handleVideoReady = () => {
     setIsVideoReady(true)
+    console.log('🎥 YouTube player ready and methods available')
   }
 
   const handleVideoError = (error) => {
@@ -121,13 +129,27 @@ export default function Watch() {
   // Handle spacebar for play/pause
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (e.code === 'Space' && player && isVideoReady) {
+      if (e.code === 'Space' && isPlayerReady()) {
         e.preventDefault()
-        const playerState = player.getPlayerState()
-        if (playerState === 1) { // Playing
-          player.pauseVideo()
-        } else { // Paused or other states
-          player.playVideo()
+        
+        try {
+          const playerState = player.getPlayerState()
+          if (playerState === 1) { // Playing
+            player.pauseVideo()
+            console.log('⏸️ Video paused')
+          } else { // Paused or other states
+            player.playVideo()
+            console.log('▶️ Video playing')
+          }
+        } catch (error) {
+          console.warn('YouTube player method call failed:', error)
+          // Fallback: try to pause if we can't determine state
+          try {
+            player.pauseVideo()
+            console.log('⏸️ Video paused (fallback)')
+          } catch (fallbackError) {
+            console.error('Fallback pause also failed:', fallbackError)
+          }
         }
       }
     }
@@ -136,11 +158,46 @@ export default function Watch() {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [player, isVideoReady])
 
+  // Check if player is fully ready with all methods available
+  const isPlayerReady = () => {
+    return player && 
+           player.getPlayerState && 
+           typeof player.getPlayerState === 'function' &&
+           player.playVideo && 
+           typeof player.playVideo === 'function' &&
+           player.pauseVideo && 
+           typeof player.pauseVideo === 'function'
+  }
+
   // Handle control strips toggle - SIMPLIFIED
   const handleControlStripsToggle = () => {
     const newState = !showControlStrips
     console.log('🔘 Toggle clicked! Current state:', showControlStrips, 'New state:', newState)
     setShowControlStrips(newState)
+  }
+
+  // Handle individual row hide/show
+  const handleRowToggle = (rowNumber) => {
+    switch(rowNumber) {
+      case 1:
+        setShowRow1(false)
+        break
+      case 2:
+        setShowRow2(false)
+        break
+      case 3:
+        setShowRow3(false)
+        break
+      default:
+        break
+    }
+  }
+
+  // Handle show all rows (reset)
+  const handleShowAllRows = () => {
+    setShowRow1(true)
+    setShowRow2(true)
+    setShowRow3(true)
   }
 
   if (!mounted || (loading && !router.isReady)) {
@@ -252,15 +309,27 @@ export default function Watch() {
         </div>
       </header>
 
-              {/* Main Content Area - Theatre Mode Layout - NO SCROLL */}
-        <div className="relative z-10 flex-1 px-6" style={{ height: 'calc(100vh - 140px)' }}>
-          {/* Video Player Container - Edge-to-Edge Width, Dynamic Height */}
-          <div className="w-full max-w-none -mt-6" style={{ height: showControlStrips ? 'calc(100vh - 140px - 200px)' : 'calc(100vh - 140px - 80px)' }}>
-          {/* YouTube Video Player - Theatre Mode */}
+      {/* Main Content Area - Theatre Mode Layout with Dynamic Height */}
+      <div className="relative z-10 flex-1 overflow-hidden px-6" style={{ 
+        height: `calc(100vh - ${showControlStrips ? '400px' : '140px'})`,
+        transition: 'height 0.3s ease-in-out'
+      }}>
+        {/* Video Player Container - Edge-to-Edge Width with Dynamic Height */}
+        <div className="w-full max-w-none h-full flex items-center justify-center">
+          {/* YouTube Video Player - Theatre Mode with Dynamic Sizing */}
           {videoId && (
-            <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl">
-              {/* Video Container - Full width, dynamic height */}
-              <div className="relative w-full h-full">
+            <div className="relative w-full h-full bg-black rounded-lg overflow-hidden shadow-2xl">
+              {/* Video Container - Dynamic height based on available space */}
+              <div 
+                className="relative w-full h-full"
+                style={{
+                  // Calculate height to maintain 16:9 aspect ratio within available space
+                  height: '100%',
+                  maxHeight: '100%',
+                  // Ensure video never exceeds container bounds
+                  objectFit: 'contain'
+                }}
+              >
                 {/* YouTube API Player */}
                 <div id="youtube-player" className="w-full h-full" />
                 
@@ -278,112 +347,121 @@ export default function Watch() {
               </div>
             </div>
           )}
-          
+        </div>
+      </div>
 
-
-          {/* STICKY CONTROL STRIPS FOOTER */}
-          {showControlStrips && (
-            <div className="fixed bottom-16 left-0 right-0 z-40 p-6 bg-red-500 border-t-4 border-yellow-400 shadow-2xl">
-              <div className="text-center text-white font-bold">
-                <p className="text-2xl mb-4">🎉 STICKY FOOTER CONTROL STRIPS! 🎉</p>
-                <p className="text-lg">Video frame scrolls behind this sticky footer!</p>
-                <div className="mt-4 grid grid-cols-3 gap-4">
-                  <div className="bg-blue-600 p-4 rounded border-2 border-white">
-                    <p className="text-lg">📝</p>
-                    <p className="text-sm">Captions</p>
-                  </div>
-                  <div className="bg-green-600 p-4 rounded border-2 border-white">
-                    <p className="text-lg">🔄</p>
-                    <p className="text-sm">Loops</p>
-                  </div>
-                  <div className="bg-purple-600 p-4 rounded border-2 border-white">
-                    <p className="text-lg">🎸</p>
-                    <p className="text-sm">Chords</p>
-                  </div>
-                </div>
+      {/* STICKY CONTROL STRIPS FOOTER */}
+      {showControlStrips && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 p-3 bg-transparent">
+          {/* Control Strips Container - 3 Rows, 2 Columns */}
+          <div className="space-y-2">
+            
+            {/* Row 1: Captions/Text Content */}
+            <div className={`flex border-2 border-white rounded-lg overflow-hidden h-16 transition-all duration-300 ${showRow1 ? 'opacity-100 max-h-16' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+              {/* Left Column - Main Content (93% width) */}
+              <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
+                {/* Content will go here - currently empty */}
               </div>
-            </div>
-          )}
-
-          {/* PERMANENT FOOTER CONTROL AREA - NEVER DISAPPEARS */}
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-t border-white/20 p-4">
-            <div className="flex justify-between items-center max-w-7xl mx-auto">
-              {/* Left side - Main video controls */}
-              <div className="flex items-center space-x-4">
-                {/* Play/Pause button */}
-                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </button>
-                
-                {/* Timeline */}
-                <div className="flex items-center space-x-2 text-white">
-                  <span className="text-sm">0:00</span>
-                  <div className="w-64 h-1 bg-white/30 rounded-full">
-                    <div className="w-0 h-full bg-white rounded-full"></div>
-                  </div>
-                  <span className="text-sm">0:00</span>
-                </div>
-              </div>
-
-              {/* Center - Control strips toggle */}
-              <div className="flex items-center space-x-4">
-                {/* View All Strips Eye Icon - Only visible when control strips are active */}
-                {showControlStrips && (
-                  <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors" title="View All Strips">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                    </svg>
-                  </button>
-                )}
-                
-                {/* Control Strips Toggle Button - 3rd from right */}
-                <button
-                  onClick={handleControlStripsToggle}
-                  className={`p-2 rounded-lg transition-colors ${
-                    showControlStrips 
-                      ? 'bg-[#8dc641]/20 border border-[#8dc641]/30 text-[#8dc641]' 
-                      : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
-                  }`}
-                  title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
+              {/* Right Column - Hide Button (7% width) */}
+              <div className="w-[7%] p-2 bg-transparent flex items-center justify-center">
+                <button 
+                  onClick={() => handleRowToggle(1)}
+                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                  title="Hide this row"
                 >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-                  </svg>
-                </button>
-                
-                {/* Guitar Pick Favorites - 4th from right */}
-                <button className="p-2 text-[#8dc641] hover:bg-white/10 rounded-lg transition-colors" title="Show Favorites Only">
-                  <TbGuitarPickFilled className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Right side - Additional video controls */}
-              <div className="flex items-center space-x-2">
-                {/* Volume */}
-                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                  </svg>
-                </button>
-                
-                {/* Fullscreen */}
-                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-                  </svg>
-                </button>
-                
-                {/* Settings/Speed */}
-                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
-                    <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.27 10.675 7.697.12.362.12.752 0 1.113-1.487 4.411-5.705 7.697-10.675 7.697-4.973 0-9.186-3.26-10.675-7.697a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 0 0110.5 0z" clipRule="evenodd"/>
-                  </svg>
+                  <FaRegEye className="w-4 h-4 text-white" />
                 </button>
               </div>
             </div>
+
+            {/* Row 2: Guitar Chord Diagrams */}
+            <div className={`flex border-2 border-white rounded-lg overflow-hidden h-16 transition-all duration-300 ${showRow2 ? 'opacity-100 max-h-16' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+              {/* Left Column - Main Content (93% width) */}
+              <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
+                {/* Content will go here - currently empty */}
+              </div>
+              {/* Right Column - Hide Button (7% width) */}
+              <div className="w-[7%] p-2 bg-transparent flex items-center justify-center">
+                <button 
+                  onClick={() => handleRowToggle(2)}
+                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                  title="Hide this row"
+                >
+                  <FaRegEye className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Row 3: Guitar Tablature */}
+            <div className={`flex border-2 border-white rounded-lg overflow-hidden h-16 transition-all duration-300 ${showRow3 ? 'opacity-100 max-h-16' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+              {/* Left Column - Main Content (93% width) */}
+              <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
+                {/* Content will go here - currently empty */}
+              </div>
+              {/* Right Column - Hide Button (7% width) */}
+              <div className="w-[7%] p-2 bg-transparent flex items-center justify-center">
+                <button 
+                  onClick={() => handleRowToggle(3)}
+                  className="hover:opacity-70 transition-opacity cursor-pointer"
+                  title="Hide this row"
+                >
+                  <FaRegEye className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* PERMANENT FOOTER CONTROL AREA - NEVER DISAPPEARS */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-t border-white/20 p-1">
+        <div className="grid grid-cols-3 max-w-7xl mx-auto h-full">
+          
+          {/* Left Column - Left-justified content */}
+          <div className="flex items-center justify-start">
+            {/* Left column content - currently empty */}
+          </div>
+
+          {/* Middle Column - Center-justified content with 3 essential icons */}
+          <div className="flex items-center justify-center space-x-4">
+            {/* View All Strips Eye Icon - Only visible when control strips are active */}
+            {showControlStrips && (
+              <button 
+                onClick={handleShowAllRows}
+                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors" 
+                title="Show All Control Strips"
+              >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+              </button>
+            )}
+            
+            {/* Control Strips Toggle Button */}
+            <button
+              onClick={handleControlStripsToggle}
+              className={`p-1 rounded-lg transition-colors ${
+                showControlStrips 
+                  ? 'bg-[#8dc641]/20 border border-[#8dc641]/30 text-[#8dc641]' 
+                  : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+              }`}
+              title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+              </svg>
+            </button>
+            
+            {/* Guitar Pick Favorites */}
+            <button className="p-2 text-[#8dc641] hover:bg-white/10 rounded-lg transition-colors" title="Show Favorites Only">
+              <TbGuitarPickFilled className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Right Column - Right-justified content */}
+          <div className="flex items-center justify-end">
+            {/* Right column content - currently empty */}
           </div>
         </div>
       </div>
