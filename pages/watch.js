@@ -253,7 +253,7 @@ export default function Watch() {
       </header>
 
               {/* Main Content Area - Theatre Mode Layout */}
-        <div className="relative z-10 flex-1 overflow-y-auto px-6 hide-scrollbar" style={{ height: 'calc(100vh - 140px)', paddingBottom: showControlStrips ? '200px' : '24px' }}>
+        <div className="relative z-10 flex-1 overflow-y-auto px-6 hide-scrollbar" style={{ height: 'calc(100vh - 140px)', paddingBottom: showControlStrips ? '280px' : '80px' }}>
           {/* Video Player Container - Edge-to-Edge Width */}
           <div className="w-full max-w-none -mt-6">
           {/* YouTube Video Player - Theatre Mode */}
@@ -279,20 +279,11 @@ export default function Watch() {
             </div>
           )}
           
-          {/* SIMPLE CONTROL STRIPS TOGGLE - STARTING FROM SCRATCH */}
-          <div className="mt-6 flex justify-center">
-            <button
-              onClick={handleControlStripsToggle}
-              className="p-4 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors"
-              title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
-            >
-              {showControlStrips ? "HIDE STRIPS" : "SHOW STRIPS"}
-            </button>
-          </div>
+
 
           {/* STICKY CONTROL STRIPS FOOTER */}
           {showControlStrips && (
-            <div className="fixed bottom-0 left-0 right-0 z-40 p-6 bg-red-500 border-t-4 border-yellow-400 shadow-2xl">
+            <div className="fixed bottom-16 left-0 right-0 z-40 p-6 bg-red-500 border-t-4 border-yellow-400 shadow-2xl">
               <div className="text-center text-white font-bold">
                 <p className="text-2xl mb-4">🎉 STICKY FOOTER CONTROL STRIPS! 🎉</p>
                 <p className="text-lg">Video frame scrolls behind this sticky footer!</p>
@@ -313,6 +304,87 @@ export default function Watch() {
               </div>
             </div>
           )}
+
+          {/* PERMANENT FOOTER CONTROL AREA - NEVER DISAPPEARS */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-t border-white/20 p-4">
+            <div className="flex justify-between items-center max-w-7xl mx-auto">
+              {/* Left side - Main video controls */}
+              <div className="flex items-center space-x-4">
+                {/* Play/Pause button */}
+                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </button>
+                
+                {/* Timeline */}
+                <div className="flex items-center space-x-2 text-white">
+                  <span className="text-sm">0:00</span>
+                  <div className="w-64 h-1 bg-white/30 rounded-full">
+                    <div className="w-0 h-full bg-white rounded-full"></div>
+                  </div>
+                  <span className="text-sm">0:00</span>
+                </div>
+              </div>
+
+              {/* Center - Control strips toggle */}
+              <div className="flex items-center space-x-4">
+                {/* View All Strips Eye Icon - Only visible when control strips are active */}
+                {showControlStrips && (
+                  <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors" title="View All Strips">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                  </button>
+                )}
+                
+                {/* Control Strips Toggle Button - 3rd from right */}
+                <button
+                  onClick={handleControlStripsToggle}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showControlStrips 
+                      ? 'bg-[#8dc641]/20 border border-[#8dc641]/30 text-[#8dc641]' 
+                      : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                  }`}
+                  title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                  </svg>
+                </button>
+                
+                {/* Guitar Pick Favorites - 4th from right */}
+                <button className="p-2 text-[#8dc641] hover:bg-white/10 rounded-lg transition-colors" title="Show Favorites Only">
+                  <TbGuitarPickFilled className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Right side - Additional video controls */}
+              <div className="flex items-center space-x-2">
+                {/* Volume */}
+                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                  </svg>
+                </button>
+                
+                {/* Fullscreen */}
+                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                  </svg>
+                </button>
+                
+                {/* Settings/Speed */}
+                <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+                    <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.27 10.675 7.697.12.362.12.752 0 1.113-1.487 4.411-5.705 7.697-10.675 7.697-4.973 0-9.186-3.26-10.675-7.697a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 0 0110.5 0z" clipRule="evenodd"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
