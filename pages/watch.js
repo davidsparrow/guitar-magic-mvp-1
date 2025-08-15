@@ -252,15 +252,15 @@ export default function Watch() {
         </div>
       </header>
 
-              {/* Main Content Area - Theatre Mode Layout */}
-        <div className="relative z-10 flex-1 overflow-y-auto px-6 hide-scrollbar" style={{ height: 'calc(100vh - 140px)', paddingBottom: showControlStrips ? '280px' : '80px' }}>
-          {/* Video Player Container - Edge-to-Edge Width */}
-          <div className="w-full max-w-none -mt-6">
+              {/* Main Content Area - Theatre Mode Layout - NO SCROLL */}
+        <div className="relative z-10 flex-1 px-6" style={{ height: 'calc(100vh - 140px)' }}>
+          {/* Video Player Container - Edge-to-Edge Width, Dynamic Height */}
+          <div className="w-full max-w-none -mt-6" style={{ height: showControlStrips ? 'calc(100vh - 140px - 200px)' : 'calc(100vh - 140px - 80px)' }}>
           {/* YouTube Video Player - Theatre Mode */}
           {videoId && (
             <div className="relative w-full bg-black rounded-lg overflow-hidden shadow-2xl">
-              {/* Video Container - Maintains edge-to-edge width */}
-              <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+              {/* Video Container - Full width, dynamic height */}
+              <div className="relative w-full h-full">
                 {/* YouTube API Player */}
                 <div id="youtube-player" className="w-full h-full" />
                 
