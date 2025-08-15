@@ -7,6 +7,8 @@ import { FaHamburger, FaSearch, FaTimes, FaRegEye } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPickFilled } from "react-icons/tb"
+import { MdFlipCameraAndroid } from "react-icons/md"
+import { ImLoop } from "react-icons/im"
 import TopBanner from '../components/TopBanner'
 
 export default function Watch() {
@@ -29,6 +31,17 @@ export default function Watch() {
   const [showRow1, setShowRow1] = useState(true)
   const [showRow2, setShowRow2] = useState(true)
   const [showRow3, setShowRow3] = useState(true)
+
+  // Video flip states
+  const [flipState, setFlipState] = useState('normal') // 'normal', 'horizontal', 'vertical'
+  
+  // Loop segment states
+  const [isLoopActive, setIsLoopActive] = useState(false)
+  const [loopStartTime, setLoopStartTime] = useState('0:00')
+  const [loopEndTime, setLoopEndTime] = useState('0:00')
+  
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Prevent hydration issues
   useEffect(() => {
@@ -59,6 +72,7 @@ export default function Watch() {
               modestbranding: 1,
               rel: 0,
               showinfo: 0,
+              fs: 0, // Disable YouTube's fullscreen button
               origin: window.location.origin
             },
             events: {
@@ -126,37 +140,64 @@ export default function Watch() {
     // Handle video loading errors
   }
 
-  // Handle spacebar for play/pause
+  // Handle keyboard shortcuts for video control
   useEffect(() => {
     const handleKeyPress = (e) => {
+      // Spacebar for play/pause
       if (e.code === 'Space' && isPlayerReady()) {
         e.preventDefault()
+        console.log('🎯 Spacebar pressed, player state:', player)
         
         try {
-          const playerState = player.getPlayerState()
-          if (playerState === 1) { // Playing
-            player.pauseVideo()
-            console.log('⏸️ Video paused')
-          } else { // Paused or other states
-            player.playVideo()
-            console.log('▶️ Video playing')
+          // Try to get player state first
+          if (player.getPlayerState && typeof player.getPlayerState === 'function') {
+            const playerState = player.getPlayerState()
+            console.log('🎮 Player state:', playerState)
+            
+            if (playerState === 1) { // Playing
+              player.pauseVideo()
+              console.log('⏸️ Video paused')
+            } else { // Paused or other states
+              player.playVideo()
+              console.log('▶️ Video playing')
+            }
+          } else {
+            // Fallback: try to pause if we can't determine state
+            console.log('⚠️ getPlayerState not available, trying fallback')
+            if (player.pauseVideo && typeof player.pauseVideo === 'function') {
+              player.pauseVideo()
+              console.log('⏸️ Video paused (fallback)')
+            }
           }
         } catch (error) {
-          console.warn('YouTube player method call failed:', error)
-          // Fallback: try to pause if we can't determine state
+          console.error('❌ Spacebar handler error:', error)
+          // Final fallback: try to pause
           try {
-            player.pauseVideo()
-            console.log('⏸️ Video paused (fallback)')
+            if (player.pauseVideo && typeof player.pauseVideo === 'function') {
+              player.pauseVideo()
+              console.log('⏸️ Video paused (final fallback)')
+            }
           } catch (fallbackError) {
-            console.error('Fallback pause also failed:', fallbackError)
+            console.error('💥 All fallbacks failed:', fallbackError)
           }
         }
+      }
+      
+      // F11 for fullscreen toggle
+      if (e.code === 'F11') {
+        e.preventDefault()
+        handleFullscreenToggle()
+      }
+      
+      // Escape to exit fullscreen
+      if (e.code === 'Escape' && isFullscreen) {
+        handleFullscreenToggle()
       }
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => document.removeEventListener('keydown', handleKeyPress)
-  }, [player, isVideoReady])
+  }, [player, isVideoReady, isFullscreen])
 
   // Check if player is fully ready with all methods available
   const isPlayerReady = () => {
@@ -199,6 +240,70 @@ export default function Watch() {
     setShowRow2(true)
     setShowRow3(true)
   }
+
+  // Video flip handler - cycles through 3 states
+  const handleFlipVideo = () => {
+    switch(flipState) {
+      case 'normal':
+        setFlipState('horizontal')
+        break
+      case 'horizontal':
+        setFlipState('both')
+        break
+      case 'both':
+        setFlipState('normal')
+        break
+      default:
+        setFlipState('normal')
+    }
+  }
+
+  // Loop toggle handler
+  const handleLoopToggle = () => {
+    setIsLoopActive(!isLoopActive)
+  }
+
+  // Save loop times handler
+  const handleSaveLoopTimes = () => {
+    // TODO: Implement loop time validation and saving
+    console.log('Loop times saved:', { start: loopStartTime, end: loopEndTime })
+    // Here you would typically validate the time format and save to state
+    // For now, just log the values
+  }
+
+  // Fullscreen toggle handler
+  const handleFullscreenToggle = async () => {
+    try {
+      if (!isFullscreen) {
+        // Enter fullscreen
+        const videoContainer = document.getElementById('video-container')
+        if (videoContainer) {
+          await videoContainer.requestFullscreen()
+          setIsFullscreen(true)
+          console.log('🎬 Entered fullscreen mode')
+        }
+      } else {
+        // Exit fullscreen
+        if (document.fullscreenElement) {
+          await document.exitFullscreen()
+          setIsFullscreen(false)
+          console.log('🎬 Exited fullscreen mode')
+        }
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error)
+    }
+  }
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   if (!mounted || (loading && !router.isReady)) {
     return (
@@ -315,19 +420,25 @@ export default function Watch() {
         transition: 'height 0.3s ease-in-out'
       }}>
         {/* Video Player Container - Edge-to-Edge Width with Dynamic Height */}
-        <div className="w-full max-w-none h-full flex items-center justify-center">
+        <div id="video-container" className="w-full max-w-none h-full flex items-center justify-center">
           {/* YouTube Video Player - Theatre Mode with Dynamic Sizing */}
           {videoId && (
             <div className="relative w-full h-full bg-black rounded-lg overflow-hidden shadow-2xl">
-              {/* Video Container - Dynamic height based on available space */}
+              {/* Video Container - Dynamic height based on available space with flip transformations */}
               <div 
-                className="relative w-full h-full"
+                className="relative w-full h-full transition-transform duration-300"
                 style={{
                   // Calculate height to maintain 16:9 aspect ratio within available space
                   height: '100%',
                   maxHeight: '100%',
                   // Ensure video never exceeds container bounds
-                  objectFit: 'contain'
+                  objectFit: 'contain',
+                  // Apply flip transformations based on state
+                  transform: flipState === 'horizontal' 
+                    ? 'scaleX(-1)' 
+                    : flipState === 'both'
+                    ? 'scaleX(-1) scaleY(-1)'
+                    : 'none'
                 }}
               >
                 {/* YouTube API Player */}
@@ -418,9 +529,75 @@ export default function Watch() {
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-t border-white/20 p-1">
         <div className="grid grid-cols-3 max-w-7xl mx-auto h-full">
           
-          {/* Left Column - Left-justified content */}
-          <div className="flex items-center justify-start">
-            {/* Left column content - currently empty */}
+          {/* Left Column - Left-justified content with Video Controls */}
+          <div className="flex items-center justify-start space-x-3">
+            {/* Flip Video Button - 3 States */}
+            <button
+              onClick={handleFlipVideo}
+              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                flipState === 'normal' 
+                  ? 'bg-white/10 text-white hover:bg-white/20' 
+                  : flipState === 'horizontal'
+                  ? 'bg-yellow-500/20 border border-yellow-400/50 text-yellow-400'
+                  : 'bg-green-500/20 border border-green-400/50 text-green-400'
+              }`}
+              title={`Flip Video - Current: ${flipState === 'normal' ? 'Normal' : flipState === 'horizontal' ? 'Horizontal' : 'Both Directions'}`}
+            >
+              <MdFlipCameraAndroid className="w-5 h-5" />
+            </button>
+
+            {/* Loop Segment Button */}
+            <button
+              onClick={handleLoopToggle}
+              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                isLoopActive 
+                  ? 'bg-blue-500/20 border border-blue-400/50 text-blue-400' 
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+              title={isLoopActive ? "Loop Active - Click to Deactivate" : "Activate Loop Segment"}
+            >
+              <ImLoop className="w-5 h-5" />
+            </button>
+
+            {/* Loop Time Fields */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={loopStartTime}
+                onChange={(e) => setLoopStartTime(e.target.value)}
+                disabled={!isLoopActive}
+                placeholder="0:00"
+                className={`w-16 px-2 py-1 text-sm rounded border transition-all duration-200 ${
+                  isLoopActive 
+                    ? 'bg-white/20 text-white border-white/30 focus:border-blue-400' 
+                    : 'bg-gray-600/50 text-gray-400 border-gray-500/50 cursor-not-allowed'
+                }`}
+                title="Loop Start Time"
+              />
+              <span className={`text-sm ${isLoopActive ? 'text-white' : 'text-gray-500'}`}>to</span>
+              <input
+                type="text"
+                value={loopEndTime}
+                onChange={(e) => setLoopEndTime(e.target.value)}
+                disabled={!isLoopActive}
+                placeholder="0:00"
+                className={`w-16 px-2 py-1 text-sm rounded border transition-all duration-200 ${
+                  isLoopActive 
+                    ? 'bg-white/20 text-white border-white/30 focus:border-blue-400' 
+                    : 'bg-gray-600/50 text-gray-400 border-gray-500/50 cursor-not-allowed'
+                }`}
+                title="Loop End Time"
+              />
+              {isLoopActive && (
+                <button
+                  onClick={handleSaveLoopTimes}
+                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  title="Save Loop Times"
+                >
+                  Save
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Middle Column - Center-justified content with 3 essential icons */}
@@ -461,7 +638,22 @@ export default function Watch() {
 
           {/* Right Column - Right-justified content */}
           <div className="flex items-center justify-end">
-            {/* Right column content - currently empty */}
+            {/* Custom Fullscreen Button */}
+            <button
+              onClick={handleFullscreenToggle}
+              className="p-2 rounded-lg transition-all duration-200 hover:scale-105 bg-white/10 text-white hover:bg-white/20"
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
+              {isFullscreen ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+              )}
+            </button>
           </div>
         </div>
       </div>

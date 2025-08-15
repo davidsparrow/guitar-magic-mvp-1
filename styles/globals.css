@@ -98,6 +98,36 @@ a {
   border-radius: 4px;
 }
 
+/* Fullscreen video container styles */
+#video-container:fullscreen {
+  background-color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#video-container:fullscreen video,
+#video-container:fullscreen iframe {
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+
+/* Webkit fullscreen support */
+#video-container:-webkit-full-screen {
+  background-color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#video-container:-webkit-full-screen video,
+#video-container:-webkit-full-screen iframe {
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+
 /* Hide scrollbar but keep scroll functionality */
 .hide-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
