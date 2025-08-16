@@ -3,12 +3,17 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { FaHamburger, FaSearch, FaTimes, FaRegEye, FaRegEdit } from "react-icons/fa"
+import { FaHamburger, FaSearch, FaTimes, FaRegEye, FaRegEdit, FaPlus } from "react-icons/fa"
+import { TiDeleteOutline } from "react-icons/ti"
+import { CgViewList } from "react-icons/cg"
+import { IoText } from "react-icons/io5"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPickFilled } from "react-icons/tb"
 import { MdFlipCameraAndroid } from "react-icons/md"
 import { ImLoop } from "react-icons/im"
+import { BsReverseLayoutSidebarInsetReverse } from "react-icons/bs"
+import { IoGameControllerOutline } from "react-icons/io5"
 import TopBanner from '../components/TopBanner'
 
 export default function Watch() {
@@ -45,11 +50,36 @@ export default function Watch() {
   
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false)
+  
+  // User access control states
+  const [isVideoFavorited, setIsVideoFavorited] = useState(false)
+  const [userPlan, setUserPlan] = useState('free') // 'free', 'basic', 'premium'
+  const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
+  
+  // Caption management states
+  const [showCaptionModal, setShowCaptionModal] = useState(false)
+  const [captions, setCaptions] = useState([])
+  const [editingCaption, setEditingCaption] = useState(null)
+  const [isAddingNewCaption, setIsAddingNewCaption] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [captionToDelete, setCaptionToDelete] = useState(null)
+  const [conflictRowIndex, setConflictRowIndex] = useState(-1)
+  const [isInCaptionMode, setIsInCaptionMode] = useState(false)
+  const [editingCaptionId, setEditingCaptionId] = useState(null)
+  const [originalCaptionState, setOriginalCaptionState] = useState(null) // Track original caption before editing
 
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Update user plan when profile loads
+  useEffect(() => {
+    if (profile && profile.subscription_tier) {
+      setUserPlan(profile.subscription_tier)
+      console.log('🔓 User plan updated:', profile.subscription_tier)
+    }
+  }, [profile])
 
   // Load YouTube API script
   useEffect(() => {
@@ -213,6 +243,13 @@ export default function Watch() {
            typeof player.pauseVideo === 'function'
   }
 
+  // Check if user can access loop functionality
+  const canAccessLoops = () => {
+    const hasAccess = userPlan !== 'free' && isVideoFavorited
+    console.log('🔐 Access check:', { userPlan, isVideoFavorited, hasAccess })
+    return hasAccess
+  }
+
   // Handle control strips toggle - SIMPLIFIED
   const handleControlStripsToggle = () => {
     const newState = !showControlStrips
@@ -252,6 +289,514 @@ export default function Watch() {
     setShowRow3(true)
   }
 
+  // Handle favorite/unfavorite video
+  const handleFavoriteToggle = () => {
+    if (isVideoFavorited) {
+      // Show warning before unfavoriting
+      setShowUnfavoriteWarning(true)
+    } else {
+      // Add to favorites
+      setIsVideoFavorited(true)
+      console.log('⭐ Video added to favorites')
+      // TODO: Save to Supabase
+    }
+  }
+
+  // Handle unfavorite confirmation
+  const handleUnfavoriteConfirm = () => {
+    setIsVideoFavorited(false)
+    setShowUnfavoriteWarning(false)
+    
+    // Wipe loop data from Supabase
+    console.log('🗑️ Wiping loop data for unfavorited video')
+    // TODO: Delete loop records from Supabase
+    
+    // Reset loop state
+    setIsLoopActive(false)
+    setLoopStartTime('0:00')
+    setLoopEndTime('0:00')
+  }
+
+  // Handle unfavorite cancel
+  const handleUnfavoriteCancel = () => {
+    setShowUnfavoriteWarning(false)
+  }
+
+  // Handle caption edit click with access control
+  const handleCaptionEditClick = (rowNumber) => {
+    // Check if user can access captions (same as loops)
+    if (!canAccessLoops()) {
+      if (userPlan === 'free') {
+        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        return
+      }
+      if (!isVideoFavorited) {
+        alert('⭐ Please save this video to favorites before editing captions.')
+        return
+      }
+      return
+    }
+
+    // Open caption edit modal for the specific row
+    console.log(`📝 Opening caption editor for row ${rowNumber}`)
+    setShowCaptionModal(true)
+    setEditingCaption({ rowType: rowNumber, rowName: rowNumber === 1 ? 'Text Captions' : rowNumber === 2 ? 'Chords Captions' : 'Auto-Gen' })
+  }
+
+  // Handle entering caption editing mode
+  const handleEnterCaptionMode = (mode, captionId = null) => {
+    // Store current loop state if active
+    if (isLoopActive) {
+      setTempLoopStart(loopStartTime)
+      setTempLoopEnd(loopEndTime)
+      setIsLoopActive(false)
+      console.log('🔄 Loop paused and stored:', { start: loopStartTime, end: loopEndTime })
+    }
+    
+    // Store original caption state if editing existing caption
+    if (captionId && mode === 'edit') {
+      const existingCaption = captions.find(c => c.id === captionId)
+      if (existingCaption) {
+        setOriginalCaptionState({ ...existingCaption })
+        console.log('💾 Original caption state stored:', existingCaption)
+      }
+    }
+    
+    // Enter caption mode
+    setIsInCaptionMode(true)
+    setEditingCaptionId(captionId)
+    console.log('📝 Entering caption mode:', { mode, captionId })
+  }
+
+  // Handle saving caption changes and exiting edit mode
+  const handleSaveCaptionChanges = () => {
+    if (editingCaptionId) {
+      const captionToUpdate = captions.find(c => c.id === editingCaptionId)
+      if (captionToUpdate) {
+        // Update the caption with any changes made
+        setCaptions(prev => prev.map(caption => 
+          caption.id === editingCaptionId 
+            ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
+            : caption
+        ))
+        console.log('💾 Caption changes saved and exiting edit mode:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
+      }
+    }
+    
+    // Exit caption mode completely - but DON'T restore loop state (keep loop icon white)
+    // Save any pending caption changes
+    if (editingCaptionId) {
+      const captionToUpdate = captions.find(c => c.id === editingCaptionId)
+      if (captionToUpdate) {
+        // Update the caption with any changes made
+        setCaptions(prev => prev.map(caption => 
+          caption.id === editingCaptionId 
+            ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
+            : caption
+        ))
+        console.log('💾 Caption changes saved:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
+      }
+    }
+    
+    // Exit caption mode WITHOUT restoring loop state
+    setIsInCaptionMode(false)
+    setEditingCaptionId(null)
+    console.log('📝 Exiting caption mode via SAVE button - loop remains inactive')
+  }
+
+  // Handle canceling caption changes and reverting to original state
+  const handleCancelCaptionChanges = () => {
+    console.log('🚫 CANCEL button clicked! Starting cancel process...')
+    
+    if (editingCaptionId) {
+      // Find the current caption
+      const currentCaption = captions.find(c => c.id === editingCaptionId)
+      console.log('🔍 Current caption found:', currentCaption)
+      
+      if (currentCaption) {
+        // Check if this was a newly added caption by checking if we have original state
+        // If we have originalCaptionState, it means this was an existing caption being edited
+        // If we don't have originalCaptionState, it means this was a newly added caption
+        const isNewCaption = !originalCaptionState
+        
+        console.log('🔍 Caption type check:', { 
+          isNewCaption, 
+          hasOriginalState: !!originalCaptionState,
+          captionId: currentCaption.id 
+        })
+        
+        if (isNewCaption) {
+          // Remove the newly added caption completely
+          setCaptions(prev => prev.filter(caption => caption.id !== editingCaptionId))
+          console.log('🗑️ Newly added caption removed:', editingCaptionId)
+        } else {
+          // Restore existing caption to original state
+          setCaptions(prev => prev.map(caption => 
+            caption.id === editingCaptionId 
+              ? { ...originalCaptionState }
+              : caption
+          ))
+          console.log('🔄 Existing caption restored to original state:', originalCaptionState)
+        }
+      }
+    }
+    
+    // Clear original state and exit caption mode completely
+    setOriginalCaptionState(null)
+    setIsInCaptionMode(false)
+    setEditingCaptionId(null)
+    console.log('📝 Exiting caption mode via CANCEL button - all changes reverted')
+  }
+
+  // Handle exiting caption editing mode
+  const handleExitCaptionMode = () => {
+    // Save any pending caption changes
+    if (editingCaptionId) {
+      const captionToUpdate = captions.find(c => c.id === editingCaptionId)
+      if (captionToUpdate) {
+        // Update the caption with any changes made
+        setCaptions(prev => prev.map(caption => 
+          caption.id === editingCaptionId 
+            ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
+            : caption
+        ))
+        console.log('💾 Caption changes saved:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
+      }
+    }
+    
+    // Restore loop state if it was active
+    if (tempLoopStart && tempLoopEnd && !isLoopActive) {
+      setLoopStartTime(tempLoopStart)
+      setLoopEndTime(tempLoopEnd)
+      setIsLoopActive(true)
+      console.log('🔄 Loop restored:', { start: tempLoopStart, end: tempLoopEnd })
+    }
+    
+    // Exit caption mode
+    setIsInCaptionMode(false)
+    setEditingCaptionId(null)
+    console.log('📝 Exiting caption mode')
+  }
+
+  // Handle adding new caption from timeline
+  const handleAddCaptionFromTimeline = () => {
+    if (!canAccessLoops()) {
+      if (userPlan === 'free') {
+        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        return
+      }
+      if (!isVideoFavorited) {
+        alert('⭐ Please save this video to favorites before editing captions.')
+        return
+      }
+      return
+    }
+
+    // Calculate start time based on existing captions
+    let startTime = 0
+    let endTime = 5
+    
+    if (captions.length > 0) {
+      // Find the caption with the latest end time
+      const lastCaption = captions.reduce((latest, current) => {
+        const latestEnd = timeToSeconds(latest.endTime)
+        const currentEnd = timeToSeconds(current.endTime)
+        return currentEnd > latestEnd ? current : latest
+      })
+      
+      // Start time = 1 second after the last caption ends
+      startTime = timeToSeconds(lastCaption.endTime) + 1
+      endTime = startTime + 5
+      
+      console.log('📅 Last caption ends at:', lastCaption.endTime, '→ New caption starts at:', startTime, 'seconds')
+    } else {
+      // No existing captions, use current video time
+      if (player && isPlayerReady()) {
+        try {
+          startTime = Math.floor(player.getCurrentTime())
+          endTime = startTime + 5
+          console.log('🎬 No existing captions, using current video time:', startTime, 'seconds')
+        } catch (error) {
+          console.error('Error getting current time:', error)
+          startTime = 0
+          endTime = 5
+        }
+      } else {
+        console.log('⚠️ Player not ready, using default time')
+        startTime = 0
+        endTime = 5
+      }
+    }
+
+    // Convert seconds to MM:SS format
+    const startMinutes = Math.floor(startTime / 60)
+    const startSeconds = startTime % 60
+    const endMinutes = Math.floor(endTime / 60)
+    const endSeconds = endTime % 60
+    
+    const startTimeString = `${startMinutes}:${startSeconds.toString().padStart(2, '0')}`
+    const endTimeString = `${endMinutes}:${endSeconds.toString().padStart(2, '0')}`
+    
+    console.log('⏰ New caption time range:', { start: startTimeString, end: endTimeString })
+
+    // Create new caption with calculated times
+    const newCaption = {
+      id: Date.now(),
+      startTime: startTimeString,
+      endTime: endTimeString,
+      line1: '',
+      line2: '',
+      rowType: editingCaption?.rowType || 1
+    }
+
+    console.log('📝 New caption created:', newCaption)
+
+    // Add to captions array
+    setCaptions(prev => {
+      const newCaptions = [...prev, newCaption]
+      console.log('📋 Updated captions array:', newCaptions)
+      return newCaptions
+    })
+    
+    // Don't close modal, just add the caption
+    console.log('✅ Caption added successfully')
+  }
+
+  // Handle adding new caption from control strip
+  const handleAddCaptionFromControlStrip = (rowNumber) => {
+    if (!canAccessLoops()) {
+      if (userPlan === 'free') {
+        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        return
+      }
+      if (!isVideoFavorited) {
+        alert('⭐ Please save this video to favorites before editing captions.')
+        return
+      }
+      return
+    }
+
+    // Check if video is playing
+    if (player && isPlayerReady()) {
+      try {
+        const playerState = player.getPlayerState()
+        if (playerState === 1) { // Playing
+          console.log('⏸️ Cannot add caption while video is playing')
+          return
+        }
+      } catch (error) {
+        console.error('Error checking player state:', error)
+      }
+    }
+
+    // Enter caption mode
+    handleEnterCaptionMode('add', null)
+    
+    // Get current video time
+    let currentTime = 0
+    if (player && isPlayerReady()) {
+      try {
+        currentTime = Math.floor(player.getCurrentTime())
+      } catch (error) {
+        console.error('Error getting current time:', error)
+      }
+    }
+
+    // Check if there's a caption currently displayed at this time
+    const currentCaption = captions.find(caption => {
+      const start = timeToSeconds(caption.startTime)
+      const end = timeToSeconds(caption.endTime)
+      return currentTime >= start && currentTime <= end
+    })
+
+    if (currentCaption) {
+      // Cut the existing caption - reduce end time to current time - 1 second
+      const newEndTime = Math.max(0, currentTime - 1)
+      const newEndTimeString = `${Math.floor(newEndTime / 60)}:${(newEndTime % 60).toString().padStart(2, '0')}`
+      
+      setCaptions(prev => prev.map(caption => 
+        caption.id === currentCaption.id 
+          ? { ...caption, endTime: newEndTimeString }
+          : caption
+      ))
+      
+      console.log('✂️ Cut existing caption end time to:', newEndTimeString)
+    }
+
+    // Add new caption starting at current time
+    const startTimeString = `${Math.floor(currentTime / 60)}:${(currentTime % 60).toString().padStart(2, '0')}`
+    const endTimeString = `${Math.floor((currentTime + 5) / 60)}:${((currentTime + 5) % 60).toString().padStart(2, '0')}`
+
+    const newCaption = {
+      id: Date.now(),
+      startTime: startTimeString,
+      endTime: endTimeString,
+      line1: '',
+      line2: '',
+      rowType: rowNumber
+    }
+
+    setCaptions(prev => [...prev, newCaption])
+    
+    // Update footer fields to control this caption
+    setTempLoopStart(startTimeString)
+    setTempLoopEnd(endTimeString)
+    
+    // Set this as the editing caption
+    setEditingCaptionId(newCaption.id)
+    
+    console.log('📝 New caption added from control strip:', newCaption)
+  }
+
+  // Handle inline editing from control strip
+  const handleInlineEditCaption = (rowNumber) => {
+    if (!canAccessLoops()) {
+      if (userPlan === 'free') {
+        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        return
+      }
+      if (!isVideoFavorited) {
+        alert('⭐ Please save this video to favorites before editing captions.')
+        return
+      }
+      return
+    }
+
+    // Check if video is playing
+    if (player && isPlayerReady()) {
+      try {
+        const playerState = player.getPlayerState()
+        if (playerState === 1) { // Playing
+          console.log('⏸️ Cannot edit caption while video is playing')
+          return
+        }
+      } catch (error) {
+        console.error('Error checking player state:', error)
+      }
+    }
+
+    // Check if there are captions to edit
+    if (captions.length === 0) {
+      console.log('📝 No captions available to edit')
+      return
+    }
+
+    // Find current caption at this time
+    let currentTime = 0
+    if (player && isPlayerReady()) {
+      try {
+        currentTime = Math.floor(player.getCurrentTime())
+      } catch (error) {
+        console.error('Error getting current time:', error)
+      }
+    }
+
+    const currentCaption = captions.find(caption => {
+      const start = timeToSeconds(caption.startTime)
+      const end = timeToSeconds(caption.endTime)
+      return currentTime >= start && currentTime <= end
+    })
+
+    if (!currentCaption) {
+      console.log('📝 No caption currently displayed at this time')
+      return
+    }
+
+    // Enter caption mode for editing
+    handleEnterCaptionMode('edit', currentCaption.id)
+    
+    // Update footer fields to control this caption
+    setTempLoopStart(currentCaption.startTime)
+    setTempLoopEnd(currentCaption.endTime)
+    
+    console.log('✏️ Entering inline edit mode for caption:', currentCaption)
+  }
+
+  // Handle saving captions
+  const handleSaveCaptions = () => {
+    // Sort captions by start time
+    const sortedCaptions = [...captions].sort((a, b) => {
+      const aStart = timeToSeconds(a.startTime)
+      const bStart = timeToSeconds(b.startTime)
+      return aStart - bStart
+    })
+
+    // Check for time overlaps and find the conflicting row
+    let hasOverlap = false
+    let conflictIndex = -1
+    
+    for (let i = 0; i < sortedCaptions.length - 1; i++) {
+      const current = sortedCaptions[i]
+      const next = sortedCaptions[i + 1]
+      
+      const currentEnd = timeToSeconds(current.endTime)
+      const nextStart = timeToSeconds(next.startTime)
+      
+      if (currentEnd > nextStart) {
+        hasOverlap = true
+        // Highlight the LOWER row (next one) that's causing the conflict
+        conflictIndex = i + 1
+        break
+      }
+    }
+
+    if (hasOverlap) {
+      // Find the actual index in the original array for highlighting
+      const conflictCaption = sortedCaptions[conflictIndex]
+      const originalIndex = captions.findIndex(c => c.id === conflictCaption.id)
+      
+      // Set the conflict index for highlighting
+      setConflictRowIndex(originalIndex)
+      
+      alert(`❌ Time overlap detected! Row ${conflictIndex + 1} conflicts with the previous row. Please fix overlapping start/end times before saving.`)
+      return
+    }
+
+    // Clear any previous conflict highlighting
+    setConflictRowIndex(-1)
+
+    // TODO: Save to Supabase
+    console.log('💾 Saving captions:', sortedCaptions)
+    
+    // Update local state with sorted captions
+    setCaptions(sortedCaptions)
+    
+    // Close modal
+    setShowCaptionModal(false)
+    setEditingCaption(null)
+    setIsAddingNewCaption(false)
+  }
+
+  // Handle canceling caption editing
+  const handleCancelCaptions = () => {
+    setShowCaptionModal(false)
+    setIsAddingNewCaption(false)
+    setEditingCaption(null)
+    // TODO: Revert to original captions
+  }
+
+  // Handle delete caption confirmation
+  const handleDeleteCaption = (captionIndex) => {
+    setCaptionToDelete(captionIndex)
+    setShowDeleteConfirm(true)
+  }
+
+  // Confirm caption deletion
+  const handleConfirmDelete = () => {
+    if (captionToDelete !== null) {
+      const newCaptions = captions.filter((_, i) => i !== captionToDelete)
+      setCaptions(newCaptions)
+      setCaptionToDelete(null)
+      setShowDeleteConfirm(false)
+    }
+  }
+
+  // Cancel caption deletion
+  const handleCancelDelete = () => {
+    setCaptionToDelete(null)
+    setShowDeleteConfirm(false)
+  }
+
   // Video flip handler - cycles through 3 states
   const handleFlipVideo = () => {
     switch(flipState) {
@@ -271,6 +816,19 @@ export default function Watch() {
 
   // Loop modal handlers
   const handleLoopClick = () => {
+    // Check if user can access loops
+    if (!canAccessLoops()) {
+      if (userPlan === 'free') {
+        alert('🔒 Loops require a paid plan. Please upgrade to access this feature.')
+        return
+      }
+      if (!isVideoFavorited) {
+        alert('⭐ Please save this video to favorites before creating loops.')
+        return
+      }
+      return
+    }
+
     if (isLoopActive) {
       // Stop the loop
       setIsLoopActive(false)
@@ -284,6 +842,19 @@ export default function Watch() {
   }
 
   const handleLoopTimesClick = () => {
+    // Check if user can access loops
+    if (!canAccessLoops()) {
+      if (userPlan === 'free') {
+        alert('🔒 Loops require a paid plan. Please upgrade to access this feature.')
+        return
+      }
+      if (!isVideoFavorited) {
+        alert('⭐ Please save this video to favorites before creating loops.')
+        return
+      }
+      return
+    }
+
     // Open modal directly when clicking on time display
     setTempLoopStart(loopStartTime)
     setTempLoopEnd(loopEndTime)
@@ -367,6 +938,53 @@ export default function Watch() {
 
     return () => clearInterval(loopInterval)
   }, [isLoopActive, player, loopStartTime, loopEndTime])
+
+  // Effect to auto-sort captions by start time
+  useEffect(() => {
+    if (captions.length > 0) {
+      const sortedCaptions = [...captions].sort((a, b) => {
+        const timeA = timeToSeconds(a.startTime)
+        const timeB = timeToSeconds(b.startTime)
+        return timeA - timeB
+      })
+      
+      // Only update if order actually changed
+      const orderChanged = sortedCaptions.some((caption, index) => caption.id !== captions[index].id)
+      if (orderChanged) {
+        console.log('🔄 Auto-sorting captions by start time')
+        setCaptions(sortedCaptions)
+      }
+    }
+  }, [captions])
+
+  // Effect to update displayed caption based on video time
+  useEffect(() => {
+    if (!player || !isPlayerReady() || captions.length === 0) return
+
+    const captionUpdateInterval = setInterval(() => {
+      try {
+        const currentTime = player.getCurrentTime()
+        // Force re-render to update displayed caption
+        setCaptions(prev => [...prev])
+      } catch (error) {
+        console.error('Caption update error:', error)
+      }
+    }, 500) // Update every 500ms for smooth caption transitions
+
+    return () => clearInterval(captionUpdateInterval)
+  }, [player, captions.length])
+
+  // Effect to update caption timing when footer fields change in caption mode
+  useEffect(() => {
+    if (isInCaptionMode && editingCaptionId && tempLoopStart && tempLoopEnd) {
+      setCaptions(prev => prev.map(caption => 
+        caption.id === editingCaptionId 
+          ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
+          : caption
+      ))
+      console.log('⏰ Caption timing updated via footer:', { start: tempLoopStart, end: tempLoopEnd })
+    }
+  }, [tempLoopStart, tempLoopEnd, isInCaptionMode, editingCaptionId])
 
   // Fullscreen toggle handler
   const handleFullscreenToggle = async () => {
@@ -553,6 +1171,8 @@ export default function Watch() {
                   />
                 )}
               </div>
+              
+
             </div>
           )}
         </div>
@@ -571,24 +1191,126 @@ export default function Watch() {
                 showRow2 ? 'bottom-[40%]' : 
                 showRow3 ? 'bottom-[40%]' : 'bottom-0'
               }`}>
-              {/* Left Column - Main Content (93% width) */}
-              <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
-                <span className="text-white text-sm font-medium">Text Captions</span>
+              {/* Left Column - Main Content (92% width) */}
+              <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex flex-col justify-center overflow-hidden">
+                {/* Display current caption based on video time */}
+                {(() => {
+                  if (!player || captions.length === 0) {
+                    return <span className="text-white text-sm font-medium">Text Captions</span>
+                  }
+                  
+                  try {
+                    const currentTime = player.getCurrentTime()
+                    
+                    const currentCaption = captions.find(caption => {
+                      const start = timeToSeconds(caption.startTime)
+                      const end = timeToSeconds(caption.endTime)
+                      return currentTime >= start && currentTime <= end
+                    })
+                    
+                    if (currentCaption) {
+                      // Check if we're editing this caption inline
+                      const isEditingThisCaption = isInCaptionMode && editingCaptionId === currentCaption.id
+                      
+                      if (isEditingThisCaption) {
+                        return (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={currentCaption.line1}
+                              onChange={(e) => {
+                                setCaptions(prev => prev.map(caption => 
+                                  caption.id === currentCaption.id 
+                                    ? { ...caption, line1: e.target.value }
+                                    : caption
+                                ))
+                              }}
+                              className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                              placeholder="First line of caption"
+                            />
+                            <input
+                              type="text"
+                              value={currentCaption.line2}
+                              onChange={(e) => {
+                                setCaptions(prev => prev.map(caption => 
+                                  caption.id === currentCaption.id 
+                                    ? { ...caption, line2: e.target.value }
+                                    : caption
+                                ))
+                              }}
+                              className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                              placeholder="Second line of caption"
+                            />
+                          </div>
+                        )
+                      } else {
+                        return (
+                          <div className="text-white text-sm">
+                            <div className="font-medium">{currentCaption.line1}</div>
+                            {currentCaption.line2 && <div className="text-gray-300">{currentCaption.line2}</div>}
+                          </div>
+                        )
+                      }
+                    } else {
+                      return <span className="text-white text-sm font-medium">Text Captions</span>
+                    }
+                  } catch (error) {
+                    return <span className="text-white text-sm font-medium">Text Captions</span>
+                  }
+                })()}
               </div>
-              {/* Right Column - Hide Button (7% width) */}
-              <div className="w-[7%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
+              {/* Middle Column - ADD + EDIT icons (4% width) */}
+              <div className="w-[4%] p-2 bg-transparent border-r-2 border-white flex flex-col items-center justify-center space-y-3">
                 <button 
-                  onClick={() => handleRowToggle(1)}
-                  className="hover:opacity-70 transition-opacity cursor-pointer"
-                  title="Hide this row"
+                  onClick={() => handleAddCaptionFromControlStrip(1)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Add new caption at current time"}
+                  disabled={isInCaptionMode}
+                >
+                  <FaPlus className="w-4 h-4 text-white" />
+                </button>
+                <button 
+                  onClick={() => handleInlineEditCaption(1)}
+                  className={`transition-colors cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'text-green-400' 
+                      : 'text-white hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Currently editing captions" : "Edit caption inline"}
+                  disabled={isInCaptionMode}
+                >
+                  <FaRegEdit className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Right Column - EYE + CgViewList icons (4% width) */}
+              <div className="w-[4%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
+                <button 
+                  onClick={() => !isInCaptionMode && handleRowToggle(1)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Hide this row"}
+                  disabled={isInCaptionMode}
                 >
                   <FaRegEye className="w-5 h-5 text-white" />
                 </button>
                 <button 
-                  className="hover:opacity-70 transition-opacity cursor-pointer"
-                  title="Edit this row"
+                  onClick={() => !isInCaptionMode && handleCaptionEditClick(1)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Open caption editor modal"}
+                  disabled={isInCaptionMode}
                 >
-                  <FaRegEdit className="w-5 h-5 text-white" />
+                  <CgViewList className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
@@ -599,24 +1321,62 @@ export default function Watch() {
               <div className={`absolute left-0 right-0 flex border-l-2 border-r-2 border-white overflow-hidden h-[40%] transition-all duration-300 ${
                 showRow3 ? 'bottom-[40%]' : 'bottom-0'
               }`}>
-              {/* Left Column - Main Content (93% width) */}
-              <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
+              {/* Left Column - Main Content (92% width) */}
+              <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex items-center">
                 <span className="text-white text-sm font-medium">Chords Captions</span>
               </div>
-              {/* Right Column - Hide Button (7% width) */}
-              <div className="w-[7%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
+              {/* Middle Column - ADD + EDIT icons (4% width) */}
+              <div className="w-[4%] p-2 bg-transparent border-r-2 border-white flex flex-col items-center justify-center space-y-3">
                 <button 
-                  onClick={() => handleRowToggle(2)}
-                  className="hover:opacity-70 transition-opacity cursor-pointer"
-                  title="Hide this row"
+                  onClick={() => handleAddCaptionFromControlStrip(2)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Add new caption at current time"}
+                  disabled={isInCaptionMode}
+                >
+                  <FaPlus className="w-4 h-4 text-white" />
+                </button>
+                <button 
+                  onClick={() => handleInlineEditCaption(2)}
+                  className={`transition-colors cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'text-green-400' 
+                      : 'text-white hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Currently editing captions" : "Edit caption inline"}
+                  disabled={isInCaptionMode}
+                >
+                  <FaRegEdit className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Right Column - EYE + CgViewList icons (4% width) */}
+              <div className="w-[4%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
+                <button 
+                  onClick={() => !isInCaptionMode && handleRowToggle(2)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Hide this row"}
+                  disabled={isInCaptionMode}
                 >
                   <FaRegEye className="w-5 h-5 text-white" />
                 </button>
                 <button 
-                  className="hover:opacity-70 transition-opacity cursor-pointer"
-                  title="Edit this row"
+                  onClick={() => !isInCaptionMode && handleCaptionEditClick(2)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Open caption editor modal"}
+                  disabled={isInCaptionMode}
                 >
-                  <FaRegEdit className="w-5 h-5 text-white" />
+                  <CgViewList className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
@@ -625,24 +1385,62 @@ export default function Watch() {
             {/* Row 3: Auto-Gen - 40% height, always at bottom */}
             {showRow3 && (
               <div className="absolute bottom-0 left-0 right-0 flex border-2 border-white rounded-b-lg overflow-hidden h-[40%] transition-all duration-300">
-              {/* Left Column - Main Content (93% width) */}
-              <div className="w-[93%] p-2 bg-transparent border-r-2 border-white flex items-center">
+              {/* Left Column - Main Content (92% width) */}
+              <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex items-center">
                 <span className="text-white text-sm font-medium">Auto-Gen</span>
               </div>
-              {/* Right Column - Hide Button (7% width) */}
-              <div className="w-[7%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
+              {/* Middle Column - ADD + EDIT icons (4% width) */}
+              <div className="w-[4%] p-2 bg-transparent border-r-2 border-white flex flex-col items-center justify-center space-y-3">
                 <button 
-                  onClick={() => handleRowToggle(3)}
-                  className="hover:opacity-70 transition-opacity cursor-pointer"
-                  title="Hide this row"
+                  onClick={() => handleAddCaptionFromControlStrip(3)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Add new caption at current time"}
+                  disabled={isInCaptionMode}
+                >
+                  <FaPlus className="w-4 h-4 text-white" />
+                </button>
+                <button 
+                  onClick={() => handleInlineEditCaption(3)}
+                  className={`transition-colors cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'text-green-400' 
+                      : 'text-white hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Currently editing captions" : "Edit caption inline"}
+                  disabled={isInCaptionMode}
+                >
+                  <FaRegEdit className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Right Column - EYE + CgViewList icons (4% width) */}
+              <div className="w-[4%] p-2 bg-transparent flex flex-col items-center justify-center space-y-2">
+                <button 
+                  onClick={() => !isInCaptionMode && handleRowToggle(3)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Hide this row"}
+                  disabled={isInCaptionMode}
                 >
                   <FaRegEye className="w-5 h-5 text-white" />
                 </button>
                 <button 
-                  className="hover:opacity-70 transition-opacity cursor-pointer"
-                  title="Edit this row"
+                  onClick={() => !isInCaptionMode && handleCaptionEditClick(3)}
+                  className={`transition-opacity cursor-pointer ${
+                    isInCaptionMode 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:opacity-70'
+                  }`}
+                  title={isInCaptionMode ? "Disabled while editing" : "Open caption editor modal"}
+                  disabled={isInCaptionMode}
                 >
-                  <FaRegEdit className="w-5 h-5 text-white" />
+                  <CgViewList className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
@@ -657,7 +1455,7 @@ export default function Watch() {
         <div className="grid grid-cols-3 max-w-7xl mx-auto h-full">
           
           {/* Left Column - Left-justified content with Video Controls */}
-          <div className="flex items-center justify-start space-x-3">
+          <div className="flex items-center justify-start space-x-3 ml-3">
             {/* Flip Video Button - 3 States */}
             <button
               onClick={handleFlipVideo}
@@ -673,71 +1471,127 @@ export default function Watch() {
               <MdFlipCameraAndroid className="w-5 h-5" />
             </button>
 
-            {/* Loop Segment Button */}
+            {/* Loop Segment / Caption Mode Button */}
             <button
-              onClick={handleLoopClick}
-              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                isLoopActive 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'bg-white/10 text-white hover:bg-white/20'
+              onClick={isInCaptionMode ? undefined : handleLoopClick}
+              className={`p-2 rounded-lg transition-all duration-200 ${
+                isInCaptionMode
+                  ? 'bg-blue-600 text-white shadow-lg cursor-default' 
+                  : isLoopActive 
+                  ? 'bg-blue-600 text-white shadow-lg hover:scale-105' 
+                  : 'bg-white/10 text-white hover:bg-white/20 hover:scale-105'
               }`}
-              title={isLoopActive ? "Stop loop" : "Configure loop segment"}
+              title={isInCaptionMode ? "Caption Mode Active" : (isLoopActive ? "Stop loop" : "Configure loop segment")}
             >
-              <ImLoop className="w-5 h-5" />
+              {isInCaptionMode ? (
+                <IoText className="w-5 h-5" />
+              ) : (
+                <ImLoop className="w-5 h-5" />
+              )}
             </button>
 
-            {/* Loop Time Display (Read-only, clickable) */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handleLoopTimesClick}
-                className={`text-sm font-mono transition-colors cursor-pointer hover:opacity-80 ${
-                  isLoopActive ? 'text-blue-400' : 'text-gray-300'
-                }`}
-                title="Click to edit loop times"
-              >
-                {loopStartTime} to {loopEndTime}
-              </button>
+            {/* Loop Time Display / Caption Timing Fields */}
+            <div className="flex flex-col items-start space-y-1">
+              {/* Mode indicator */}
+              {isInCaptionMode && (
+                <span className="text-xs text-blue-400 font-medium">
+                  Caption Timing
+                </span>
+              )}
+              
+              {isInCaptionMode ? (
+                /* Editable caption timing fields with SAVE button */
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={tempLoopStart}
+                    onChange={(e) => setTempLoopStart(e.target.value)}
+                    className="w-16 px-2 py-1 text-xs bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                    placeholder="0:00"
+                  />
+                  <span className="text-white text-xs">-</span>
+                  <input
+                    type="text"
+                    value={tempLoopEnd}
+                    onChange={(e) => setTempLoopEnd(e.target.value)}
+                    className="w-16 px-2 py-1 text-xs bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                    placeholder="0:00"
+                  />
+                  {/* SAVE button for caption changes */}
+                  <button
+                    onClick={handleSaveCaptionChanges}
+                    className="px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
+                    title="Save caption changes and exit edit mode"
+                  >
+                    SAVE
+                  </button>
+                  {/* CANCEL button for caption changes */}
+                  <button
+                    onClick={() => {
+                      console.log('🚫 CANCEL button clicked directly!')
+                      handleCancelCaptionChanges()
+                    }}
+                    className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors ml-2 cursor-pointer z-10 relative border border-red-500"
+                    title="Cancel all changes and revert to original state"
+                    style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+                    data-testid="cancel-button"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              ) : (
+                /* Read-only loop timing display */
+                <button
+                  onClick={handleLoopTimesClick}
+                  className={`text-sm font-mono transition-colors cursor-pointer hover:opacity-80 ${
+                    isLoopActive ? 'text-blue-400' : 'text-gray-300'
+                  }`}
+                  title="Click to edit loop times"
+                >
+                  {loopStartTime} - {loopEndTime}
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Middle Column - Center-justified content with 3 essential icons */}
-          <div className="flex items-center justify-center space-x-4">
-            {/* View All Strips Eye Icon - Only visible when control strips are active */}
-            {showControlStrips && (
-              <button 
-                onClick={handleShowAllRows}
-                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors" 
-                title="Show All Control Strips"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
-              </button>
-            )}
+          {/* Middle Column - Center-justified content (Empty for spacing) */}
+          <div className="flex items-center justify-center">
+            {/* Empty - just for spacing */}
+          </div>
+
+          {/* Right Column - Right-justified content */}
+          <div className="flex items-center justify-end mr-3 space-x-3">
+            {/* Guitar Pick Favorites */}
+            <button 
+              onClick={handleFavoriteToggle}
+              className={`p-2 rounded-lg transition-colors ${
+                isVideoFavorited 
+                  ? 'text-[#8dc641] bg-[#8dc641]/20' 
+                  : 'text-gray-400 hover:text-[#8dc641] hover:bg-white/10'
+              }`}
+              title={isVideoFavorited ? "Remove from favorites" : "Add to favorites"}
+            >
+              <TbGuitarPickFilled className="w-6 h-6" />
+            </button>
             
-            {/* Control Strips Toggle Button */}
+            {/* Control Strip Toggle (Game Controller) */}
             <button
               onClick={handleControlStripsToggle}
-              className={`p-1 rounded-lg transition-colors ${
+              className={`p-2 rounded-lg transition-colors ${
                 showControlStrips 
                   ? 'bg-[#8dc641]/20 border border-[#8dc641]/30 text-[#8dc641]' 
                   : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
               }`}
               title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
             >
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-              </svg>
+              <IoGameControllerOutline className="w-5 h-5" />
             </button>
             
-            {/* Guitar Pick Favorites */}
-            <button className="p-2 text-[#8dc641] hover:bg-white/10 rounded-lg transition-colors" title="Show Favorites Only">
-              <TbGuitarPickFilled className="w-6 h-6" />
+            {/* Layout Icon */}
+            <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors" title="Layout Options">
+              <BsReverseLayoutSidebarInsetReverse className="w-5 h-5" />
             </button>
-          </div>
-
-          {/* Right Column - Right-justified content */}
-          <div className="flex items-center justify-end">
+            
             {/* Custom Fullscreen Button */}
             <button
               onClick={handleFullscreenToggle}
@@ -791,6 +1645,231 @@ export default function Watch() {
               </button>
               <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors">
                 Go to Pricing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unfavorite Warning Modal */}
+      {showUnfavoriteWarning && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowUnfavoriteWarning(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-sm w-full relative text-white p-6">
+            {/* Modal Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-4">⚠️ Remove from Favorites?</h2>
+              <p className="text-gray-300 text-sm">
+                Removing this favorite will also delete all user entered meta-data. This action cannot be undone. Proceed?
+              </p>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleUnfavoriteCancel}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleUnfavoriteConfirm}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+              >
+                PROCEED
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteConfirm(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-sm w-full relative text-white p-6">
+            {/* Modal Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-4">🗑️ Delete Caption?</h2>
+              <p className="text-gray-300 text-sm">
+                This action cannot be undone. Are you sure you want to delete this caption?
+              </p>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCancelDelete}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+              >
+                DELETE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Caption Editor Modal */}
+      {showCaptionModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCaptionModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-4xl w-full relative text-white p-6 max-h-[90vh] overflow-y-auto">
+            {/* Add Caption Button - Upper Left */}
+            <button
+              onClick={handleAddCaptionFromTimeline}
+              className="absolute top-4 left-4 z-20 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg"
+              title="Add new caption at current time"
+            >
+              <FaPlus className="w-5 h-5" />
+            </button>
+            
+            {/* Close Button */}
+            <button
+              onClick={handleCancelCaptions}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Modal Header */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-2">
+                {editingCaption?.rowName} Editor
+              </h2>
+              <p className="text-gray-300 text-sm">
+                Manage your captions with start/stop times and content
+              </p>
+            </div>
+            
+            {/* Captions List */}
+            <div className="space-y-4 mb-6">
+              {captions.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  <p>No captions yet. Use the + button on the video to add your first caption!</p>
+                </div>
+              ) : (
+                captions.map((caption, index) => (
+                  <div 
+                    key={caption.id} 
+                    className={`border rounded-lg p-4 transition-all duration-200 ${
+                      conflictRowIndex === index 
+                        ? 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20' 
+                        : 'border-white/20 bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      {/* Start Time - 50% narrower */}
+                      <div className="w-16">
+                        <input
+                          type="text"
+                          value={caption.startTime}
+                          onChange={(e) => {
+                            const newCaptions = [...captions]
+                            newCaptions[index].startTime = e.target.value
+                            setCaptions(newCaptions)
+                          }}
+                          className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                          placeholder="Start"
+                        />
+                      </div>
+                      
+                      {/* End Time - 50% narrower */}
+                      <div className="w-16">
+                        <input
+                          type="text"
+                          value={caption.endTime}
+                          onChange={(e) => {
+                            const newCaptions = [...captions]
+                            newCaptions[index].endTime = e.target.value
+                            setCaptions(newCaptions)
+                          }}
+                          className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                          placeholder="End"
+                        />
+                      </div>
+                      
+                      {/* Caption Lines - Stacked and stretched */}
+                      <div className="flex-1 space-y-2">
+                        {/* Line 1 */}
+                        <input
+                          type="text"
+                          value={caption.line1}
+                          onChange={(e) => {
+                            const newCaptions = [...captions]
+                            newCaptions[index].line1 = e.target.value
+                            setCaptions(newCaptions)
+                          }}
+                          className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                          placeholder="First line of caption"
+                        />
+                        
+                        {/* Line 2 */}
+                        <input
+                          type="text"
+                          value={caption.line2}
+                          onChange={(e) => {
+                            const newCaptions = [...captions]
+                            newCaptions[index].line2 = e.target.value
+                            setCaptions(newCaptions)
+                          }}
+                          className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                          placeholder="Second line of caption"
+                        />
+                      </div>
+                      
+                      {/* Delete Icon */}
+                      <div className="flex-shrink-0">
+                        <button
+                          onClick={() => handleDeleteCaption(index)}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-white/10 rounded-lg transition-colors"
+                          title="Delete caption"
+                        >
+                          <TiDeleteOutline className="w-6 h-6" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={handleCancelCaptions}
+                className="px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCaptions}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Save Captions
               </button>
             </div>
           </div>
