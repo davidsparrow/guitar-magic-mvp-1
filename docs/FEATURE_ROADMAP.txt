@@ -34,6 +34,24 @@ FEATURE_SPECIFICATIONS
 - **Feature Gates**: Dynamic system for premium features
 - **Usage Tracking**: Analytics and limit enforcement
 
+## 📝 Caption Management System
+### Premium Only 💎
+- **Text Captions**: Timeline-based text annotations with start/stop times
+- **Chords Captions**: Chord diagram integration (planned)
+- **Auto-Gen**: AI-generated content (planned)
+- **Sharing**: Share captions between paid users
+- **Inline Editing**: Edit captions directly in control strips
+- **Modal Editor**: Advanced caption management interface
+
+## 🎸 Creator Revenue Sharing System
+### Platform Feature 🌟
+- **Per-Channel Watch Time Tracking**: Monitor user engagement by YouTube channel
+- **Top 100 Creators**: Monthly leaderboard by watch time
+- **10% Revenue Sharing**: Transparent payout system
+- **Public Leaderboard**: Community transparency and engagement
+- **Monthly Payouts**: Automated creator compensation
+- **Channel Analytics**: Detailed performance metrics
+
 ---
 
 # 🚀 DEVELOPMENT ROADMAP: From MVP to Music Empire
@@ -70,7 +88,7 @@ FEATURE_SPECIFICATIONS
 - **Estimate**: 2-3 days
 - **Complexity**: Medium (responsive design + animations)
 
-### **6. Top Banner System** ⭐ PRIORITY 2
+### **6. Top Banner System** ✅ COMPLETED
 - **Admin-controlled announcement banner**
 - **Estimate**: 0.5 days  
 - **Complexity**: Low (already designed)
@@ -87,16 +105,30 @@ FEATURE_SPECIFICATIONS
 - **Estimate**: 3-4 days
 - **Complexity**: Medium (aggregation + public page)
 
+### **9. Caption Management Integration** ⭐ NEW PRIORITY
+- **Supabase integration for captions**
+- **User caption storage and retrieval**
+- **Inline editing in control strips**
+- **Estimate**: 2-3 days
+- **Complexity**: Medium (database integration + UI updates)
+
+### **10. Watch Time Tracking System** ⭐ NEW PRIORITY
+- **Per-channel watch time monitoring**
+- **User engagement analytics**
+- **Creator revenue calculation foundation**
+- **Estimate**: 2-3 days
+- **Complexity**: Medium (tracking logic + database updates)
+
 ## 🎵 Phase 2: Music Magic (4-5 weeks)
 
-### **9. Custom Caption Creator** ⭐ GAME-CHANGER
+### **11. Custom Caption Creator** ⭐ GAME-CHANGER
 - **Timeline-based text annotations**
 - **120-char text strings with start/stop times**
 - **No overlap validation, edit existing segments**
 - **Estimate**: 4-5 days
 - **Complexity**: Medium-High (timeline UI + sync logic)
 
-### **10. Basic Chord Diagrams** ⭐ GAME-CHANGER
+### **12. Basic Chord Diagrams** ⭐ GAME-CHANGER
 - **Manual chord name entry → visual diagrams**
 - **Integration with custom captions**
 - **Sync with video timeline**
@@ -105,23 +137,37 @@ FEATURE_SPECIFICATIONS
 - **APIs**: VexChords, ChordJS, or UberChord API
 - **API URL**: `https://api.uberchord.com/v1/chords/{chordName}`
 
-### **11. Song Name Detection** ⭐ ENHANCEMENT
+### **13. Song Name Detection** ⭐ ENHANCEMENT
 - **Parse YouTube titles for artist/song**
 - **Smart title cleaning algorithms**
 - **Auto-populate song search fields**
 - **Estimate**: 2-3 days
 - **Complexity**: Medium (text parsing + validation)
 
-### **12. Enhanced Search Features** ⭐ PREMIUM
+### **14. Enhanced Search Features** ⭐ PREMIUM
 - **Advanced video filters and sorting**
 - **Saved search collections**
 - **Search history analytics**
 - **Estimate**: 2-3 days
 - **Complexity**: Medium
 
+### **15. Caption Sharing System** ⭐ NEW FEATURE
+- **Share captions between paid users**
+- **Sharing links with expiration and usage limits**
+- **Import captions from shared favorites**
+- **Estimate**: 3-4 days
+- **Complexity**: Medium (sharing logic + UI)
+
+### **16. Creator Analytics Dashboard** ⭐ NEW FEATURE
+- **Channel performance metrics**
+- **Watch time analytics**
+- **Revenue projection tools**
+- **Estimate**: 4-5 days
+- **Complexity**: Medium-High (analytics + visualization)
+
 ## 🏆 Phase 3: Ultimate Platform (6-8 weeks)
 
-### **13. Ultimate Guitar Integration** ⭐ HOLY GRAIL
+### **17. Ultimate Guitar Integration** ⭐ HOLY GRAIL
 - **Auto-fetch chord progressions by song name**  
 - **Multiple tab versions (acoustic, electric, etc.)**
 - **Green/Orange/Red light status system**
@@ -131,14 +177,14 @@ FEATURE_SPECIFICATIONS
 - **APIs**: Ultimate Guitar scraper endpoints
 - **GitHub**: `https://github.com/Pilfer/ultimate-guitar-scraper`
 
-### **14. Auto-Synchronized Chords** ⭐ REVOLUTIONARY
+### **18. Auto-Synchronized Chords** ⭐ REVOLUTIONARY
 - **Automatic chord timeline from UG database**
 - **Song structure detection (verse, chorus, bridge)**
 - **Pre-timed chord changes with video**
 - **Estimate**: 5-7 days
 - **Complexity**: High (data parsing + timeline sync)
 
-### **15. Advanced Practice Features** ⭐ PREMIUM
+### **19. Advanced Practice Features** ⭐ PREMIUM
 - **Loop sections with chord displays**
 - **Slow-down playback with synchronized chords**
 - **Export practice sessions**
@@ -146,16 +192,23 @@ FEATURE_SPECIFICATIONS
 - **Estimate**: 3-4 days
 - **Complexity**: Medium (YouTube Player API + UI)
 
-### **16. Creator Revenue Dashboard** ⭐ BUSINESS
+### **20. Creator Revenue Dashboard** ⭐ BUSINESS
 - **Creator portal for earnings tracking**
 - **Payment history and analytics**
 - **Creator onboarding and verification**
 - **Estimate**: 4-5 days
 - **Complexity**: Medium-High
 
+### **21. Advanced Caption Features** ⭐ NEW FEATURE
+- **Caption templates and presets**
+- **Bulk caption operations**
+- **Caption versioning and history**
+- **Estimate**: 3-4 days
+- **Complexity**: Medium
+
 ## 🚀 Phase 4: Platform Scale (8+ weeks)
 
-### **17. Advanced Tab Features** ⭐ ENTERPRISE
+### **22. Advanced Tab Features** ⭐ ENTERPRISE
 - **Full guitar tablature display**
 - **Bass tabs, multiple instruments**
 - **GuitarPro-style playback with timing**
@@ -163,7 +216,7 @@ FEATURE_SPECIFICATIONS
 - **Estimate**: 10-15 days
 - **Complexity**: Very High (complex rendering + sync)
 
-### **18. User-Generated Content** ⭐ COMMUNITY
+### **23. User-Generated Content** ⭐ COMMUNITY
 - **Share custom caption/chord sets**
 - **Community-contributed timings**
 - **Rating and review system**
@@ -171,14 +224,14 @@ FEATURE_SPECIFICATIONS
 - **Estimate**: 8-12 days
 - **Complexity**: High (moderation + social features)
 
-### **19. Mobile Application** ⭐ EXPANSION
+### **24. Mobile Application** ⭐ EXPANSION
 - **React Native app with core features**
 - **Offline chord charts and saved content**
 - **Mobile-optimized video controls**
 - **Estimate**: 15-20 days
 - **Complexity**: Very High
 
-### **20. Video Hosting Platform** ⭐ FUTURE VISION
+### **25. Video Hosting Platform** ⭐ FUTURE VISION
 - **Creator direct uploads**
 - **Multi-platform video hosting**
 - **Advanced monetization tools**
@@ -189,6 +242,13 @@ FEATURE_SPECIFICATIONS
   - Vimeo: `https://api.vimeo.com`
   - Wistia: `https://wistia.com/support/developers`
   - Cloudflare: `https://api.cloudflare.com/client/v4/accounts/{account_id}/stream`
+
+### **26. Creator Economy Platform** ⭐ NEW VISION
+- **Advanced revenue sharing models**
+- **Creator marketplace for lessons**
+- **Subscription-based creator channels**
+- **Estimate**: 15-20 days
+- **Complexity**: Very High
 
 ## 🔌 API Integration Summary
 
@@ -211,6 +271,29 @@ FEATURE_SPECIFICATIONS
 - **Wistia API**: `https://wistia.com/support/developers`
 - **Cloudflare Stream**: `https://api.cloudflare.com/client/v4/`
 
+## 🗄️ Database Schema Overview
+
+### **Core Tables**
+- **`user_profiles`**: User authentication and subscription data
+- **`subscriptions`**: Stripe subscription management
+- **`favorites`**: User-saved videos with sharing capabilities
+- **`captions`**: User-created captions with sharing support
+- **`custom_loops`**: User-created video loops
+
+### **Creator Revenue System**
+- **`channel_watch_time`**: Per-channel watch time tracking
+- **`creator_payouts`**: Monthly creator compensation
+- **`public_leaderboard`**: Transparent creator rankings
+
+### **Sharing & Collaboration**
+- **`sharing_links`**: Advanced sharing with expiration and limits
+- **`saved_searches`**: User search history and preferences
+
+### **Analytics & Usage**
+- **`user_usage`**: Daily user activity tracking
+- **`billing_history`**: Payment and subscription history
+- **`feature_gates`**: Dynamic feature access control
+
 ## 📊 Success Metrics by Phase
 
 ### **MVP Success (Month 1)**
@@ -218,27 +301,50 @@ FEATURE_SPECIFICATIONS
 - 100+ daily active users
 - Basic revenue from subscriptions
 - Creator leaderboard engagement
+- Caption system adoption
 
 ### **Phase 2 Success (Month 3)**
 - 10,000+ registered users
 - 1,000+ daily active users
 - Custom caption usage > 50%
 - Chord diagram feature adoption
+- Creator revenue sharing active
 
 ### **Phase 3 Success (Month 6)**
 - 50,000+ registered users
 - 5,000+ daily active users
 - Ultimate Guitar integration driving growth
 - Creator revenue sharing program active
+- Advanced caption collaboration
 
 ### **Phase 4 Success (Year 1)**
 - 500,000+ registered users
 - Platform-hosted content library
 - Industry recognition as music learning leader
 - Sustainable creator economy
+- Global caption sharing community
 
 ## 🎯 Estimated Total Timeline
 - **MVP Launch**: 4 weeks
 - **Music Platform**: 3 months
 - **Industry Leader**: 6 months
 - **Platform Dominance**: 12 months
+
+## 🆕 Recent Additions & Enhancements
+
+### **✅ Completed Database Infrastructure**
+- **Creator Revenue Sharing System**: Complete database schema for tracking per-channel watch time and monthly payouts
+- **Caption Management System**: Full database support for user captions with sharing capabilities
+- **Advanced Sharing Features**: Database support for expiration-based sharing links with usage tracking
+- **Enterprise Security**: Row Level Security (RLS) policies for all new tables
+
+### **🔄 In Progress**
+- **Frontend Supabase Integration**: Connecting watch.js to new database tables
+- **Caption CRUD Operations**: Implementing create, read, update, delete for captions
+- **Watch Time Tracking**: Implementing per-channel watch time monitoring
+
+### **📋 Planned Enhancements**
+- **Real-time Caption Updates**: Supabase real-time subscriptions for live collaboration
+- **Caption Analytics**: Track caption usage, sharing, and community engagement
+- **Advanced Creator Tools**: Enhanced analytics and payout management for creators
+- **Community Features**: Caption rating, commenting, and community moderation
