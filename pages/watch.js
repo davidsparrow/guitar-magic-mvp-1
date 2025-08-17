@@ -247,10 +247,14 @@ export default function Watch() {
     setCustomAlertButtons([])
   }
 
+  // Helper functions to get messages from Admin Settings
+  const getAdminMessage = (messageKey, fallback) => {
+    return featureGates?.global_settings?.[messageKey] || fallback
+  }
+
   // Show video playing restriction modal
   const showVideoPlayingRestriction = () => {
-    const message = featureGates?.global_settings?.video_playing_message || 
-                   'Please pause video before using this feature'
+    const message = getAdminMessage('video_playing_message', 'Please pause video before using this feature')
     
     showCustomAlertModal(message, [
       { text: 'OK', action: hideCustomAlertModal }
@@ -1283,14 +1287,14 @@ export default function Watch() {
     // Check if user can access captions (same as loops)
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+        showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
         ])
         return
       }
       if (!isVideoFavorited) {
-        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+        showCustomAlertModal(getAdminMessage('save_to_favorites_message', '⭐ Please save this video to favorites before editing captions.'), [
           { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
           { text: 'OK', action: hideCustomAlertModal }
         ])
@@ -1447,14 +1451,14 @@ export default function Watch() {
   const handleAddCaptionFromTimeline = () => {
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+        showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
         ])
         return
       }
       if (!isVideoFavorited) {
-        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+        showCustomAlertModal(getAdminMessage('save_to_favorites_message', '⭐ Please save this video to favorites before editing captions.'), [
           { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
           { text: 'OK', action: hideCustomAlertModal }
         ])
@@ -1537,14 +1541,14 @@ export default function Watch() {
   const handleAddCaptionFromControlStrip = async (rowNumber) => {
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+        showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
         ])
         return
       }
       if (!isVideoFavorited) {
-        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+        showCustomAlertModal(getAdminMessage('save_to_favorites_message', '⭐ Please save this video to favorites before editing captions.'), [
           { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
           { text: 'OK', action: hideCustomAlertModal }
         ])
@@ -1629,14 +1633,14 @@ export default function Watch() {
   const handleInlineEditCaption = (rowNumber) => {
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+        showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
         ])
         return
       }
       if (!isVideoFavorited) {
-        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+        showCustomAlertModal(getAdminMessage('save_to_favorites_message', '⭐ Please save this video to favorites before editing captions.'), [
           { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
           { text: 'OK', action: hideCustomAlertModal }
         ])
@@ -1828,14 +1832,14 @@ export default function Watch() {
     // Check if user can access loops
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        showCustomAlertModal('🔒 Loops require a paid plan. Please upgrade to access this feature.', [
+        showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
         ])
         return
       }
       if (!isVideoFavorited) {
-        showCustomAlertModal('⭐ Please save this video to favorites before creating loops.', [
+        showCustomAlertModal(getAdminMessage('save_to_favorites_message', '⭐ Please save this video to favorites before creating loops.'), [
           { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
           { text: 'OK', action: hideCustomAlertModal }
         ])
@@ -1866,14 +1870,14 @@ export default function Watch() {
     // Check if user can access loops
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        showCustomAlertModal('🔒 Loops require a paid plan. Please upgrade to access this feature.', [
+        showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
         ])
         return
       }
       if (!isVideoFavorited) {
-        showCustomAlertModal('⭐ Please save this video to favorites before creating loops.', [
+        showCustomAlertModal(getAdminMessage('save_to_favorites_message', '⭐ Please save this video to favorites before creating loops.'), [
           { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
           { text: 'OK', action: hideCustomAlertModal }
         ])
