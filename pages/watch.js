@@ -97,6 +97,11 @@ export default function Watch() {
   const [toasts, setToasts] = useState([])
   const [toastIdCounter, setToastIdCounter] = useState(0)
 
+  // Custom alert modal states
+  const [showCustomAlert, setShowCustomAlert] = useState(false)
+  const [customAlertMessage, setCustomAlertMessage] = useState('')
+  const [customAlertButtons, setCustomAlertButtons] = useState([])
+
   // Basic Supabase database operations
   const saveFavorite = async (videoData) => {
     try {
@@ -260,7 +265,18 @@ export default function Watch() {
     setToasts([])
   }
 
+  // Custom alert modal utility functions
+  const showCustomAlertModal = (message, buttons = []) => {
+    setCustomAlertMessage(message)
+    setCustomAlertButtons(buttons)
+    setShowCustomAlert(true)
+  }
 
+  const hideCustomAlertModal = () => {
+    setShowCustomAlert(false)
+    setCustomAlertMessage('')
+    setCustomAlertButtons([])
+  }
 
   // Show video playing restriction toast
   const showVideoPlayingRestriction = () => {
@@ -1298,11 +1314,17 @@ export default function Watch() {
     // Check if user can access captions (same as loops)
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+          { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       if (!isVideoFavorited) {
-        alert('⭐ Please save this video to favorites before editing captions.')
+        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+          { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       return
@@ -1456,11 +1478,17 @@ export default function Watch() {
   const handleAddCaptionFromTimeline = () => {
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+          { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       if (!isVideoFavorited) {
-        alert('⭐ Please save this video to favorites before editing captions.')
+        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+          { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       return
@@ -1540,11 +1568,17 @@ export default function Watch() {
   const handleAddCaptionFromControlStrip = async (rowNumber) => {
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+          { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       if (!isVideoFavorited) {
-        alert('⭐ Please save this video to favorites before editing captions.')
+        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+          { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       return
@@ -1626,11 +1660,17 @@ export default function Watch() {
   const handleInlineEditCaption = (rowNumber) => {
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
+        showCustomAlertModal('🔒 Captions require a paid plan. Please upgrade to access this feature.', [
+          { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       if (!isVideoFavorited) {
-        alert('⭐ Please save this video to favorites before editing captions.')
+        showCustomAlertModal('⭐ Please save this video to favorites before editing captions.', [
+          { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       return
@@ -1819,11 +1859,17 @@ export default function Watch() {
     // Check if user can access loops
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        alert('🔒 Loops require a paid plan. Please upgrade to access this feature.')
+        showCustomAlertModal('🔒 Loops require a paid plan. Please upgrade to access this feature.', [
+          { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       if (!isVideoFavorited) {
-        alert('⭐ Please save this video to favorites before creating loops.')
+        showCustomAlertModal('⭐ Please save this video to favorites before creating loops.', [
+          { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       return
@@ -1851,11 +1897,17 @@ export default function Watch() {
     // Check if user can access loops
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
-        alert('🔒 Loops require a paid plan. Please upgrade to access this feature.')
+        showCustomAlertModal('🔒 Loops require a paid plan. Please upgrade to access this feature.', [
+          { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       if (!isVideoFavorited) {
-        alert('⭐ Please save this video to favorites before creating loops.')
+        showCustomAlertModal('⭐ Please save this video to favorites before creating loops.', [
+          { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
         return
       }
       return
@@ -3016,6 +3068,44 @@ export default function Watch() {
                 {isLoopActive ? 'Update & Restart Loop' : 'Save & Start Loop'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Alert Modal */}
+      {showCustomAlert && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full border border-gray-600">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-600">
+              <h3 className="text-lg font-semibold text-white">
+                Alert, no need to panic. Yet.
+              </h3>
+            </div>
+            
+            {/* Message */}
+            <div className="px-6 py-4">
+              <p className="text-white text-base">{customAlertMessage}</p>
+            </div>
+            
+            {/* Action Buttons */}
+            {customAlertButtons.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-600 flex space-x-3 justify-end">
+                {customAlertButtons.map((button, index) => (
+                  <button
+                    key={index}
+                    onClick={button.action}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      index === 0 
+                        ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                  >
+                    {button.text}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
