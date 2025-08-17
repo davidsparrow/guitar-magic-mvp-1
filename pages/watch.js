@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
+import { supabase } from '../lib/supabase'
 import { FaHamburger, FaSearch, FaTimes, FaRegEye, FaRegEdit, FaPlus } from "react-icons/fa"
 import { TiDeleteOutline } from "react-icons/ti"
 import { CgViewList } from "react-icons/cg"
@@ -68,6 +69,361 @@ export default function Watch() {
   const [editingCaptionId, setEditingCaptionId] = useState(null)
   const [originalCaptionState, setOriginalCaptionState] = useState(null) // Track original caption before editing
 
+  // Database operation states
+  const [isLoadingCaptions, setIsLoadingCaptions] = useState(false)
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
+  const [dbError, setDbError] = useState(null)
+  
+  // Watch time tracking states
+  const [watchStartTime, setWatchStartTime] = useState(null)
+  const [isTrackingWatchTime, setIsTrackingWatchTime] = useState(false)
+  const lastSavedSessionRef = useRef(null)
+  const saveTimeoutRef = useRef(null) // Add timeout ref for debouncing
+  
+  // YouTube API loading states
+  const [youtubeAPILoading, setYoutubeAPILoading] = useState(false)
+  const [youtubeAPIError, setYoutubeAPIError] = useState(false)
+
+  // Basic Supabase database operations
+  const saveFavorite = async (videoData) => {
+    try {
+      setIsLoadingFavorites(true)
+      setDbError(null)
+      
+      const { data, error } = await supabase
+        .from('favorites')
+        .insert([{
+          user_id: user?.id,
+          video_id: videoData.videoId,
+          video_title: videoData.videoTitle,
+          video_channel: videoData.videoChannel,
+          video_thumbnail: videoData.videoThumbnail,
+          video_duration_seconds: videoData.videoDuration
+        }])
+        .select()
+      
+      if (error) throw error
+      
+      console.log('✅ Favorite saved to database:', data)
+      return data[0]
+    } catch (error) {
+      console.error('❌ Error saving favorite:', error)
+      setDbError('Failed to save favorite')
+      return null
+    } finally {
+      setIsLoadingFavorites(false)
+    }
+  }
+
+  const loadCaptions = async (videoId) => {
+    try {
+      setIsLoadingCaptions(true)
+      setDbError(null)
+      
+      // First get the favorite record for this video
+      const { data: favoriteData, error: favoriteError } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user?.id)
+        .eq('video_id', videoId)
+        .single()
+      
+      if (favoriteError) {
+        if (favoriteError.code === 'PGRST116') {
+          // No favorite found, return empty array
+          console.log('ℹ️ No favorite found for video, no captions to load')
+          return []
+        }
+        throw favoriteError
+      }
+      
+      // Now get captions for this favorite
+      const { data, error } = await supabase
+        .from('captions')
+        .select('*')
+        .eq('favorite_id', favoriteData.id)
+        .order('start_time', { ascending: true })
+      
+      if (error) throw error
+      
+      // Transform database field names to frontend field names
+      const transformedCaptions = (data || []).map(caption => ({
+        id: caption.id,
+        startTime: caption.start_time,
+        endTime: caption.end_time,
+        line1: caption.line1,
+        line2: caption.line2,
+        rowType: caption.row_type,
+        favorite_id: caption.favorite_id,
+        user_id: caption.user_id,
+        created_at: caption.created_at,
+        updated_at: caption.updated_at
+      }))
+      
+      console.log('✅ Captions loaded from database:', data)
+      console.log('🔄 Transformed captions for frontend:', transformedCaptions)
+      return transformedCaptions
+    } catch (error) {
+      console.error('❌ Error loading captions:', error)
+      setDbError('Failed to load captions')
+      return []
+    } finally {
+      setIsLoadingCaptions(false)
+    }
+  }
+
+  const checkIfVideoFavorited = async (videoId) => {
+    try {
+      if (!user?.id || !videoId) return false
+      
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('video_id', videoId)
+        .single()
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('❌ Error checking favorite status:', error)
+        return false
+      }
+      
+      return !!data // Convert to boolean
+    } catch (error) {
+      console.error('❌ Error checking favorite status:', error)
+      return false
+    }
+  }
+
+  const removeFavorite = async (videoId) => {
+    try {
+      if (!user?.id || !videoId) return false
+      
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('video_id', videoId)
+      
+      if (error) throw error
+      
+      console.log('🗑️ Favorite removed from database')
+      return true
+    } catch (error) {
+      console.error('❌ Error removing favorite:', error)
+      setDbError('Failed to remove favorite')
+      return false
+    }
+  }
+
+  // Caption database operations
+  const saveCaption = async (captionData) => {
+    try {
+      setIsLoadingCaptions(true)
+      setDbError(null)
+      
+      // First ensure the video is favorited
+      const isFavorited = await checkIfVideoFavorited(videoId)
+      if (!isFavorited) {
+        console.error('❌ Cannot save caption: video not favorited')
+        setDbError('Video must be favorited to save captions')
+        return null
+      }
+      
+      // Get the favorite record to link the caption
+      const { data: favoriteData, error: favoriteError } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('video_id', videoId)
+        .single()
+      
+      if (favoriteError) throw favoriteError
+      
+      const { data, error } = await supabase
+        .from('captions')
+        .insert([{
+          favorite_id: favoriteData.id,
+          user_id: user.id,
+          row_type: captionData.rowType,
+          start_time: captionData.startTime || '0:00',
+          end_time: captionData.endTime || '0:05',
+          line1: captionData.line1 || '',
+          line2: captionData.line2 || ''
+        }])
+        .select()
+      
+      if (error) throw error
+      
+      // Transform the saved caption to frontend format
+      const savedCaption = data[0]
+      const transformedCaption = {
+        id: savedCaption.id,
+        startTime: savedCaption.start_time,
+        endTime: savedCaption.end_time,
+        line1: savedCaption.line1,
+        line2: savedCaption.line2,
+        rowType: savedCaption.row_type,
+        favorite_id: savedCaption.favorite_id,
+        user_id: savedCaption.user_id,
+        created_at: savedCaption.created_at,
+        updated_at: savedCaption.updated_at
+      }
+      
+      console.log('✅ Caption saved to database:', savedCaption)
+      console.log('🔄 Transformed saved caption:', transformedCaption)
+      return transformedCaption
+    } catch (error) {
+      console.error('❌ Error saving caption:', error)
+      setDbError('Failed to save caption')
+      return null
+    } finally {
+      setIsLoadingCaptions(false)
+    }
+  }
+
+  const updateCaption = async (captionId, updates) => {
+    try {
+      setIsLoadingCaptions(true)
+      setDbError(null)
+      
+      const { data, error } = await supabase
+        .from('captions')
+        .update({
+          start_time: updates.startTime,
+          end_time: updates.endTime,
+          line1: updates.line1 || '',
+          line2: updates.line2 || '',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', captionId)
+        .eq('user_id', user.id) // Security: only update own captions
+        .select()
+      
+      if (error) throw error
+      
+      // Transform the updated caption to frontend format
+      const updatedCaption = data[0]
+      const transformedCaption = {
+        id: updatedCaption.id,
+        startTime: updatedCaption.start_time,
+        endTime: updatedCaption.end_time,
+        line1: updatedCaption.line1,
+        line2: updatedCaption.line2,
+        rowType: updatedCaption.row_type,
+        favorite_id: updatedCaption.favorite_id,
+        user_id: updatedCaption.user_id,
+        created_at: updatedCaption.created_at,
+        updated_at: updatedCaption.updated_at
+      }
+      
+      console.log('✅ Caption updated in database:', updatedCaption)
+      console.log('🔄 Transformed updated caption:', transformedCaption)
+      return transformedCaption
+    } catch (error) {
+      console.error('❌ Error updating caption:', error)
+      setDbError('Failed to update caption')
+      return null
+    } finally {
+      setIsLoadingCaptions(false)
+    }
+  }
+
+  const deleteCaption = async (captionId) => {
+    try {
+      setIsLoadingCaptions(true)
+      setDbError(null)
+      
+      const { error } = await supabase
+        .from('captions')
+        .delete()
+        .eq('id', captionId)
+        .eq('user_id', user.id) // Security: only delete own captions
+      
+      if (error) throw error
+      
+      console.log('🗑️ Caption deleted from database:', captionId)
+      return true
+    } catch (error) {
+      console.error('❌ Error deleting caption:', error)
+      setDbError('Failed to delete caption')
+      return false
+    } finally {
+      setIsLoadingCaptions(false)
+    }
+  }
+
+  // Watch time tracking functions
+  const startWatchTimeTracking = () => {
+    if (!videoId || !user?.id || !videoChannel) return null
+    const startTime = Date.now()
+    return startTime
+  }
+
+  const stopWatchTimeTracking = (startTime) => {
+    if (!startTime || !videoId || !user?.id || !videoChannel) return
+    
+    const endTime = Date.now()
+    const watchDurationSeconds = Math.floor((endTime - startTime) / 1000)
+    
+    if (watchDurationSeconds > 0) {
+      saveWatchTimeToDatabase(watchDurationSeconds, startTime)
+    }
+  }
+
+  const saveWatchTimeToDatabase = async (watchDurationSeconds, startTimestamp) => {
+    try {
+      if (!videoId || !user?.id || !videoChannel || watchDurationSeconds <= 0) return
+
+      // DEBOUNCING: Clear any existing timeout to prevent rapid successive calls
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+        console.log('⏱️ Cleared previous save timeout')
+      }
+
+      // DEBOUNCING: Set new timeout for 1 second to prevent duplicates
+      saveTimeoutRef.current = setTimeout(async () => {
+        const endTimestamp = new Date().toISOString()
+        const startTimestampISO = new Date(startTimestamp).toISOString()
+
+        // Check if we already saved this exact session to prevent duplicates
+        const sessionKey = `${videoId}-${Math.floor(startTimestamp / 1000)}` // Round to nearest second
+        
+        if (lastSavedSessionRef.current === sessionKey) {
+          console.log('⚠️ Duplicate session detected, skipping save:', sessionKey)
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('channel_watch_time')
+          .insert([{
+            user_id: user.id,
+            video_id: videoId,
+            video_title: videoTitle,
+            channel_name: videoChannel,
+            channel_id: '',
+            watch_time_seconds: watchDurationSeconds,
+            watch_date: new Date().toISOString().split('T')[0],
+            watch_timestamp_start: startTimestampISO,
+            watch_timestamp_stop: endTimestamp
+          }])
+          .select()
+
+        if (error) throw error
+        
+        // Mark this session as saved to prevent duplicates
+        lastSavedSessionRef.current = sessionKey
+        
+        console.log('✅ Watch time saved:', watchDurationSeconds, 'seconds', 'from', startTimestampISO, 'to', endTimestamp)
+      }, 1000) // 1 second debounce
+
+    } catch (error) {
+      console.error('❌ Error saving watch time:', error)
+    }
+  }
+
+
+
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
@@ -81,21 +437,74 @@ export default function Watch() {
     }
   }, [profile])
 
+  // Track when user data becomes available
+  useEffect(() => {
+    console.log('👤 User data useEffect triggered:', { 
+      hasUser: !!user, 
+      userId: user?.id, 
+      hasProfile: !!profile,
+      loading,
+      isAuthenticated
+    })
+  }, [user, profile, loading, isAuthenticated])
+
   // Load YouTube API script
   useEffect(() => {
     if (mounted && !window.YT) {
+      console.log('📡 Loading YouTube iframe API...')
+      setYoutubeAPILoading(true)
+      setYoutubeAPIError(false)
+      
       const tag = document.createElement('script')
       tag.src = 'https://www.youtube.com/iframe_api'
+      
+      // Add more detailed error handling
+      tag.onerror = (error) => {
+        console.error('❌ Failed to load YouTube iframe API:', error)
+        console.error('❌ Error details:', { 
+          error: error.message, 
+          type: error.type,
+          target: tag.src 
+        })
+        setYoutubeAPILoading(false)
+        setYoutubeAPIError(true)
+        handleYouTubeAPIError()
+      }
+      
+      tag.onload = () => {
+        console.log('✅ YouTube iframe API script loaded')
+        setYoutubeAPILoading(false)
+      }
+      
+      // Add timeout to detect hanging script loading
+      const timeoutId = setTimeout(() => {
+        if (!window.YT) {
+          console.error('⏰ YouTube API script loading timeout - script may be hanging')
+          setYoutubeAPILoading(false)
+          setYoutubeAPIError(true)
+        }
+      }, 10000) // 10 second timeout
+      
       const firstScriptTag = document.getElementsByTagName('script')[0]
       firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
+      
+      // Cleanup timeout if script loads successfully
+      if (window.YT) {
+        clearTimeout(timeoutId)
+      }
+    } else if (mounted && window.YT) {
+      console.log('✅ YouTube API already loaded')
     }
   }, [mounted])
 
   // Initialize YouTube player when API is ready
   useEffect(() => {
     if (mounted && videoId) {
+      console.log('🎬 Initializing YouTube player for video:', videoId)
+      
       const initPlayer = () => {
         if (window.YT && window.YT.Player) {
+          console.log('✅ YouTube API ready, creating player...')
           const newPlayer = new window.YT.Player('youtube-player', {
             height: '100%',
             width: '100%',
@@ -109,43 +518,204 @@ export default function Watch() {
               origin: window.location.origin
             },
             events: {
-              onReady: handleVideoReady,
+              onReady: (event) => handleVideoReady(event, newPlayer),
               onError: handleVideoError
             }
           })
           
-          // Wait a bit for the player to fully initialize before setting it
-          setTimeout(() => {
-            setPlayer(newPlayer)
-          }, 100)
+          // Store the player reference for later use
+          console.log('⏳ Player created, waiting for onReady event...')
+        } else {
+          console.log('⚠️ YouTube API not ready yet, waiting...')
         }
       }
 
       // Check if API is already loaded
       if (window.YT && window.YT.Player) {
+        console.log('🚀 YouTube API already loaded, initializing immediately')
         initPlayer()
       } else {
         // Wait for API to be ready
-        window.onYouTubeIframeAPIReady = initPlayer
+        console.log('⏳ Setting up YouTube API ready callback...')
+        window.onYouTubeIframeAPIReady = () => {
+          console.log('🎉 YouTube API ready callback triggered!')
+          initPlayer()
+        }
       }
     }
   }, [mounted, videoId])
 
   // Load video from URL parameters when page loads
   useEffect(() => {
-    if (mounted && router.isReady) {
-      const { v, title, channel } = router.query
-      if (v && typeof v === 'string') {
+    console.log('🔍 Video loading useEffect triggered:', { 
+      mounted, 
+      routerIsReady: router.isReady, 
+      routerQuery: router.query,
+      hasVideoId: !!router.query?.v,
+      videoId: router.query?.v,
+      title: router.query?.title,
+      channel: router.query?.channel,
+      currentUrl: window.location.href,
+      pathname: router.pathname,
+      asPath: router.asPath
+    })
+    
+    // Try to get video data from URL if router isn't ready yet
+    if (mounted && !router.isReady) {
+      console.log('🔍 Router not ready, trying to parse URL manually...')
+      const urlParams = new URLSearchParams(window.location.search)
+      const v = urlParams.get('v')
+      const title = urlParams.get('title')
+      const channel = urlParams.get('channel')
+      
+      if (v) {
+        console.log('✅ Got video data from URL manually:', { v, title, channel })
         setVideoId(v)
         setVideoTitle(title ? decodeURIComponent(title) : '')
         setVideoChannel(channel ? decodeURIComponent(channel) : '')
         setIsVideoReady(true)
       } else {
+        console.log('❌ No video ID in URL, redirecting to home')
+        router.push('/')
+      }
+    } else if (mounted && router.isReady) {
+      const { v, title, channel } = router.query
+      if (v && typeof v === 'string') {
+        console.log('✅ Setting video data from router:', { v, title, channel })
+        setVideoId(v)
+        setVideoTitle(title ? decodeURIComponent(title) : '')
+        setVideoChannel(channel ? decodeURIComponent(channel) : '')
+        setIsVideoReady(true)
+      } else {
+        console.log('❌ No video ID provided, redirecting to home')
         // No video ID provided, redirect to home
         router.push('/')
       }
+    } else {
+      console.log('⏳ Video loading conditions not met:', { mounted, routerIsReady: router.isReady })
     }
-  }, [mounted, router.isReady, router.query, router])
+  }, [mounted, router.isReady, router.query])
+
+  // Fallback: Check URL immediately when component mounts
+  useEffect(() => {
+    if (mounted) {
+      console.log('🔍 Fallback: Checking URL immediately on mount...')
+      const urlParams = new URLSearchParams(window.location.search)
+      const v = urlParams.get('v')
+      const title = urlParams.get('title')
+      const channel = urlParams.get('channel')
+      
+      if (v && !videoId) {
+        console.log('✅ Fallback: Setting video data from URL:', { v, title, channel })
+        setVideoId(v)
+        setVideoTitle(title ? decodeURIComponent(title) : '')
+        setVideoChannel(channel ? decodeURIComponent(channel) : '')
+        setIsVideoReady(true)
+      }
+    }
+  }, [mounted, videoId])
+
+  // Check if video is favorited when video loads or user changes
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (videoId && user?.id) {
+        const isFavorited = await checkIfVideoFavorited(videoId)
+        setIsVideoFavorited(isFavorited)
+        console.log('⭐ Favorite status checked:', isFavorited)
+      }
+    }
+    
+    checkFavoriteStatus()
+  }, [videoId, user?.id])
+
+  // Load captions when video loads or user changes
+  useEffect(() => {
+    const loadVideoCaptions = async () => {
+      console.log('🔄 Caption loading effect triggered:', { videoId, userId: user?.id, isVideoFavorited })
+      
+      if (videoId && user?.id && isVideoFavorited) {
+        console.log('📝 Loading captions for video:', videoId)
+        const videoCaptions = await loadCaptions(videoId)
+        console.log('📝 Captions loaded:', videoCaptions)
+        setCaptions(videoCaptions)
+        console.log('📝 Captions set in state:', videoCaptions.length)
+      } else {
+        console.log('📝 Clearing captions - conditions not met:', { videoId, userId: user?.id, isVideoFavorited })
+        setCaptions([])
+      }
+    }
+    
+    loadVideoCaptions()
+  }, [videoId, user?.id, isVideoFavorited])
+
+  // Automatic watch time tracking
+  useEffect(() => {
+    console.log('🔄 Watch time tracking useEffect EXECUTED', {
+      timestamp: Date.now(),
+      playerReady: isPlayerReady(),
+      isTracking: isTrackingWatchTime,
+      hasWatchStartTime: !!watchStartTime,
+      executionCount: (useEffect.executionCount || 0) + 1
+    })
+    
+    // Track execution count
+    useEffect.executionCount = (useEffect.executionCount || 0) + 1
+    
+    if (!player || !isPlayerReady() || !user?.id || !videoId || !videoChannel) {
+      console.log('⏸️ Watch time tracking paused - conditions not met:', {
+        hasPlayer: !!player,
+        playerReady: isPlayerReady(),
+        hasUser: !!user?.id,
+        hasVideoId: !!videoId,
+        hasChannel: !!videoChannel
+      })
+      return
+    }
+
+    // Set up polling to check player state
+    const checkPlayerState = () => {
+      try {
+        if (!player || !isPlayerReady()) return
+        
+        const playerState = player.getPlayerState()
+        console.log('🎮 Player state check:', {
+          state: playerState,
+          isTracking: isTrackingWatchTime,
+          hasStartTime: !!watchStartTime,
+          timestamp: Date.now()
+        })
+        
+        if (playerState === 1 && !isTrackingWatchTime) { // Playing
+          console.log('▶️ Starting watch time tracking...')
+          const startTime = startWatchTimeTracking()
+          setWatchStartTime(startTime)
+          setIsTrackingWatchTime(true)
+        } else if ((playerState === 2 || playerState === 0) && isTrackingWatchTime && watchStartTime) { // Paused or Ended
+          console.log('⏸️ Stopping watch time tracking...')
+          stopWatchTimeTracking(watchStartTime)
+          setWatchStartTime(null)
+          setIsTrackingWatchTime(false)
+        }
+      } catch (error) {
+        console.log('⚠️ Error checking player state:', error)
+      }
+    }
+
+    // Check player state every 2 seconds
+    const intervalId = setInterval(checkPlayerState, 2000)
+
+    // Cleanup function
+    return () => {
+      clearInterval(intervalId)
+      if (isTrackingWatchTime && watchStartTime) {
+        stopWatchTimeTracking(watchStartTime)
+      }
+    }
+  }, [player, user?.id, videoId, videoChannel, isTrackingWatchTime, watchStartTime])
+
+
+
+
 
   // Handle login/logout
   const handleAuthClick = async () => {
@@ -163,14 +733,28 @@ export default function Watch() {
   }
 
   // Video player functions
-  const handleVideoReady = () => {
+  const handleVideoReady = (event, playerInstance) => {
     setIsVideoReady(true)
     console.log('🎥 YouTube player ready and methods available')
+    
+    // Set the fully ready player in state
+    if (playerInstance) {
+      console.log('✅ Setting fully ready player in state...')
+      setPlayer(playerInstance)
+    } else {
+      console.log('⚠️ No player instance provided to handleVideoReady')
+    }
   }
 
   const handleVideoError = (error) => {
     console.error('Video error:', error)
     // Handle video loading errors
+  }
+
+  // Handle YouTube API loading errors
+  const handleYouTubeAPIError = () => {
+    console.error('❌ YouTube API failed to load')
+    // Could show a retry button or fallback message
   }
 
   // Handle keyboard shortcuts for video control
@@ -234,13 +818,23 @@ export default function Watch() {
 
   // Check if player is fully ready with all methods available
   const isPlayerReady = () => {
-    return player && 
+    const result = player && 
            player.getPlayerState && 
            typeof player.getPlayerState === 'function' &&
            player.playVideo && 
            typeof player.playVideo === 'function' &&
            player.pauseVideo && 
            typeof player.pauseVideo === 'function'
+    
+    // Simple logging that won't be collapsed
+    console.log('🔍 isPlayerReady - hasPlayer:', !!player)
+    console.log('🔍 isPlayerReady - hasGetPlayerState:', !!player?.getPlayerState)
+    console.log('🔍 isPlayerReady - getPlayerStateType:', typeof player?.getPlayerState)
+    console.log('🔍 isPlayerReady - hasPlayVideo:', !!player?.playVideo)
+    console.log('🔍 isPlayerReady - hasPauseVideo:', !!player?.pauseVideo)
+    console.log('🔍 isPlayerReady - FINAL RESULT:', result)
+    
+    return result
   }
 
   // Check if user can access loop functionality
@@ -290,31 +884,61 @@ export default function Watch() {
   }
 
   // Handle favorite/unfavorite video
-  const handleFavoriteToggle = () => {
+  const handleFavoriteToggle = async () => {
     if (isVideoFavorited) {
       // Show warning before unfavoriting
       setShowUnfavoriteWarning(true)
     } else {
       // Add to favorites
-      setIsVideoFavorited(true)
-      console.log('⭐ Video added to favorites')
-      // TODO: Save to Supabase
+      try {
+        const videoData = {
+          videoId,
+          videoTitle,
+          videoChannel,
+          videoThumbnail: '', // TODO: Get from YouTube API
+          videoDuration: 0 // TODO: Get from YouTube API
+        }
+        
+        const savedFavorite = await saveFavorite(videoData)
+        if (savedFavorite) {
+          setIsVideoFavorited(true)
+          console.log('✅ Video saved to favorites in database')
+        } else {
+          console.error('❌ Failed to save favorite to database')
+        }
+      } catch (error) {
+        console.error('❌ Error in handleFavoriteToggle:', error)
+        setDbError('Failed to save favorite')
+      }
     }
   }
 
   // Handle unfavorite confirmation
-  const handleUnfavoriteConfirm = () => {
-    setIsVideoFavorited(false)
-    setShowUnfavoriteWarning(false)
-    
-    // Wipe loop data from Supabase
-    console.log('🗑️ Wiping loop data for unfavorited video')
-    // TODO: Delete loop records from Supabase
-    
-    // Reset loop state
-    setIsLoopActive(false)
-    setLoopStartTime('0:00')
-    setLoopEndTime('0:00')
+  const handleUnfavoriteConfirm = async () => {
+    try {
+      const removed = await removeFavorite(videoId)
+      if (removed) {
+        setIsVideoFavorited(false)
+        setShowUnfavoriteWarning(false)
+        
+        // Wipe loop data from Supabase
+        console.log('🗑️ Wiping loop data for unfavorited video')
+        // TODO: Delete loop records from Supabase
+        
+        // Reset loop state
+        setIsLoopActive(false)
+        setLoopStartTime('0:00')
+        setLoopEndTime('0:00')
+        
+        console.log('✅ Favorite removed from database')
+      } else {
+        console.error('❌ Failed to remove favorite from database')
+        setDbError('Failed to remove favorite')
+      }
+    } catch (error) {
+      console.error('❌ Error in handleUnfavoriteConfirm:', error)
+      setDbError('Failed to remove favorite')
+    }
   }
 
   // Handle unfavorite cancel
@@ -369,32 +993,35 @@ export default function Watch() {
   }
 
   // Handle saving caption changes and exiting edit mode
-  const handleSaveCaptionChanges = () => {
+  const handleSaveCaptionChanges = async () => {
     if (editingCaptionId) {
       const captionToUpdate = captions.find(c => c.id === editingCaptionId)
       if (captionToUpdate) {
-        // Update the caption with any changes made
-        setCaptions(prev => prev.map(caption => 
-          caption.id === editingCaptionId 
-            ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
-            : caption
-        ))
-        console.log('💾 Caption changes saved and exiting edit mode:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
-      }
-    }
-    
-    // Exit caption mode completely - but DON'T restore loop state (keep loop icon white)
-    // Save any pending caption changes
-    if (editingCaptionId) {
-      const captionToUpdate = captions.find(c => c.id === editingCaptionId)
-      if (captionToUpdate) {
-        // Update the caption with any changes made
-        setCaptions(prev => prev.map(caption => 
-          caption.id === editingCaptionId 
-            ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
-            : caption
-        ))
-        console.log('💾 Caption changes saved:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
+        try {
+          // Update caption in database
+          const updatedCaption = await updateCaption(editingCaptionId, {
+            startTime: tempLoopStart,
+            endTime: tempLoopEnd,
+            line1: captionToUpdate.line1,
+            line2: captionToUpdate.line2
+          })
+          
+          if (updatedCaption) {
+            // Update local state with database response
+            setCaptions(prev => prev.map(caption => 
+              caption.id === editingCaptionId 
+                ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
+                : caption
+            ))
+            console.log('💾 Caption changes saved to database and exiting edit mode:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
+          } else {
+            console.error('❌ Failed to save caption changes to database')
+            return // Don't exit edit mode if save failed
+          }
+        } catch (error) {
+          console.error('❌ Error saving caption changes:', error)
+          return // Don't exit edit mode if save failed
+        }
       }
     }
     
@@ -563,7 +1190,7 @@ export default function Watch() {
   }
 
   // Handle adding new caption from control strip
-  const handleAddCaptionFromControlStrip = (rowNumber) => {
+  const handleAddCaptionFromControlStrip = async (rowNumber) => {
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
         alert('🔒 Captions require a paid plan. Please upgrade to access this feature.')
@@ -628,7 +1255,6 @@ export default function Watch() {
     const endTimeString = `${Math.floor((currentTime + 5) / 60)}:${((currentTime + 5) % 60).toString().padStart(2, '0')}`
 
     const newCaption = {
-      id: Date.now(),
       startTime: startTimeString,
       endTime: endTimeString,
       line1: '',
@@ -636,16 +1262,24 @@ export default function Watch() {
       rowType: rowNumber
     }
 
-    setCaptions(prev => [...prev, newCaption])
-    
-    // Update footer fields to control this caption
-    setTempLoopStart(startTimeString)
-    setTempLoopEnd(endTimeString)
-    
-    // Set this as the editing caption
-    setEditingCaptionId(newCaption.id)
-    
-    console.log('📝 New caption added from control strip:', newCaption)
+    // Save caption to database
+    const savedCaption = await saveCaption(newCaption)
+    if (savedCaption) {
+      // Add to local state with database ID
+      setCaptions(prev => [...prev, savedCaption])
+      
+      // Update footer fields to control this caption
+      setTempLoopStart(startTimeString)
+      setTempLoopEnd(endTimeString)
+      
+      // Set this as the editing caption
+      setEditingCaptionId(savedCaption.id)
+      
+      console.log('📝 New caption saved to database:', savedCaption)
+    } else {
+      console.error('❌ Failed to save new caption to database')
+      setDbError('Failed to save new caption')
+    }
   }
 
   // Handle inline editing from control strip
@@ -782,12 +1416,33 @@ export default function Watch() {
   }
 
   // Confirm caption deletion
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (captionToDelete !== null) {
-      const newCaptions = captions.filter((_, i) => i !== captionToDelete)
-      setCaptions(newCaptions)
-      setCaptionToDelete(null)
-      setShowDeleteConfirm(false)
+      try {
+        const captionToDeleteObj = captions[captionToDelete]
+        if (captionToDeleteObj?.id) {
+          const deleted = await deleteCaption(captionToDeleteObj.id)
+          if (deleted) {
+            const newCaptions = captions.filter((_, i) => i !== captionToDelete)
+            setCaptions(newCaptions)
+            setCaptionToDelete(null)
+            setShowDeleteConfirm(false)
+            console.log('🗑️ Caption deleted from database')
+          } else {
+            console.error('❌ Failed to delete caption from database')
+            setDbError('Failed to delete caption')
+          }
+        } else {
+          // Fallback for captions without database IDs
+          const newCaptions = captions.filter((_, i) => i !== captionToDelete)
+          setCaptions(newCaptions)
+          setCaptionToDelete(null)
+          setShowDeleteConfirm(false)
+        }
+      } catch (error) {
+        console.error('❌ Error deleting caption:', error)
+        setDbError('Failed to delete caption')
+      }
     }
   }
 
@@ -898,6 +1553,11 @@ export default function Watch() {
 
   // Convert time string (e.g., "1:23") to seconds
   const timeToSeconds = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') {
+      console.warn('⚠️ timeToSeconds called with invalid value:', timeStr)
+      return 0
+    }
+    
     const parts = timeStr.split(':').map(Number)
     if (parts.length === 2) {
       return parts[0] * 60 + parts[1]
@@ -1488,6 +2148,82 @@ export default function Watch() {
               ) : (
                 <ImLoop className="w-5 h-5" />
               )}
+            </button>
+
+            {/* Temporary test button for watch time tracking */}
+            <button
+              onClick={() => {
+                console.log('🧪 Manual test - Current state:', { 
+                  isTrackingWatchTime, 
+                  watchStartTime, 
+                  player: !!player,
+                  isPlayerReady: isPlayerReady()
+                })
+                if (isTrackingWatchTime && watchStartTime) {
+                  stopWatchTimeTracking(watchStartTime)
+                  setWatchStartTime(null)
+                  setIsTrackingWatchTime(false)
+                  console.log('🧪 Manual stop tracking')
+                } else {
+                  const startTime = startWatchTimeTracking()
+                  setWatchStartTime(startTime)
+                  setIsTrackingWatchTime(true)
+                  console.log('🧪 Manual start tracking')
+                }
+              }}
+              className="p-2 rounded-lg bg-blue-500/20 border border-blue-400/50 text-blue-400 hover:bg-blue-500/30 transition-all duration-200"
+              title="Test Watch Time Tracking"
+            >
+              ⏱️
+            </button>
+
+            {/* Test player methods button */}
+            <button
+              onClick={() => {
+                console.log('🎮 Testing player methods...')
+                if (player && isPlayerReady()) {
+                  try {
+                    const state = player.getPlayerState()
+                    console.log('✅ getPlayerState() works:', state)
+                    console.log('✅ Player is ready for watch time tracking!')
+                  } catch (error) {
+                    console.error('❌ getPlayerState() failed:', error)
+                  }
+                } else {
+                  console.log('❌ Player not ready:', { 
+                    hasPlayer: !!player, 
+                    isPlayerReady: isPlayerReady() 
+                  })
+                }
+              }}
+              className="p-2 rounded-lg bg-green-500/20 border border-green-400/50 text-green-400 hover:bg-green-500/30 transition-all duration-200"
+              title="Test Player Methods"
+            >
+              🎮
+            </button>
+
+            {/* Test YouTube API loading button */}
+            <button
+              onClick={() => {
+                console.log('📡 Testing YouTube API status...')
+                console.log('  - window.YT exists:', !!window.YT)
+                console.log('  - window.YT.Player exists:', !!(window.YT && window.YT.Player))
+                console.log('  - youtubeAPILoading:', youtubeAPILoading)
+                console.log('  - youtubeAPIError:', youtubeAPIError)
+                
+                if (!window.YT) {
+                  console.log('🔄 Manually triggering YouTube API load...')
+                  const tag = document.createElement('script')
+                  tag.src = 'https://www.youtube.com/iframe_api'
+                  tag.onload = () => console.log('✅ Manual YouTube API load successful')
+                  tag.onerror = (e) => console.error('❌ Manual YouTube API load failed:', e)
+                  document.head.appendChild(tag)
+                }
+              }}
+              className="p-2 rounded-lg bg-yellow-500/20 border border-yellow-400/50 text-yellow-400 hover:bg-yellow-500/30 transition-all duration-200"
+              title="Test YouTube API Loading"
+            >
+              📡
             </button>
 
             {/* Loop Time Display / Caption Timing Fields */}
