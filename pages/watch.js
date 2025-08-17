@@ -1840,7 +1840,7 @@ export default function Watch() {
 
       {/* STICKY CONTROL STRIPS FOOTER */}
       {showControlStrips && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 h-64 bg-transparent">
+        <div className="fixed bottom-16 left-0 right-0 z-40 h-64 bg-transparent px-4 md:px-6">
           {/* Control Strips Container - Dynamic positioning from bottom */}
           <div className="h-full relative">
             
@@ -2067,7 +2067,7 @@ export default function Watch() {
                   onClick={() => handleInlineEditCaption(3)}
                   className={`transition-colors cursor-pointer ${
                     isInCaptionMode 
-                      ? 'text-green-400' 
+                      ? 'text-gray-400' 
                       : 'text-white hover:opacity-70'
                   }`}
                   title={isInCaptionMode ? "Currently editing captions" : "Edit caption inline"}
@@ -2115,7 +2115,7 @@ export default function Watch() {
         <div className="grid grid-cols-3 max-w-7xl mx-auto h-full">
           
           {/* Left Column - Left-justified content with Video Controls */}
-          <div className="flex items-center justify-start space-x-3 ml-3">
+          <div className="flex items-center justify-start space-x-3 ml-1 md:ml-4">
             {/* Flip Video Button - 3 States */}
             <button
               onClick={handleFlipVideo}
@@ -2150,81 +2150,11 @@ export default function Watch() {
               )}
             </button>
 
-            {/* Temporary test button for watch time tracking */}
-            <button
-              onClick={() => {
-                console.log('🧪 Manual test - Current state:', { 
-                  isTrackingWatchTime, 
-                  watchStartTime, 
-                  player: !!player,
-                  isPlayerReady: isPlayerReady()
-                })
-                if (isTrackingWatchTime && watchStartTime) {
-                  stopWatchTimeTracking(watchStartTime)
-                  setWatchStartTime(null)
-                  setIsTrackingWatchTime(false)
-                  console.log('🧪 Manual stop tracking')
-                } else {
-                  const startTime = startWatchTimeTracking()
-                  setWatchStartTime(startTime)
-                  setIsTrackingWatchTime(true)
-                  console.log('🧪 Manual start tracking')
-                }
-              }}
-              className="p-2 rounded-lg bg-blue-500/20 border border-blue-400/50 text-blue-400 hover:bg-blue-500/30 transition-all duration-200"
-              title="Test Watch Time Tracking"
-            >
-              ⏱️
-            </button>
 
-            {/* Test player methods button */}
-            <button
-              onClick={() => {
-                console.log('🎮 Testing player methods...')
-                if (player && isPlayerReady()) {
-                  try {
-                    const state = player.getPlayerState()
-                    console.log('✅ getPlayerState() works:', state)
-                    console.log('✅ Player is ready for watch time tracking!')
-                  } catch (error) {
-                    console.error('❌ getPlayerState() failed:', error)
-                  }
-                } else {
-                  console.log('❌ Player not ready:', { 
-                    hasPlayer: !!player, 
-                    isPlayerReady: isPlayerReady() 
-                  })
-                }
-              }}
-              className="p-2 rounded-lg bg-green-500/20 border border-green-400/50 text-green-400 hover:bg-green-500/30 transition-all duration-200"
-              title="Test Player Methods"
-            >
-              🎮
-            </button>
 
-            {/* Test YouTube API loading button */}
-            <button
-              onClick={() => {
-                console.log('📡 Testing YouTube API status...')
-                console.log('  - window.YT exists:', !!window.YT)
-                console.log('  - window.YT.Player exists:', !!(window.YT && window.YT.Player))
-                console.log('  - youtubeAPILoading:', youtubeAPILoading)
-                console.log('  - youtubeAPIError:', youtubeAPIError)
-                
-                if (!window.YT) {
-                  console.log('🔄 Manually triggering YouTube API load...')
-                  const tag = document.createElement('script')
-                  tag.src = 'https://www.youtube.com/iframe_api'
-                  tag.onload = () => console.log('✅ Manual YouTube API load successful')
-                  tag.onerror = (e) => console.error('❌ Manual YouTube API load failed:', e)
-                  document.head.appendChild(tag)
-                }
-              }}
-              className="p-2 rounded-lg bg-yellow-500/20 border border-yellow-400/50 text-yellow-400 hover:bg-yellow-500/30 transition-all duration-200"
-              title="Test YouTube API Loading"
-            >
-              📡
-            </button>
+
+
+
 
             {/* Loop Time Display / Caption Timing Fields */}
             <div className="flex flex-col items-start space-y-1">
