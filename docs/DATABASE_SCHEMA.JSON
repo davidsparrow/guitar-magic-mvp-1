@@ -301,6 +301,20 @@
     "column_default": "now()"
   },
   {
+    "table_name": "channel_watch_time",
+    "column_name": "watch_timestamp_start",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "channel_watch_time",
+    "column_name": "watch_timestamp_stop",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
     "table_name": "creator_payouts",
     "column_name": "id",
     "data_type": "uuid",
