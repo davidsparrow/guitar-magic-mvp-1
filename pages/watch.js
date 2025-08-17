@@ -445,11 +445,43 @@ export default function Watch() {
       const totalMinutes = (totalSeconds / 60).toFixed(1)
       
       console.log('📊 Daily watch time from Supabase:', totalMinutes, 'minutes')
+      
       return totalMinutes
     } catch (error) {
       console.error('❌ Error querying daily watch time:', error)
       return 0
     }
+  }
+
+  // Check if user has exceeded their daily watch time limits
+  const checkDailyWatchTimeLimits = (dailyMinutes) => {
+    if (!user?.id || !userPlan) return
+    
+    // Define daily limits for each plan
+    const dailyLimits = {
+      'free': 30,      // 30 minutes per day
+      'roadie': 60,    // 60 minutes per day  
+      'hero': 120      // 120 minutes per day
+    }
+    
+    const userLimit = dailyLimits[userPlan] || dailyLimits.free
+    const hasExceeded = dailyMinutes >= userLimit
+    
+    console.log('🔐 Daily limit check:', {
+      userPlan,
+      dailyMinutes,
+      userLimit,
+      hasExceeded,
+      remainingMinutes: userLimit - dailyMinutes
+    })
+    
+    if (hasExceeded) {
+      console.log('⚠️ User has exceeded daily watch time limit!')
+      // TODO: Show upgrade message and block access
+      // This will be implemented in the next step
+    }
+    
+    return { hasExceeded, userPlan, dailyMinutes, userLimit }
   }
 
   // Feature Gates Helper Functions
@@ -558,8 +590,18 @@ export default function Watch() {
     if (profile && profile.subscription_tier) {
       setUserPlan(profile.subscription_tier)
       console.log('🔓 User plan updated:', profile.subscription_tier)
+      
+      // Check daily watch time limits after user plan is confirmed
+      if (user?.id) {
+        console.log('🔐 User plan confirmed - checking daily watch time limits')
+        getDailyWatchTimeTotal().then(dailyMinutes => {
+          if (dailyMinutes) {
+            checkDailyWatchTimeLimits(parseFloat(dailyMinutes))
+          }
+        })
+      }
     }
-  }, [profile])
+  }, [profile, user?.id])
 
   // Load feature gates configuration
   useEffect(() => {
@@ -661,6 +703,7 @@ export default function Watch() {
             },
             events: {
               onReady: (event) => handleVideoReady(event, newPlayer),
+              onStateChange: (event) => handlePlayerStateChange(event),
               onError: handleVideoError
             }
           })
@@ -728,6 +771,12 @@ export default function Watch() {
         setVideoTitle(title ? decodeURIComponent(title) : '')
         setVideoChannel(channel ? decodeURIComponent(channel) : '')
         setIsVideoReady(true)
+        
+        // Query daily watch time total when video loads
+        if (user?.id) {
+          console.log('📊 Video loaded - querying daily watch time total')
+          getDailyWatchTimeTotal()
+        }
       } else {
         console.log('❌ No video ID provided, redirecting to home')
         // No video ID provided, redirect to home
@@ -893,6 +942,25 @@ export default function Watch() {
     // Handle video loading errors
   }
 
+  // Handle YouTube player state changes - Global event handler for all play/pause actions
+  const handlePlayerStateChange = (event) => {
+    console.log('🎮 YouTube player state changed:', event.data)
+    
+    // YouTube player states:
+    // -1: UNSTARTED, 0: ENDED, 1: PLAYING, 2: PAUSED, 3: BUFFERING, 5: CUED
+    
+    // Log state changes for debugging (watch time tracking still works)
+    if (event.data === 1) { // PLAYING
+      console.log('▶️ Video started playing')
+    } else if (event.data === 2) { // PAUSED
+      console.log('⏸️ Video paused')
+    } else if (event.data === 3) { // BUFFERING
+      console.log('🔄 Video buffering')
+    } else if (event.data === 5) { // CUED
+      console.log('📋 Video cued')
+    }
+  }
+
   // Handle YouTube API loading errors
   const handleYouTubeAPIError = () => {
     console.error('❌ YouTube API failed to load')
@@ -920,8 +988,16 @@ export default function Watch() {
               player.playVideo()
               console.log('▶️ Video playing')
               
-              // Query daily watch time total when video starts
-              getDailyWatchTimeTotal()
+              // Query daily watch time total only when starting from beginning (0:00)
+              if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
+                const currentTime = player.getCurrentTime()
+                if (currentTime <= 1) { // Within 1 second of start (0:00)
+                  console.log('🎯 Video starting from beginning (0:00) - querying daily watch time total')
+                  getDailyWatchTimeTotal()
+                } else {
+                  console.log('⏭️ Video resuming from position:', currentTime, '- skipping daily total query')
+                }
+              }
             }
           } else {
             // Fallback: try to pause if we can't determine state
