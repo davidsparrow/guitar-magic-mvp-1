@@ -93,6 +93,10 @@ export default function Watch() {
   const [dailyLimitInfo, setDailyLimitInfo] = useState(null)
   const [currentDailyTotal, setCurrentDailyTotal] = useState(0) // Track current daily watch time total
 
+  // Toast notification states
+  const [toasts, setToasts] = useState([])
+  const [toastIdCounter, setToastIdCounter] = useState(0)
+
   // Basic Supabase database operations
   const saveFavorite = async (videoData) => {
     try {
@@ -223,6 +227,49 @@ export default function Watch() {
       setDbError('Failed to remove favorite')
       return false
     }
+  }
+
+  // Toast notification utility functions
+  const showToast = (message, type = 'info', actions = [], duration = 8000) => {
+    const id = toastIdCounter
+    setToastIdCounter(prev => prev + 1)
+    
+    const newToast = {
+      id,
+      message,
+      type,
+      actions,
+      createdAt: Date.now()
+    }
+    
+    setToasts(prev => [...prev, newToast])
+    
+    // Auto-dismiss after duration
+    setTimeout(() => {
+      dismissToast(id)
+    }, duration)
+    
+    return id
+  }
+
+  const dismissToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id))
+  }
+
+  const dismissAllToasts = () => {
+    setToasts([])
+  }
+
+
+
+  // Show video playing restriction toast
+  const showVideoPlayingRestriction = () => {
+    const message = featureGates?.global_settings?.video_playing_message || 
+                   'Please pause video before using this feature'
+    
+    showToast(message, 'warning', [
+      { text: 'OK', action: () => dismissAllToasts() }
+    ])
   }
 
   // Caption database operations
@@ -489,17 +536,12 @@ export default function Watch() {
     if (hasExceeded) {
       console.log('⚠️ User has exceeded daily watch time limit!')
       
-      // Set daily limit info for the upgrade modal
-      setDailyLimitInfo({
-        userPlan,
-        dailyMinutes,
-        userLimit,
-        hasExceeded,
-        remainingMinutes: userLimit - dailyMinutes
-      })
-      
-      // Show the upgrade modal
-      setShowUpgradeModal(true)
+      // Show toast with upgrade option
+      const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
+      showToast(message, 'warning', [
+        { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+        { text: 'OK', action: () => dismissAllToasts() }
+      ])
     }
     
     return { hasExceeded, userPlan, dailyMinutes, userLimit }
@@ -530,17 +572,12 @@ export default function Watch() {
         remainingMinutes: userLimit - dailyMinutes
       })
       
-      // Set daily limit info for the upgrade modal
-      setDailyLimitInfo({
-        userPlan,
-        dailyMinutes,
-        userLimit,
-        hasExceeded,
-        remainingMinutes: userLimit - dailyMinutes
-      })
-      
-      // Show the upgrade modal
-      setShowUpgradeModal(true)
+      // Show toast with upgrade option
+      const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
+      showToast(message, 'warning', [
+        { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+        { text: 'OK', action: () => dismissAllToasts() }
+      ])
       return false
     }
     
@@ -1153,6 +1190,12 @@ export default function Watch() {
 
   // Handle individual row hide/show
   const handleRowToggle = (rowNumber) => {
+    // Check if video is playing
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
+      return
+    }
+    
     switch(rowNumber) {
       case 1:
         setShowRow1(false)
@@ -1170,6 +1213,12 @@ export default function Watch() {
 
   // Handle show all rows (reset)
   const handleShowAllRows = () => {
+    // Check if video is playing
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
+      return
+    }
+    
     setShowRow1(true)
     setShowRow2(true)
     setShowRow3(true)
@@ -1240,6 +1289,12 @@ export default function Watch() {
 
   // Handle caption edit click with access control
   const handleCaptionEditClick = (rowNumber) => {
+    // Check if video is playing
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
+      return
+    }
+    
     // Check if user can access captions (same as loops)
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
@@ -1496,16 +1551,9 @@ export default function Watch() {
     }
 
     // Check if video is playing
-    if (player && isPlayerReady()) {
-      try {
-        const playerState = player.getPlayerState()
-        if (playerState === 1) { // Playing
-          console.log('⏸️ Cannot add caption while video is playing')
-          return
-        }
-      } catch (error) {
-        console.error('Error checking player state:', error)
-      }
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
+      return
     }
 
     // Enter caption mode
@@ -1589,16 +1637,9 @@ export default function Watch() {
     }
 
     // Check if video is playing
-    if (player && isPlayerReady()) {
-      try {
-        const playerState = player.getPlayerState()
-        if (playerState === 1) { // Playing
-          console.log('⏸️ Cannot edit caption while video is playing')
-          return
-        }
-      } catch (error) {
-        console.error('Error checking player state:', error)
-      }
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
+      return
     }
 
     // Check if there are captions to edit
@@ -2978,6 +3019,46 @@ export default function Watch() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] space-y-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`bg-black/90 backdrop-blur-sm border border-white/20 rounded-lg px-4 py-3 text-white shadow-2xl max-w-md transition-all duration-300 ${
+              toast.type === 'warning' ? 'border-yellow-400/50' : 
+              toast.type === 'error' ? 'border-red-400/50' : 
+              toast.type === 'success' ? 'border-green-400/50' : 
+              'border-blue-400/50'
+            }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium">{toast.message}</p>
+                {toast.actions && toast.actions.length > 0 && (
+                  <div className="flex space-x-2 mt-2">
+                    {toast.actions.map((action, index) => (
+                      <button
+                        key={index}
+                        onClick={action.action}
+                        className="px-3 py-1 text-xs bg-white/20 hover:bg-white/30 text-white rounded transition-colors"
+                      >
+                        {action.text}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => dismissToast(toast.id)}
+                className="ml-3 text-white/60 hover:text-white transition-colors text-lg font-bold"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Auth Modal */}
       {showAuthModal && (
