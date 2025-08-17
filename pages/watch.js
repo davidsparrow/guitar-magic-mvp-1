@@ -2256,7 +2256,7 @@ export default function Watch() {
         <div className="grid grid-cols-3 max-w-7xl mx-auto h-full">
           
           {/* Left Column - Left-justified content with Video Controls */}
-          <div className="flex items-center justify-start space-x-3 ml-1 md:ml-4">
+          <div className="flex items-center justify-start space-x-3 -ml-2 md:ml-1">
             {/* Flip Video Button - 3 States */}
             <button
               onClick={handleFlipVideo}
@@ -2367,7 +2367,7 @@ export default function Watch() {
           </div>
 
           {/* Right Column - Right-justified content */}
-          <div className="flex items-center justify-end mr-3 space-x-3">
+          <div className="flex items-center justify-end mr-1.5 space-x-3">
             {/* Guitar Pick Favorites */}
             <button 
               onClick={handleFavoriteToggle}
