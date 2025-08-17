@@ -1035,6 +1035,14 @@ export default function Watch() {
     const handleKeyPress = (e) => {
       // Spacebar for play/pause
       if (e.code === 'Space' && isPlayerReady()) {
+        // Check if any input field is currently focused - disable video control if so
+        if (document.activeElement && 
+            (document.activeElement.tagName === 'INPUT' || 
+             document.activeElement.tagName === 'TEXTAREA')) {
+          console.log('🔤 Input field focused - spacebar video control disabled')
+          return // Exit early, don't handle video control
+        }
+        
         e.preventDefault()
         console.log('🎯 Spacebar pressed, player state:', player)
         
