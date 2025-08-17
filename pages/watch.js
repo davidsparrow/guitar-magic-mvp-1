@@ -84,6 +84,10 @@ export default function Watch() {
   const [youtubeAPILoading, setYoutubeAPILoading] = useState(false)
   const [youtubeAPIError, setYoutubeAPIError] = useState(false)
 
+  // Feature Gates states
+  const [featureGates, setFeatureGates] = useState(null)
+  const [featureGatesLoading, setFeatureGatesLoading] = useState(true)
+
   // Basic Supabase database operations
   const saveFavorite = async (videoData) => {
     try {
@@ -422,7 +426,127 @@ export default function Watch() {
     }
   }
 
+  // Query daily watch time total from Supabase
+  const getDailyWatchTimeTotal = async () => {
+    if (!user?.id) return
+    
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      
+      const { data, error } = await supabase
+        .from('channel_watch_time')
+        .select('watch_time_seconds')
+        .eq('user_id', user.id)
+        .eq('watch_date', today)
 
+      if (error) throw error
+
+      const totalSeconds = data.reduce((sum, record) => sum + record.watch_time_seconds, 0)
+      const totalMinutes = (totalSeconds / 60).toFixed(1)
+      
+      console.log('📊 Daily watch time from Supabase:', totalMinutes, 'minutes')
+      return totalMinutes
+    } catch (error) {
+      console.error('❌ Error querying daily watch time:', error)
+      return 0
+    }
+  }
+
+  // Feature Gates Helper Functions
+  const loadFeatureGates = async () => {
+    try {
+      setFeatureGatesLoading(true)
+      console.log('🚪 Loading feature gates configuration...')
+      
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('*')
+        .eq('setting_key', 'feature_gates')
+        .single()
+
+      if (error) {
+        console.error('❌ Error loading feature gates:', error)
+        return
+      }
+
+      if (data && data.setting_value) {
+        setFeatureGates(data.setting_value)
+        console.log('✅ Feature gates loaded:', data.setting_value)
+      } else {
+        console.log('⚠️ No feature gates configuration found')
+      }
+    } catch (error) {
+      console.error('❌ Error in loadFeatureGates:', error)
+    } finally {
+      setFeatureGatesLoading(false)
+    }
+  }
+
+  const checkFeatureAccess = (featureKey, options = {}) => {
+    if (!featureGates || !featureGates.feature_gates) {
+      console.log('⚠️ Feature gates not loaded, defaulting to restricted')
+      return { hasAccess: false, reason: 'feature_gates_not_loaded' }
+    }
+
+    const feature = featureGates.feature_gates[featureKey]
+    if (!feature) {
+      console.log(`⚠️ Feature '${featureKey}' not found in configuration`)
+      return { hasAccess: false, reason: 'feature_not_configured' }
+    }
+
+    // Check if feature is enabled
+    if (!feature.is_enabled) {
+      return { hasAccess: false, reason: 'feature_disabled', message: 'This feature is currently disabled' }
+    }
+
+    // Check tier requirement
+    const tierOrder = { 'free': 0, 'roadie': 1, 'hero': 2 }
+    const userTier = userPlan || 'free'
+    const requiredTier = feature.min_tier || 'free'
+    
+    if (tierOrder[userTier] < tierOrder[requiredTier]) {
+      const message = feature.messages?.tier_restriction || 
+        `Requires ${requiredTier.toUpperCase()} Plan or higher`
+      return { 
+        hasAccess: false, 
+        reason: 'tier_restriction', 
+        message,
+        upgradeButton: feature.upgrade_button
+      }
+    }
+
+    // Check video playing restriction
+    if (options.checkVideoPlaying && feature.video_restricted && isVideoPlaying()) {
+      const message = feature.messages?.video_playing || 
+        featureGates.global_settings?.video_playing_message || 
+        'Please pause video before using this feature'
+      return { 
+        hasAccess: false, 
+        reason: 'video_playing', 
+        message 
+      }
+    }
+
+    return { hasAccess: true }
+  }
+
+  const isVideoPlaying = () => {
+    if (!player || !player.getPlayerState) return false
+    const state = player.getPlayerState()
+    // YouTube states: 1=playing, 2=paused, 3=buffering, 5=video cued
+    return state === 1 || state === 3
+  }
+
+  const getFeatureRestrictionMessage = (featureKey, options = {}) => {
+    const access = checkFeatureAccess(featureKey, options)
+    if (access.hasAccess) return null
+    
+    return {
+      message: access.message,
+      reason: access.reason,
+      upgradeButton: access.upgradeButton
+    }
+  }
 
   // Prevent hydration issues
   useEffect(() => {
@@ -436,6 +560,24 @@ export default function Watch() {
       console.log('🔓 User plan updated:', profile.subscription_tier)
     }
   }, [profile])
+
+  // Load feature gates configuration
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      loadFeatureGates()
+    }
+  }, [mounted, isAuthenticated])
+
+  // Debug feature gates state
+  useEffect(() => {
+    if (featureGates) {
+      console.log('🚪 Feature gates state updated:', {
+        features: Object.keys(featureGates.feature_gates || {}),
+        globalSettings: featureGates.global_settings,
+        userTier: userPlan
+      })
+    }
+  }, [featureGates, userPlan])
 
   // Track when user data becomes available
   useEffect(() => {
@@ -777,6 +919,9 @@ export default function Watch() {
             } else { // Paused or other states
               player.playVideo()
               console.log('▶️ Video playing')
+              
+              // Query daily watch time total when video starts
+              getDailyWatchTimeTotal()
             }
           } else {
             // Fallback: try to pause if we can't determine state
@@ -826,13 +971,7 @@ export default function Watch() {
            player.pauseVideo && 
            typeof player.pauseVideo === 'function'
     
-    // Simple logging that won't be collapsed
-    console.log('🔍 isPlayerReady - hasPlayer:', !!player)
-    console.log('🔍 isPlayerReady - hasGetPlayerState:', !!player?.getPlayerState)
-    console.log('🔍 isPlayerReady - getPlayerStateType:', typeof player?.getPlayerState)
-    console.log('🔍 isPlayerReady - hasPlayVideo:', !!player?.playVideo)
-    console.log('🔍 isPlayerReady - hasPauseVideo:', !!player?.pauseVideo)
-    console.log('🔍 isPlayerReady - FINAL RESULT:', result)
+
     
     return result
   }
@@ -1788,6 +1927,8 @@ export default function Watch() {
           </div>
         </div>
       </header>
+
+
 
       {/* Main Content Area - Theatre Mode Layout with Dynamic Height */}
       <div className="relative z-10 overflow-hidden px-6" style={{ 
