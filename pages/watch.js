@@ -93,9 +93,7 @@ export default function Watch() {
   const [dailyLimitInfo, setDailyLimitInfo] = useState(null)
   const [currentDailyTotal, setCurrentDailyTotal] = useState(0) // Track current daily watch time total
 
-  // Toast notification states
-  const [toasts, setToasts] = useState([])
-  const [toastIdCounter, setToastIdCounter] = useState(0)
+
 
   // Custom alert modal states
   const [showCustomAlert, setShowCustomAlert] = useState(false)
@@ -234,36 +232,7 @@ export default function Watch() {
     }
   }
 
-  // Toast notification utility functions
-  const showToast = (message, type = 'info', actions = [], duration = 8000) => {
-    const id = toastIdCounter
-    setToastIdCounter(prev => prev + 1)
-    
-    const newToast = {
-      id,
-      message,
-      type,
-      actions,
-      createdAt: Date.now()
-    }
-    
-    setToasts(prev => [...prev, newToast])
-    
-    // Auto-dismiss after duration
-    setTimeout(() => {
-      dismissToast(id)
-    }, duration)
-    
-    return id
-  }
 
-  const dismissToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id))
-  }
-
-  const dismissAllToasts = () => {
-    setToasts([])
-  }
 
   // Custom alert modal utility functions
   const showCustomAlertModal = (message, buttons = []) => {
@@ -278,13 +247,13 @@ export default function Watch() {
     setCustomAlertButtons([])
   }
 
-  // Show video playing restriction toast
+  // Show video playing restriction modal
   const showVideoPlayingRestriction = () => {
     const message = featureGates?.global_settings?.video_playing_message || 
                    'Please pause video before using this feature'
     
-    showToast(message, 'warning', [
-      { text: 'OK', action: () => dismissAllToasts() }
+    showCustomAlertModal(message, [
+      { text: 'OK', action: hideCustomAlertModal }
     ])
   }
 
@@ -3110,45 +3079,7 @@ export default function Watch() {
         </div>
       )}
 
-      {/* Toast Notifications */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] space-y-2">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`bg-black/90 backdrop-blur-sm border border-white/20 rounded-lg px-4 py-3 text-white shadow-2xl max-w-md transition-all duration-300 ${
-              toast.type === 'warning' ? 'border-yellow-400/50' : 
-              toast.type === 'error' ? 'border-red-400/50' : 
-              toast.type === 'success' ? 'border-green-400/50' : 
-              'border-blue-400/50'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium">{toast.message}</p>
-                {toast.actions && toast.actions.length > 0 && (
-                  <div className="flex space-x-2 mt-2">
-                    {toast.actions.map((action, index) => (
-                      <button
-                        key={index}
-                        onClick={action.action}
-                        className="px-3 py-1 text-xs bg-white/20 hover:bg-white/30 text-white rounded transition-colors"
-                      >
-                        {action.text}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => dismissToast(toast.id)}
-                className="ml-3 text-white/60 hover:text-white transition-colors text-lg font-bold"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+
 
       {/* Auth Modal */}
       {showAuthModal && (
