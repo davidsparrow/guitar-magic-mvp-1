@@ -88,6 +88,10 @@ export default function Watch() {
   const [featureGates, setFeatureGates] = useState(null)
   const [featureGatesLoading, setFeatureGatesLoading] = useState(true)
 
+  // Daily limit upgrade modal states
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [dailyLimitInfo, setDailyLimitInfo] = useState(null)
+
   // Basic Supabase database operations
   const saveFavorite = async (videoData) => {
     try {
@@ -459,9 +463,9 @@ export default function Watch() {
     
     // Define daily limits for each plan
     const dailyLimits = {
-      'free': 30,      // 30 minutes per day
-      'roadie': 60,    // 60 minutes per day  
-      'hero': 120      // 120 minutes per day
+      'free': 60,      // 60 minutes per day (1 hour)
+      'roadie': 180,   // 180 minutes per day (3 hours)
+      'hero': 480      // 480 minutes per day (8 hours)
     }
     
     const userLimit = dailyLimits[userPlan] || dailyLimits.free
@@ -477,8 +481,18 @@ export default function Watch() {
     
     if (hasExceeded) {
       console.log('⚠️ User has exceeded daily watch time limit!')
-      // TODO: Show upgrade message and block access
-      // This will be implemented in the next step
+      
+      // Set daily limit info for the upgrade modal
+      setDailyLimitInfo({
+        userPlan,
+        dailyMinutes,
+        userLimit,
+        hasExceeded,
+        remainingMinutes: userLimit - dailyMinutes
+      })
+      
+      // Show the upgrade modal
+      setShowUpgradeModal(true)
     }
     
     return { hasExceeded, userPlan, dailyMinutes, userLimit }
@@ -2566,6 +2580,61 @@ export default function Watch() {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
               >
                 PROCEED
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Daily Limit Upgrade Modal */}
+      {showUpgradeModal && dailyLimitInfo && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowUpgradeModal(false)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-6">
+            {/* Modal Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-red-400">⏰ Daily Limit Exceeded</h2>
+              <p className="text-gray-300 text-sm mb-4">
+                Sorry, you've exceeded your <span className="font-semibold text-blue-400">{dailyLimitInfo.userPlan.toUpperCase()}</span> plan daily watch limit.
+              </p>
+              <div className="bg-gray-800 rounded-lg p-3 mb-4">
+                <p className="text-sm text-gray-300">
+                  <span className="text-red-400">Used:</span> {dailyLimitInfo.dailyMinutes} minutes
+                </p>
+                <p className="text-sm text-gray-300">
+                  <span className="text-green-400">Limit:</span> {dailyLimitInfo.userLimit} minutes
+                </p>
+              </div>
+              <p className="text-gray-300 text-xs">
+                Your daily limit resets at midnight. Upgrade your plan for more watch time!
+              </p>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowUpgradeModal(false)
+                  router.push('/pricing')
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                UPGRADE PLAN
+              </button>
+              <button
+                onClick={() => {
+                  setShowUpgradeModal(false)
+                  router.push('/')
+                }}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              >
+                GO HOME
               </button>
             </div>
           </div>
