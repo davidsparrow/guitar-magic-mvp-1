@@ -91,6 +91,7 @@ export default function Watch() {
   // Daily limit upgrade modal states
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [dailyLimitInfo, setDailyLimitInfo] = useState(null)
+  const [currentDailyTotal, setCurrentDailyTotal] = useState(0) // Track current daily watch time total
 
   // Basic Supabase database operations
   const saveFavorite = async (videoData) => {
@@ -450,6 +451,9 @@ export default function Watch() {
       
       console.log('📊 Daily watch time from Supabase:', totalMinutes, 'minutes')
       
+      // Update the current daily total state for feature access checks
+      setCurrentDailyTotal(parseFloat(totalMinutes))
+      
       return totalMinutes
     } catch (error) {
       console.error('❌ Error querying daily watch time:', error)
@@ -460,6 +464,9 @@ export default function Watch() {
   // Check if user has exceeded their daily watch time limits
   const checkDailyWatchTimeLimits = (dailyMinutes) => {
     if (!user?.id || !userPlan) return
+    
+    // Update current daily total state for feature access checks
+    setCurrentDailyTotal(parseFloat(dailyMinutes))
     
     // Define daily limits for each plan
     const dailyLimits = {
@@ -496,6 +503,48 @@ export default function Watch() {
     }
     
     return { hasExceeded, userPlan, dailyMinutes, userLimit }
+  }
+
+  // Check if user can access features based on daily watch time limits
+  const checkDailyLimitForFeature = () => {
+    if (!user?.id || !userPlan) return false
+    
+    // Get current daily total from state
+    const dailyMinutes = currentDailyTotal
+    
+    // Define daily limits for each plan
+    const dailyLimits = {
+      'free': 60,      // 60 minutes per day (1 hour)
+      'roadie': 180,   // 180 minutes per day (3 hours)
+      'hero': 480      // 480 minutes per day (8 hours)
+    }
+    
+    const userLimit = dailyLimits[userPlan] || dailyLimits.free
+    const hasExceeded = dailyMinutes >= userLimit
+    
+    if (hasExceeded) {
+      console.log('🚫 Feature access blocked - daily limit exceeded:', {
+        userPlan,
+        dailyMinutes,
+        userLimit,
+        remainingMinutes: userLimit - dailyMinutes
+      })
+      
+      // Set daily limit info for the upgrade modal
+      setDailyLimitInfo({
+        userPlan,
+        dailyMinutes,
+        userLimit,
+        hasExceeded,
+        remainingMinutes: userLimit - dailyMinutes
+      })
+      
+      // Show the upgrade modal
+      setShowUpgradeModal(true)
+      return false
+    }
+    
+    return true
   }
 
   // Feature Gates Helper Functions
@@ -1075,6 +1124,12 @@ export default function Watch() {
 
   // Handle control strips toggle - SIMPLIFIED
   const handleControlStripsToggle = () => {
+    // Check daily watch time limits before allowing control strips feature
+    if (!checkDailyLimitForFeature()) {
+      console.log('🚫 Control Strips access blocked - daily limit exceeded')
+      return
+    }
+    
     const newState = !showControlStrips
     console.log('🔘 Toggle clicked! Current state:', showControlStrips, 'New state:', newState)
     
@@ -1683,6 +1738,12 @@ export default function Watch() {
 
   // Video flip handler - cycles through 3 states
   const handleFlipVideo = () => {
+    // Check daily watch time limits before allowing flip feature
+    if (!checkDailyLimitForFeature()) {
+      console.log('🚫 Flip Video access blocked - daily limit exceeded')
+      return
+    }
+    
     switch(flipState) {
       case 'normal':
         setFlipState('horizontal')
@@ -1700,6 +1761,12 @@ export default function Watch() {
 
   // Loop modal handlers
   const handleLoopClick = () => {
+    // Check daily watch time limits before allowing loop feature
+    if (!checkDailyLimitForFeature()) {
+      console.log('🚫 Loop access blocked - daily limit exceeded')
+      return
+    }
+    
     // Check if user can access loops
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
@@ -1726,6 +1793,12 @@ export default function Watch() {
   }
 
   const handleLoopTimesClick = () => {
+    // Check daily watch time limits before allowing loop feature
+    if (!checkDailyLimitForFeature()) {
+      console.log('🚫 Loop access blocked - daily limit exceeded')
+      return
+    }
+    
     // Check if user can access loops
     if (!canAccessLoops()) {
       if (userPlan === 'free') {
