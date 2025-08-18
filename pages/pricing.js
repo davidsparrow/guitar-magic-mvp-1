@@ -116,22 +116,13 @@ export default function Home() {
             className="hover:opacity-80 transition-opacity"
           >
             <img 
-              src="/images/gt_logoM_wide_on_black.png" 
+              src="/images/gt_logo_wide_on_black_450x90.png" 
               alt="VideoFlip Logo" 
               className="h-8 md:h-10 w-auto" // Mobile: h-8, Desktop: h-10
             />
           </a>
           {/* Right side buttons */}
           <div className="flex items-center space-x-1 md:space-x-2"> {/* Mobile: space-x-1, Desktop: space-x-2 */}
-            {/* Brain Icon Button - Now in right flex container */}
-            <button
-              onClick={() => router.push('/features')}
-              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
-              title="GuitarTube Features"
-            >
-              <LuBrain className="w-5 h-5 md:w-6 md:h-6 group-hover:text-yellow-400 transition-colors" />
-            </button>
-            
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -139,14 +130,10 @@ export default function Home() {
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-5 h-5 md:w-6 md:h-6 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-5 h-5 md:w-6 md:h-6 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
               )}
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                {isAuthenticated ? "End of the Party" : "Start Me Up"}
-              </div>
             </button>
             {/* Menu Icon */}
             <button 
@@ -155,10 +142,6 @@ export default function Home() {
               title="Yummy"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                Yummy
-              </div>
             </button>
           </div>
         </div>
@@ -339,7 +322,7 @@ export default function Home() {
       </div>
       {/* Footer - Fixed at Bottom */}
       <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:text-sm md:-mt-5" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:-mt-5" style={{ fontFamily: 'Futura, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>

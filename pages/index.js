@@ -114,8 +114,8 @@ export default function Home() {
       <TopBanner />
       
       {/* Desktop Header */}
-      <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-between items-center">
+      <header className="relative z-10 px-6 py-3 md:py-4" style={{ backgroundColor: 'transparent' }}>
+        <div className="flex justify-between items-center -mt-1">
           {/* Logo - Upper Left - NEW WIDE LOGO */}
           <a 
             href="/?home=true" 
@@ -169,11 +169,11 @@ export default function Home() {
         {/* 1. Large Centered Logo - Desktop Optimized */}
         <div className="mt-32 mb-8">
                       <img 
-              src="/images/gt_logo_wide_on_black_458x90.png" 
+              src="/images/gt_logo_wide_on_black_450x90.png" 
               alt="GuitarTube" 
               className="mx-auto mb-3 h-28 w-auto"
             />
-          <p className="text-center text-white font-bold text-xl" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <p className="text-center text-white font-bold text-l" style={{ fontFamily: 'Futura, sans-serif' }}>
             Press fast forward on your Video Guitar Learning journey
           </p>
         </div>
@@ -224,6 +224,7 @@ export default function Home() {
           <button
             onClick={() => router.push('/pricing')}
             className="relative text-green-400 font-bold text-3xl hover:text-green-300 transition-all duration-500 transform hover:scale-105 overflow-hidden group px-8 py-3 rounded-full"
+            style={{ fontFamily: 'Futura, sans-serif' }}
             title="No credit card required to Join"
           >
             <span className="relative z-10 bg-gradient-to-r from-green-400 via-emerald-300 to-green-400 bg-clip-text text-transparent animate-shine">
@@ -232,7 +233,7 @@ export default function Home() {
             <img 
               src="/images/no_credit_card2.png" 
               alt="No Credit Card" 
-              className="inline-block ml-3 -mt-0.5 w-7 h-7"
+              className="inline-block ml-3 -mt-2 w-7 h-7"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 via-emerald-300/40 to-green-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm rounded-full"></div>
           </button>
@@ -241,7 +242,7 @@ export default function Home() {
       </div>
       {/* Footer - Desktop Optimized */}
       <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs" style={{ fontFamily: 'Futura, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
