@@ -98,6 +98,146 @@ a {
   border-radius: 4px;
 }
 
+/* =============================================================
+   AUTH MODAL ANIMATIONS
+   ============================================================= */
+
+/* Modal backdrop fade-in */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal content slide-up */
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Input field focus glow */
+@keyframes inputGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Button hover scale */
+@keyframes buttonHover {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.02);
+  }
+}
+
+/* Apply animations to modal elements */
+.modal-backdrop {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  animation: modalSlideUp 0.4s ease-out;
+}
+
+/* Input field animations */
+.auth-input:focus {
+  animation: inputGlow 0.6s ease-out;
+}
+
+/* Button hover effects */
+.auth-button:hover {
+  animation: buttonHover 0.2s ease-out;
+}
+
+/* Smooth transitions for all interactive elements */
+.auth-modal * {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Enhanced focus states */
+.auth-input:focus {
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Hover effects for transparent elements */
+.auth-modal .bg-transparent:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Smooth backdrop blur transition */
+.backdrop-blur-sm {
+  transition: backdrop-filter 0.3s ease-in-out;
+}
+
+/* =============================================================
+   INPUT FIELD STYLING - ALWAYS TRANSPARENT
+   ============================================================= */
+
+/* Ensure input fields are always transparent */
+.auth-input {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+}
+
+/* Override any browser default styling */
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: white !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+}
+
+/* Ensure no background on autofill */
+.auth-input[data-autocompleted] {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+}
+
+/* Override any form styling that might add backgrounds */
+.auth-modal input[type="text"],
+.auth-modal input[type="email"],
+.auth-modal input[type="password"] {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+}
+
+/* Force text color to be white and visible */
+.auth-modal input {
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+}
+
+/* Ensure placeholder text is visible */
+.auth-modal input::placeholder {
+  color: rgba(229, 231, 235, 0.8) !important;
+  opacity: 1 !important;
+}
+
 /* Fullscreen video container styles */
 #video-container:fullscreen {
   background-color: #000000;
