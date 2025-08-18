@@ -135,7 +135,7 @@ export default function Home() {
               className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
               title="GuitarTube Features"
             >
-              <LuBrain className="w-7 h-7 group-hover:text-yellow-400 transition-colors" />
+              <LuBrain className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
             
             {/* Login/Logout Icon */}
@@ -145,14 +145,10 @@ export default function Home() {
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-7 h-7 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-7 h-7 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
               )}
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                {isAuthenticated ? "End of the Party" : "Start Me Up"}
-              </div>
             </button>
             {/* Menu Icon */}
             <button 
@@ -161,10 +157,6 @@ export default function Home() {
               title="Yummy"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                Yummy
-              </div>
             </button>
           </div>
         </div>
@@ -177,7 +169,7 @@ export default function Home() {
         {/* 1. Large Centered Logo - Desktop Optimized */}
         <div className="mt-32 mb-8">
                       <img 
-              src="/images/gt_logoM_wide_on_black.png" 
+              src="/images/gt_logo_wide_on_black_458x90.png" 
               alt="GuitarTube" 
               className="mx-auto mb-3 h-28 w-auto"
             />

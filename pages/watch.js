@@ -13,7 +13,7 @@ import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPickFilled } from "react-icons/tb"
 import { MdFlipCameraAndroid } from "react-icons/md"
 import { ImLoop } from "react-icons/im"
-import { BsReverseLayoutSidebarInsetReverse } from "react-icons/bs"
+import { BsReverseLayoutSidebarInsetReverse, BsArrowsFullscreen } from "react-icons/bs"
 import { IoGameControllerOutline } from "react-icons/io5"
 import TopBanner from '../components/TopBanner'
 
@@ -2100,14 +2100,18 @@ export default function Watch() {
             </div>
             {/* Right side: Auth buttons + Search icon */}
             <div className="flex items-center space-x-2">
-              <button onClick={handleAuthClick} className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
-                {isAuthenticated ? (<RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />) : (<IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />)}
+              <button onClick={handleAuthClick} className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
+                {isAuthenticated ? (
+                  <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+                ) : (
+                  <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
+                )}
               </button>
-              <button onClick={() => setShowMobileSearch(!showMobileSearch)} className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105" title="Search for videos">
-                <FaSearch className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              <button onClick={() => setShowMobileSearch(!showMobileSearch)} className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title="Search for videos">
+                <FaSearch className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               </button>
-              <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group">
-                <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative" title="Yummy">
+                <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               </button>
             </div>
           </div>
@@ -2155,11 +2159,15 @@ export default function Watch() {
           
           {/* Desktop Right side buttons */}
           <div className="hidden md:flex items-center space-x-2">
-            <button onClick={handleAuthClick} className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
-              {isAuthenticated ? (<RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />) : (<IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />)}
+            <button onClick={handleAuthClick} className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
+              {isAuthenticated ? (
+                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+              ) : (
+                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
+              )}
             </button>
-            <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group">
-              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+            <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative" title="Yummy">
+              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         </div>
@@ -2497,12 +2505,12 @@ export default function Watch() {
             {/* Flip Video Button - 3 States */}
             <button
               onClick={handleFlipVideo}
-              className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+              className={`p-2 rounded-lg transition-colors duration-300 ${
                 flipState === 'normal' 
-                  ? 'bg-white/10 text-white hover:bg-white/20' 
+                  ? 'text-white hover:bg-white/10' 
                   : flipState === 'horizontal'
-                  ? 'bg-yellow-500/20 border border-yellow-400/50 text-yellow-400'
-                  : 'bg-green-500/20 border border-green-400/50 text-green-400'
+                  ? 'text-yellow-400 hover:bg-white/10'
+                  : 'text-green-400 hover:bg-white/10'
               }`}
               title={`Flip Video - Current: ${flipState === 'normal' ? 'Normal' : flipState === 'horizontal' ? 'Horizontal' : 'Both Directions'}`}
             >
@@ -2512,12 +2520,12 @@ export default function Watch() {
             {/* Loop Segment / Caption Mode Button */}
             <button
               onClick={isInCaptionMode ? undefined : handleLoopClick}
-              className={`p-2 rounded-lg transition-all duration-200 ${
+              className={`p-2 rounded-lg transition-colors duration-300 ${
                 isInCaptionMode
-                  ? 'bg-blue-600 text-white shadow-lg cursor-default' 
+                  ? 'text-blue-400 cursor-default' 
                   : isLoopActive 
-                  ? 'bg-blue-600 text-white shadow-lg hover:scale-105' 
-                  : 'bg-white/10 text-white hover:bg-white/20 hover:scale-105'
+                  ? 'text-blue-400 hover:bg-white/10' 
+                  : 'text-white hover:bg-white/10'
               }`}
               title={isInCaptionMode ? "Caption Mode Active" : (isLoopActive ? "Stop loop" : "Configure loop segment")}
             >
@@ -2608,49 +2616,42 @@ export default function Watch() {
             {/* Guitar Pick Favorites */}
             <button 
               onClick={handleFavoriteToggle}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-2 rounded-lg transition-colors duration-300 ${
                 isVideoFavorited 
-                  ? 'text-[#8dc641] bg-[#8dc641]/20' 
+                  ? 'text-[#8dc641] hover:bg-white/10' 
                   : 'text-gray-400 hover:text-[#8dc641] hover:bg-white/10'
               }`}
               title={isVideoFavorited ? "Remove from favorites" : "Add to favorites"}
             >
-              <TbGuitarPickFilled className="w-6 h-6" />
+              <TbGuitarPickFilled className="w-5 h-5" />
             </button>
             
             {/* Control Strip Toggle (Game Controller) */}
             <button
               onClick={handleControlStripsToggle}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`rounded-lg transition-colors duration-300 ${
                 showControlStrips 
-                  ? 'bg-[#8dc641]/20 border border-[#8dc641]/30 text-[#8dc641]' 
-                  : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                  ? 'text-red-400 hover:bg-white/10' 
+                  : 'text-white hover:bg-white/10'
               }`}
+              style={{ padding: '5.5px' }}
               title={showControlStrips ? "Hide Control Strips" : "Show Control Strips"}
             >
-              <IoGameControllerOutline className="w-5 h-5" />
+              <IoGameControllerOutline className="w-6 h-6" />
             </button>
             
             {/* Layout Icon */}
-            <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors" title="Layout Options">
+            <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors duration-300" title="Layout Options">
               <BsReverseLayoutSidebarInsetReverse className="w-5 h-5" />
             </button>
             
             {/* Custom Fullscreen Button */}
             <button
               onClick={handleFullscreenToggle}
-              className="p-2 rounded-lg transition-all duration-200 hover:scale-105 bg-white/10 text-white hover:bg-white/20"
+              className="p-2 rounded-lg transition-colors duration-300 text-white hover:bg-white/10"
               title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
             >
-              {isFullscreen ? (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-                </svg>
-              )}
+              <BsArrowsFullscreen className="w-4 h-4" />
             </button>
           </div>
         </div>

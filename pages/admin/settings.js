@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import BannerSettings from '../../components/admin/BannerSettings'
+import FeatureGates from '../../components/admin/FeatureGates'
 import { isUserAdmin } from '../../lib/adminSupabase'
 
 export default function AdminSettings() {
@@ -48,6 +49,7 @@ export default function AdminSettings() {
 
   const tabs = [
     { id: 'banner', name: 'Banner Settings', icon: '📢' },
+    { id: 'feature-gates', name: 'Feature Gates', icon: '🚪' },
     { id: 'general', name: 'General Settings', icon: '⚙️' },
     { id: 'users', name: 'User Management', icon: '👥' }
   ]
@@ -88,6 +90,8 @@ export default function AdminSettings() {
         {/* Tab Content */}
         <div className="space-y-6">
           {activeTab === 'banner' && <BannerSettings />}
+          
+          {activeTab === 'feature-gates' && <FeatureGates />}
           
           {activeTab === 'general' && (
             <div className="bg-white rounded-lg shadow p-6">
