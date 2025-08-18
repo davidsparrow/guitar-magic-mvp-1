@@ -1,20 +1,24 @@
 // pages/privacy.js - Privacy Policy Page
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
-import { GiGuitar } from "react-icons/gi"
+import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
+import { FaRegCreditCard } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
+import { FaTimes, FaSearch } from "react-icons/fa"
 
 export default function PrivacyPolicy() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [mounted, setMounted] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const searchInputRef = useRef(null)
   const router = useRouter()
 
   // Prevent hydration issues
@@ -25,10 +29,8 @@ export default function PrivacyPolicy() {
   // Handle login/logout
   const handleAuthClick = async () => {
     if (isAuthenticated) {
-      // User is logged in, sign them out
       try {
         await signOut()
-        // Close any open modals
         setShowAuthModal(false)
         setShowRightMenuModal(false)
         setShowProfileModal(false)
@@ -37,7 +39,6 @@ export default function PrivacyPolicy() {
         console.error('Sign out failed:', error)
       }
     } else {
-      // User is not logged in, show auth modal
       setShowAuthModal(true)
     }
   }
@@ -54,25 +55,23 @@ export default function PrivacyPolicy() {
     <div className="relative h-screen overflow-hidden bg-black" style={{ 
       backgroundColor: '#000000',
       minHeight: '100vh',
-      minHeight: '100dvh',
       width: '100vw',
       overflow: 'hidden'
     }}>
       {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden md:block"
         style={{
           backgroundImage: `url('/images/gt_splashBG_dark.png')`,
           width: '100%',
           height: '100%',
           minWidth: '100vw',
           minHeight: '100vh',
-          minHeight: '100dvh'
         }}
       />
       
-      {/* Transparent Header */}
-      <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
+      {/* Responsive Header - Mobile optimized, transparent on desktop */}
+      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
         <div className="flex justify-between items-center">
           {/* Logo - Upper Left - NEW WIDE LOGO */}
           <a 
@@ -80,13 +79,13 @@ export default function PrivacyPolicy() {
             className="hover:opacity-80 transition-opacity"
           >
             <img 
-              src="/images/gt_logoM_wide_on_black.png" 
-              alt="VideoFlip Logo" 
-              className="h-10 w-auto"
+              src="/images/gt_logo_wide_on_black_450x90.png" 
+              alt="GuitarTube Logo" 
+              className="h-8 md:h-10 w-auto" // Mobile: h-8, Desktop: h-10
             />
           </a>
           {/* Right side buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 md:space-x-2"> {/* Mobile: space-x-1, Desktop: space-x-2 */}
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -94,19 +93,16 @@ export default function PrivacyPolicy() {
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
               )}
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                {isAuthenticated ? "End of the Party" : "Start Me Up"}
-              </div>
             </button>
             {/* Menu Icon */}
             <button 
               onClick={() => setShowRightMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
+              title="Menu"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
@@ -116,10 +112,14 @@ export default function PrivacyPolicy() {
 
       {/* Main Content - Privacy Policy */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
-        height: 'calc(100vh - 140px)',
+        height: 'calc(100vh - 100px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-white overflow-y-auto max-h-full">
+        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full" style={{ 
+          fontFamily: 'Futura, sans-serif',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
+        }}>
           <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">Privacy Policy</h1>
           
           <div className="space-y-6 text-lg leading-relaxed">
@@ -388,7 +388,7 @@ export default function PrivacyPolicy() {
                   <div className="bg-green-400/20 p-3 rounded-lg border border-green-400/30">
                     <h3 className="text-xl font-semibold text-green-200 mb-2">7.1 All-Ages Music Education Platform</h3>
                     <p className="text-green-300">
-                      <strong>VideoFlip welcomes users of all ages!</strong> We are committed to providing a safe, educational environment for young musicians to learn guitar and other instruments. Our platform is designed to be family-friendly and educationally focused.
+                      <strong>GuitarTube welcomes users of all ages!</strong> We are committed to providing a safe, educational environment for young musicians to learn guitar and other instruments. Our platform is designed to be family-friendly and educationally focused.
                     </p>
                   </div>
                   
@@ -453,7 +453,7 @@ export default function PrivacyPolicy() {
                     <div className="bg-blue-400/20 p-3 rounded-lg border border-blue-400/30 mt-3">
                       <h4 className="text-lg font-semibold text-blue-200 mb-2">Contact for Parental Inquiries:</h4>
                       <ul className="ml-6 space-y-1">
-                        <li>• <strong>Email</strong>: parents@videoflip.com</li>
+                        <li>• <strong>Email</strong>: parents@guitartube.com</li>
                         <li>• <strong>Subject Line</strong>: "Child Privacy Inquiry"</li>
                         <li>• <strong>Include</strong>: Child's registered email/username and your relationship to the child</li>
                       </ul>
@@ -468,7 +468,7 @@ export default function PrivacyPolicy() {
                   <div className="bg-blue-400/20 p-3 rounded-lg border border-blue-400/30">
                     <h3 className="text-xl font-semibold text-blue-200 mb-2">8.1 For Schools and Educational Institutions</h3>
                     <ul className="ml-6 space-y-1">
-                      <li>• VideoFlip can be used as an educational tool in classrooms and music programs</li>
+                      <li>• GuitarTube can be used as an educational tool in classrooms and music programs</li>
                       <li>• We do not collect "educational records" as defined by FERPA (Family Educational Rights and Privacy Act)</li>
                       <li>• Teachers and schools should obtain appropriate permissions before students use our platform</li>
                       <li>• We provide the same privacy protections regardless of whether use is personal or educational</li>
@@ -607,8 +607,8 @@ export default function PrivacyPolicy() {
       </div>
 
       {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
+        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:-mt-5" style={{ fontFamily: 'Futura, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
@@ -701,7 +701,7 @@ export default function PrivacyPolicy() {
           </div>
         </div>
       )}
-
+      
       {/* Profile Modal */}
       {showProfileModal && (
         <div 
@@ -770,7 +770,7 @@ export default function PrivacyPolicy() {
           <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
             {/* Close Button */}
             <button
-              onClick={() => setShowPlanModal(false)}
+              onClick={() => setShowProfileModal(false)}
               className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
             >
               ×
