@@ -2230,12 +2230,12 @@ export default function Watch() {
           {/* Control Strips Container - Dynamic positioning from bottom */}
           <div className="h-full relative">
             
-            {/* Row 1: Text Captions - 20% height, positioned from bottom */}
+            {/* Row 1: Text Captions - 24% height, positioned from bottom */}
             {showRow1 && (
-              <div className={`absolute left-0 right-0 flex border-2 border-white rounded-t-lg overflow-hidden h-[20%] transition-all duration-300 ${
-                showRow2 && showRow3 ? 'bottom-[80%]' : 
-                showRow2 ? 'bottom-[40%]' : 
-                showRow3 ? 'bottom-[40%]' : 'bottom-0'
+              <div className={`absolute left-0 right-0 flex border-2 border-white rounded-t-lg overflow-hidden h-[24%] transition-all duration-300 ${
+                showRow2 && showRow3 ? 'bottom-[76%]' : 
+                showRow2 ? 'bottom-[38%]' : 
+                showRow3 ? 'bottom-[38%]' : 'bottom-0'
               }`}>
               {/* Left Column - Main Content (92% width) */}
               <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex flex-col justify-center overflow-hidden">
@@ -2260,7 +2260,7 @@ export default function Watch() {
                       
                       if (isEditingThisCaption) {
                         return (
-                          <div className="space-y-2">
+                          <div className="space-y-0.5">
                             <input
                               type="text"
                               value={currentCaption.line1}
@@ -2271,7 +2271,7 @@ export default function Watch() {
                                     : caption
                                 ))
                               }}
-                              className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                              className="w-full px-2 py-1 text-[15px] bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none font-bold"
                               placeholder="First line of caption"
                             />
                             <input
@@ -2284,15 +2284,15 @@ export default function Watch() {
                                     : caption
                                 ))
                               }}
-                              className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                              className="w-full px-2 py-1 text-[15px] bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
                               placeholder="Second line of caption"
                             />
                           </div>
                         )
                       } else {
                         return (
-                          <div className="text-white text-sm">
-                            <div className="font-medium">{currentCaption.line1}</div>
+                          <div className="text-white text-[15px]">
+                            <div className="font-bold">{currentCaption.line1}</div>
                             {currentCaption.line2 && <div className="text-gray-300">{currentCaption.line2}</div>}
                           </div>
                         )
@@ -2362,10 +2362,10 @@ export default function Watch() {
             </div>
             )}
 
-            {/* Row 2: Chords Captions - 40% height, positioned from bottom */}
+            {/* Row 2: Chords Captions - 38% height, positioned from bottom */}
             {showRow2 && (
-              <div className={`absolute left-0 right-0 flex border-l-2 border-r-2 border-white overflow-hidden h-[40%] transition-all duration-300 ${
-                showRow3 ? 'bottom-[40%]' : 'bottom-0'
+              <div className={`absolute left-0 right-0 flex border-l-2 border-r-2 border-white overflow-hidden h-[38%] transition-all duration-300 ${
+                showRow3 ? 'bottom-[38%]' : 'bottom-0'
               }`}>
               {/* Left Column - Main Content (92% width) */}
               <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex items-center">
@@ -2428,9 +2428,9 @@ export default function Watch() {
             </div>
             )}
 
-            {/* Row 3: Auto-Gen - 40% height, always at bottom */}
+            {/* Row 3: Auto-Gen - 38% height, always at bottom */}
             {showRow3 && (
-              <div className="absolute bottom-0 left-0 right-0 flex border-2 border-white rounded-b-lg overflow-hidden h-[40%] transition-all duration-300">
+              <div className="absolute bottom-0 left-0 right-0 flex border-2 border-white rounded-b-lg overflow-hidden h-[38%] transition-all duration-300">
               {/* Left Column - Main Content (92% width) */}
               <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex items-center">
                 <span className="text-white text-sm font-medium">Auto-Gen</span>
