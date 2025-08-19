@@ -123,13 +123,13 @@ export default function Features() {
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
-              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
+              className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
               )}
             </button>
             {/* Menu Icon */}

@@ -317,13 +317,13 @@ export default function Search() {
               {/* Login/Logout Icon */}
               <button 
                 onClick={handleAuthClick}
-                className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
+                className="p-[7px] rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
                 title={isAuthenticated ? "End of the Party" : "Start Me Up"}
               >
                 {isAuthenticated ? (
-                  <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                  <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
                 ) : (
-                  <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+                  <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
                 )}
               </button>
               
@@ -332,7 +332,7 @@ export default function Search() {
                 onClick={() => setShowRightMenuModal(true)}
                 className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
               >
-                <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               </button>
             </div>
           </div>
@@ -505,13 +505,13 @@ export default function Search() {
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
-              className="p-2 rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
+              className="p-[7px] rounded-lg transition-all duration-200 relative group text-white hover:bg-white/10 hover:scale-105"
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
               )}
             </button>
             
@@ -520,7 +520,7 @@ export default function Search() {
               onClick={() => setShowRightMenuModal(true)}
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
             >
-              <FaHamburger className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         </div>

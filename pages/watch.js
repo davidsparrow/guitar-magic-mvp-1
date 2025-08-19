@@ -2100,11 +2100,11 @@ export default function Watch() {
             </div>
             {/* Right side: Auth buttons + Search icon */}
             <div className="flex items-center space-x-2">
-              <button onClick={handleAuthClick} className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
+              <button onClick={handleAuthClick} className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
                 {isAuthenticated ? (
-                  <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+                  <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
                 ) : (
-                  <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
+                  <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
                 )}
               </button>
               <button onClick={() => setShowMobileSearch(!showMobileSearch)} className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title="Search for videos">
@@ -2159,11 +2159,11 @@ export default function Watch() {
           
           {/* Desktop Right side buttons */}
           <div className="hidden md:flex items-center space-x-2">
-            <button onClick={handleAuthClick} className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
+            <button onClick={handleAuthClick} className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
               )}
             </button>
             <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative" title="Yummy">
@@ -2641,7 +2641,7 @@ export default function Watch() {
             </button>
             
             {/* Layout Icon */}
-            <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors duration-300" title="Layout Options">
+            <button className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors duration-300" title="Inline Search - under development">
               <BsReverseLayoutSidebarInsetReverse className="w-5 h-5" />
             </button>
             
