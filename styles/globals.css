@@ -198,45 +198,7 @@ a {
   color: white !important;
 }
 
-/* Override any browser default styling */
-.auth-input:-webkit-autofill,
-.auth-input:-webkit-autofill:hover,
-.auth-input:-webkit-autofill:focus,
-.auth-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
-  -webkit-text-fill-color: white !important;
-  background-color: transparent !important;
-  background: transparent !important;
-  color: white !important;
-}
-
-/* Ensure no background on autofill */
-.auth-input[data-autocompleted] {
-  background-color: transparent !important;
-  background: transparent !important;
-  color: white !important;
-}
-
-/* Override any form styling that might add backgrounds */
-.auth-modal input[type="text"],
-.auth-modal input[type="email"],
-.auth-modal input[type="password"] {
-  background-color: transparent !important;
-  background: transparent !important;
-  color: white !important;
-}
-
-/* Force text color to be white and visible */
-.auth-modal input {
-  color: white !important;
-  -webkit-text-fill-color: white !important;
-}
-
-/* Ensure placeholder text is visible */
-.auth-modal input::placeholder {
-  color: rgba(229, 231, 235, 0.8) !important;
-  opacity: 1 !important;
-}
+/* Auth modal styling - removed autofill overrides for white background */
 
 /* Fullscreen video container styles */
 #video-container:fullscreen {
