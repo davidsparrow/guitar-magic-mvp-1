@@ -45,15 +45,15 @@ const AuthModal = ({ isOpen, onClose, initialTab = 'signin' }) => {
       
       if (error) {
         setError(error.message)
+        setLoading(false)
       } else {
-        setSuccess('Successfully signed in!')
+        // Keep loading state active for the green button and delay
         setTimeout(() => {
           handleClose()
-        }, 1000)
+        }, 1500)
       }
     } catch (err) {
       setError('An unexpected error occurred')
-    } finally {
       setLoading(false)
     }
   }
@@ -160,18 +160,16 @@ const AuthModal = ({ isOpen, onClose, initialTab = 'signin' }) => {
           {/* Close Button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors hover:scale-110 z-10"
+            className="absolute top-3 right-9 text-white hover:text-yellow-400 transition-colors text-2xl font-bold z-10"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            ×
           </button>
           {/* Logo */}
           <div className="text-center mb-6">
             <img 
-              src="/images/gt_logo_wide_on_black_458x90.png" 
-              alt="GuitarMagic Logo" 
-              className="h-8 w-auto mx-auto"
+              src="/images/gt_logoM_PlayButton.png" 
+              alt="GuitarTube Logo" 
+              className="h-12 w-auto mx-auto"
             />
           </div>
 
@@ -290,10 +288,14 @@ const AuthModal = ({ isOpen, onClose, initialTab = 'signin' }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors auth-button"
+                    className={`w-full text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors auth-button ${
+                      loading 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                     title="Sign In"
                   >
-                    {loading ? 'Putting you in...' : 'Put Me in Coach'}
+                    {loading ? 'Putting you in Centerfield!' : 'Put Me in Coach'}
                   </button>
 
                   {/* Forgot Password Link */}
