@@ -17,17 +17,34 @@ export default function FeatureGates() {
   const loadFeatureGates = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      
+      // Load feature gates
+      const { data: featureGatesData, error: featureGatesError } = await supabase
         .from('admin_settings')
         .select('*')
         .eq('setting_key', 'feature_gates')
         .single()
 
-      if (error) throw error
+      if (featureGatesError) throw featureGatesError
 
-      if (data) {
-        setFeatureGates(data.setting_value)
+      // Load error messages
+      const { data: errorMessagesData, error: errorMessagesError } = await supabase
+        .from('admin_settings')
+        .select('*')
+        .eq('setting_key', 'error_messages')
+        .single()
+
+      if (errorMessagesError && errorMessagesError.code !== 'PGRST116') {
+        console.error('Error loading error messages:', errorMessagesError)
       }
+
+      // Combine both configurations
+      const combinedConfig = {
+        ...(featureGatesData?.setting_value || {}),
+        error_messages: errorMessagesData?.setting_value || {}
+      }
+
+      setFeatureGates(combinedConfig)
     } catch (error) {
       console.error('Error loading feature gates:', error)
       setMessage('Error loading feature gates')
@@ -39,21 +56,43 @@ export default function FeatureGates() {
   const saveFeatureGates = async () => {
     try {
       setSaving(true)
-      const { error } = await supabase
+      
+      // Save feature gates
+      const { error: featureGatesError } = await supabase
         .from('admin_settings')
         .update({ 
-          setting_value: featureGates,
+          setting_value: {
+            feature_gates: featureGates.feature_gates,
+            global_settings: featureGates.global_settings,
+            daily_limits: featureGates.daily_limits
+          },
           updated_at: new Date().toISOString()
         })
         .eq('setting_key', 'feature_gates')
 
-      if (error) throw error
+      if (featureGatesError) throw featureGatesError
 
-      setMessage('Feature gates saved successfully!')
+      // Save error messages if they exist
+      if (featureGates.error_messages) {
+        const { error: errorMessagesError } = await supabase
+          .from('admin_settings')
+          .upsert({
+            setting_key: 'error_messages',
+            setting_name: 'Error Messages',
+            description: 'Application-wide error messages that can be customized by administrators',
+            setting_value: featureGates.error_messages,
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+
+        if (errorMessagesError) throw errorMessagesError
+      }
+
+      setMessage('Feature gates and error messages saved successfully!')
       setTimeout(() => setMessage(''), 3000)
     } catch (error) {
-      console.error('Error saving feature gates:', error)
-      setMessage('Error saving feature gates')
+      console.error('Error saving settings:', error)
+      setMessage('Error saving settings')
     } finally {
       setSaving(false)
     }
@@ -77,6 +116,16 @@ export default function FeatureGates() {
       ...prev,
       global_settings: {
         ...prev.global_settings,
+        [key]: value
+      }
+    }))
+  }
+
+  const updateErrorMessage = (key, value) => {
+    setFeatureGates(prev => ({
+      ...prev,
+      error_messages: {
+        ...prev.error_messages,
         [key]: value
       }
     }))
@@ -167,6 +216,26 @@ export default function FeatureGates() {
               placeholder="⭐ Please save this video to favorites before using this feature."
             />
             <p className="text-xs text-gray-500 mt-1">Message shown when users try to use features without saving video to favorites</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Messages */}
+      <div className="mb-8 p-4 bg-red-50 rounded-lg">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Error Messages</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Caption Trim Error Intro
+            </label>
+            <input
+              type="text"
+              value={featureGates?.error_messages?.caption_trim_error || ''}
+              onChange={(e) => updateErrorMessage('caption_trim_error', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="An internal error has occurred: "
+            />
+            <p className="text-xs text-gray-500 mt-1">Intro text shown before caption trimming error details</p>
           </div>
         </div>
       </div>
