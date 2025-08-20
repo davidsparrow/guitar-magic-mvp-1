@@ -7,7 +7,8 @@ import { supabase } from '../lib/supabase'
 import { FaHamburger, FaSearch, FaTimes, FaRegEye, FaRegEdit, FaPlus } from "react-icons/fa"
 import { TiDeleteOutline } from "react-icons/ti"
 import { CgViewList } from "react-icons/cg"
-import { IoText } from "react-icons/io5"
+import { IoText, IoDuplicate } from "react-icons/io5"
+import { MdDeleteSweep } from "react-icons/md"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPickFilled } from "react-icons/tb"
@@ -18,6 +19,31 @@ import { IoGameControllerOutline } from "react-icons/io5"
 import TopBanner from '../components/TopBanner'
 
 export default function Watch() {
+  // Helper functions for time conversion
+  const parseTimeToSeconds = (timeString) => {
+    if (!timeString) return 0
+    const parts = timeString.split(':')
+    if (parts.length === 2) {
+      return parseInt(parts[0]) * 60 + parseInt(parts[1])
+    } else if (parts.length === 3) {
+      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2])
+    }
+    return 0
+  }
+
+  const formatSecondsToTime = (seconds) => {
+    if (seconds < 0) seconds = 0
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = Math.floor(seconds % 60)
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    } else {
+      return `${minutes}:${secs.toString().padStart(2, '0')}`
+    }
+  }
+
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
@@ -68,6 +94,10 @@ export default function Watch() {
   const [isInCaptionMode, setIsInCaptionMode] = useState(false)
   const [editingCaptionId, setEditingCaptionId] = useState(null)
   const [originalCaptionState, setOriginalCaptionState] = useState(null) // Track original caption before editing
+  
+  // New Caption Placement Dialog states
+  const [showAddCaptionDialog, setShowAddCaptionDialog] = useState(false)
+  const [selectedSerialNumber, setSelectedSerialNumber] = useState(null)
 
   // Database operation states
   const [isLoadingCaptions, setIsLoadingCaptions] = useState(false)
@@ -170,15 +200,20 @@ export default function Watch() {
         line1: caption.line1,
         line2: caption.line2,
         rowType: caption.row_type,
+        serial_number: caption.serial_number, // Add serial number field
         favorite_id: caption.favorite_id,
         user_id: caption.user_id,
         created_at: caption.created_at,
         updated_at: caption.updated_at
       }))
       
+      // Ensure all captions have serial numbers
+      const captionsWithSerialNumbers = assignSerialNumbersToCaptions(transformedCaptions)
+      
       console.log('✅ Captions loaded from database:', data)
       console.log('🔄 Transformed captions for frontend:', transformedCaptions)
-      return transformedCaptions
+      console.log('🔢 Captions with serial numbers:', captionsWithSerialNumbers)
+      return captionsWithSerialNumbers
     } catch (error) {
       console.error('❌ Error loading captions:', error)
       setDbError('Failed to load captions')
@@ -249,18 +284,7 @@ export default function Watch() {
 
   // Helper functions to get messages from Admin Settings
   const getAdminMessage = (messageKey, fallback) => {
-    // First check if it's an error message
-    if (featureGates?.error_messages?.[messageKey]) {
-      return featureGates.error_messages[messageKey]
-    }
-    
-    // Then check if it's a global setting (feature gates related)
-    if (featureGates?.global_settings?.[messageKey]) {
-      return featureGates.global_settings[messageKey]
-    }
-    
-    // Fallback to provided default
-    return fallback
+    return featureGates?.global_settings?.[messageKey] || fallback
   }
 
   // Show video playing restriction modal
@@ -305,7 +329,8 @@ export default function Watch() {
           start_time: captionData.startTime || '0:00',
           end_time: captionData.endTime || '0:05',
           line1: captionData.line1 || '',
-          line2: captionData.line2 || ''
+          line2: captionData.line2 || '',
+          serial_number: captionData.serial_number || null // Add serial number field
         }])
         .select()
       
@@ -320,6 +345,7 @@ export default function Watch() {
         line1: savedCaption.line1,
         line2: savedCaption.line2,
         rowType: savedCaption.row_type,
+        serial_number: savedCaption.serial_number, // Add serial number field
         favorite_id: savedCaption.favorite_id,
         user_id: savedCaption.user_id,
         created_at: savedCaption.created_at,
@@ -367,6 +393,7 @@ export default function Watch() {
         line1: updatedCaption.line1,
         line2: updatedCaption.line2,
         rowType: updatedCaption.row_type,
+        serial_number: updatedCaption.serial_number, // Add serial number field
         favorite_id: updatedCaption.favorite_id,
         user_id: updatedCaption.user_id,
         created_at: updatedCaption.created_at,
@@ -588,39 +615,25 @@ export default function Watch() {
   const loadFeatureGates = async () => {
     try {
       setFeatureGatesLoading(true)
-      console.log('🚪 Loading feature gates and error messages configuration...')
+      console.log('🚪 Loading feature gates configuration...')
       
-      // Load feature gates
-      const { data: featureGatesData, error: featureGatesError } = await supabase
+      const { data, error } = await supabase
         .from('admin_settings')
         .select('*')
         .eq('setting_key', 'feature_gates')
         .single()
 
-      if (featureGatesError) {
-        console.error('❌ Error loading feature gates:', featureGatesError)
+      if (error) {
+        console.error('❌ Error loading feature gates:', error)
         return
       }
 
-      // Load error messages
-      const { data: errorMessagesData, error: errorMessagesError } = await supabase
-        .from('admin_settings')
-        .select('*')
-        .eq('setting_key', 'error_messages')
-        .single()
-
-      if (errorMessagesError && errorMessagesError.code !== 'PGRST116') {
-        console.error('❌ Error loading error messages:', errorMessagesError)
+      if (data && data.setting_value) {
+        setFeatureGates(data.setting_value)
+        console.log('✅ Feature gates loaded:', data.setting_value)
+      } else {
+        console.log('⚠️ No feature gates configuration found')
       }
-
-      // Combine both configurations
-      const combinedConfig = {
-        ...(featureGatesData?.setting_value || {}),
-        error_messages: errorMessagesData?.setting_value || {}
-      }
-
-      setFeatureGates(combinedConfig)
-      console.log('✅ Feature gates and error messages loaded:', combinedConfig)
     } catch (error) {
       console.error('❌ Error in loadFeatureGates:', error)
     } finally {
@@ -1492,75 +1505,124 @@ export default function Watch() {
       return
     }
 
-    // Calculate start time based on existing captions
-    let startTime = 0
-    let endTime = 5
-    
+    // Open the caption placement dialog instead of directly adding
+    // Set default selection to last caption if available
     if (captions.length > 0) {
-      // Find the caption with the latest end time
-      const lastCaption = captions.reduce((latest, current) => {
-        const latestEnd = timeToSeconds(latest.endTime)
-        const currentEnd = timeToSeconds(current.endTime)
-        return currentEnd > latestEnd ? current : latest
-      })
-      
-      // Start time = 1 second after the last caption ends
-      startTime = timeToSeconds(lastCaption.endTime) + 1
-      endTime = startTime + 5
-      
-      console.log('📅 Last caption ends at:', lastCaption.endTime, '→ New caption starts at:', startTime, 'seconds')
-    } else {
-      // No existing captions, use current video time
-      if (player && isPlayerReady()) {
-        try {
-          startTime = Math.floor(player.getCurrentTime())
-          endTime = startTime + 5
-          console.log('🎬 No existing captions, using current video time:', startTime, 'seconds')
-        } catch (error) {
-          console.error('Error getting current time:', error)
-          startTime = 0
-          endTime = 5
-        }
-      } else {
-        console.log('⚠️ Player not ready, using default time')
-        startTime = 0
-        endTime = 5
-      }
+      const lastSerialNumber = Math.max(...captions.map(c => c.serial_number))
+      setSelectedSerialNumber(lastSerialNumber)
     }
+    setShowAddCaptionDialog(true)
+  }
 
-    // Convert seconds to MM:SS format
-    const startMinutes = Math.floor(startTime / 60)
-    const startSeconds = startTime % 60
-    const endMinutes = Math.floor(endTime / 60)
-    const endSeconds = endTime % 60
+  // Assign serial numbers to captions that don't have them
+  const assignSerialNumbersToCaptions = (captionsArray) => {
+    if (!captionsArray || captionsArray.length === 0) return captionsArray
     
-    const startTimeString = `${startMinutes}:${startSeconds.toString().padStart(2, '0')}`
-    const endTimeString = `${endMinutes}:${endSeconds.toString().padStart(2, '0')}`
-    
-    console.log('⏰ New caption time range:', { start: startTimeString, end: endTimeString })
-
-    // Create new caption with calculated times
-    const newCaption = {
-      id: Date.now(),
-      startTime: startTimeString,
-      endTime: endTimeString,
-      line1: '',
-      line2: '',
-      rowType: editingCaption?.rowType || 1
-    }
-
-    console.log('📝 New caption created:', newCaption)
-
-    // Add to captions array
-    setCaptions(prev => {
-      const newCaptions = [...prev, newCaption]
-      console.log('📋 Updated captions array:', newCaptions)
-      return newCaptions
+    // Sort by start time first
+    const sortedCaptions = [...captionsArray].sort((a, b) => {
+      const timeA = parseTimeToSeconds(a.startTime)
+      const timeB = parseTimeToSeconds(b.startTime)
+      return timeA - timeB
     })
     
-    // Don't close modal, just add the caption
-    console.log('✅ Caption added successfully')
+    // Assign sequential serial numbers
+    return sortedCaptions.map((caption, index) => ({
+      ...caption,
+      serial_number: index + 1
+    }))
   }
+
+  // Handle adding new caption at specific position
+  const handleAddCaptionAtPosition = async () => {
+    if (!selectedSerialNumber) {
+      console.log('⚠️ No serial number selected')
+      return
+    }
+
+    try {
+      // Find the target caption by serial number
+      const targetCaption = captions.find(caption => caption.serial_number === selectedSerialNumber)
+      if (!targetCaption) {
+        console.error('❌ Target caption not found')
+        return
+      }
+
+      let newCaptionStartTime, newCaptionEndTime
+      let modifiedCaptions = [...captions]
+
+      // Check if this is the last caption
+      const isLastCaption = selectedSerialNumber === Math.max(...captions.map(c => c.serial_number))
+
+      if (isLastCaption) {
+        // Option A: After last caption - add 10 seconds
+        newCaptionStartTime = targetCaption.endTime
+        newCaptionEndTime = formatSecondsToTime(parseTimeToSeconds(targetCaption.endTime) + 10)
+        
+        console.log('📝 Adding after last caption:', { start: newCaptionStartTime, end: newCaptionEndTime })
+      } else {
+        // Option B: Between existing captions - use duplicate logic
+        const startTime = parseTimeToSeconds(targetCaption.startTime)
+        const endTime = parseTimeToSeconds(targetCaption.endTime)
+        const originalDuration = endTime - startTime
+        
+        // Modify original caption - reduce duration by 50%
+        const newOriginalEndTime = startTime + (originalDuration / 2)
+        const newOriginalEndTimeFormatted = formatSecondsToTime(newOriginalEndTime)
+        
+        // Update original caption
+        modifiedCaptions = modifiedCaptions.map(caption => 
+          caption.serial_number === selectedSerialNumber 
+            ? { ...caption, endTime: newOriginalEndTimeFormatted }
+            : caption
+        )
+        
+        // New caption takes the second half
+        newCaptionStartTime = newOriginalEndTimeFormatted
+        newCaptionEndTime = targetCaption.endTime
+        
+        console.log('📝 Adding between captions:', { start: newCaptionStartTime, end: newCaptionEndTime })
+      }
+
+      // Create new caption
+      const newCaption = {
+        id: Date.now(),
+        startTime: newCaptionStartTime,
+        endTime: newCaptionEndTime,
+        line1: '',
+        line2: '',
+        rowType: editingCaption?.rowType || 1,
+        serial_number: null // Will be assigned by database
+      }
+
+      // Add to captions array
+      const updatedCaptions = [...modifiedCaptions, newCaption]
+      
+      // Sort by start time and reassign serial numbers
+      const sortedCaptions = updatedCaptions.sort((a, b) => {
+        const timeA = parseTimeToSeconds(a.startTime)
+        const timeB = parseTimeToSeconds(b.startTime)
+        return timeA - timeB
+      }).map((caption, index) => ({
+        ...caption,
+        serial_number: index + 1
+      }))
+
+      // Update state
+      setCaptions(sortedCaptions)
+      
+      // Close dialog
+      setShowAddCaptionDialog(false)
+      setSelectedSerialNumber(null)
+      
+      console.log('✅ New caption added at position:', selectedSerialNumber)
+      
+    } catch (error) {
+      console.error('❌ Error adding caption at position:', error)
+      setDbError('Failed to add caption at position')
+    }
+  }
+
+
 
   // Handle adding new caption from control strip
   const handleAddCaptionFromControlStrip = async (rowNumber) => {
@@ -1588,9 +1650,6 @@ export default function Watch() {
       return
     }
 
-    // Enter caption mode
-    handleEnterCaptionMode('add', null)
-    
     // Get current video time
     let currentTime = 0
     if (player && isPlayerReady()) {
@@ -1609,49 +1668,8 @@ export default function Watch() {
     })
 
     if (currentCaption) {
-      try {
-        // Rule 4: Trim existing caption to current time (new caption start time)
-        const newEndTime = Math.max(0, currentTime)
-        const newEndTimeString = `${Math.floor(newEndTime / 60)}:${(newEndTime % 60).toString().padStart(2, '0')}`
-        
-        // Trim existing caption in local state
-        setCaptions(prev => prev.map(caption => 
-          caption.id === currentCaption.id 
-            ? { ...caption, endTime: newEndTimeString }
-            : caption
-        ))
-        
-        // IMMEDIATELY save trimmed caption to database
-        const trimmedCaption = {
-          startTime: currentCaption.startTime,
-          endTime: newEndTimeString,
-          line1: currentCaption.line1,
-          line2: currentCaption.line2
-        }
-        
-        // Save trimmed caption to database
-        const updatedCaption = await updateCaption(currentCaption.id, trimmedCaption)
-        
-        if (!updatedCaption) {
-          // Trimming failed - revert to Watch state
-          throw new Error('Failed to save trimmed caption to database')
-        }
-        
-        console.log('✂️ Cut existing caption end time to:', newEndTimeString)
-        console.log('💾 Trimmed caption saved to database')
-        
-      } catch (error) {
-        // Show admin-editable error message
-        const errorMessage = getAdminMessage('caption_trim_error', 'An internal error has occurred: ') + error.message
-        showCustomAlertModal(errorMessage, [
-          { text: 'OK', action: hideCustomAlertModal }
-        ])
-        
-        // Exit caption mode and return to Watch state
-        setIsInCaptionMode(false)
-        setEditingCaptionId(null)
-        return // Don't create new caption
-      }
+      // Rule 4: Don't trim existing caption - new caption will start exactly where current caption ends
+      console.log('📝 Existing caption found, will create new caption starting at current time')
     }
 
     // Sort captions by start time to determine if current caption is last
@@ -1714,6 +1732,9 @@ export default function Watch() {
       
       // Set this as the editing caption
       setEditingCaptionId(savedCaption.id)
+      
+      // NOW enter caption mode with the new caption ID
+      handleEnterCaptionMode('add', savedCaption.id)
       
       console.log('📝 New caption saved to database:', savedCaption)
     } else {
@@ -1846,6 +1867,66 @@ export default function Watch() {
     setIsAddingNewCaption(false)
     setEditingCaption(null)
     // TODO: Revert to original captions
+  }
+
+  // Handle duplicate caption
+  const handleDuplicateCaption = (captionIndex) => {
+    try {
+      const originalCaption = captions[captionIndex]
+      if (!originalCaption) return
+      
+      // Calculate original duration
+      const startTime = parseTimeToSeconds(originalCaption.startTime)
+      const endTime = parseTimeToSeconds(originalCaption.endTime)
+      const originalDuration = endTime - startTime
+      
+      // Step 3a: Modify original caption - reduce duration by 50%
+      const newOriginalEndTime = startTime + (originalDuration / 2)
+      const newOriginalEndTimeFormatted = formatSecondsToTime(newOriginalEndTime)
+      
+      // Step 3b: Create duplicate caption
+      const duplicateCaption = {
+        ...originalCaption,
+        id: null, // Will get new ID when saved
+        startTime: newOriginalEndTimeFormatted, // Start where original now ends
+        endTime: originalCaption.endTime, // Keep original end time
+        serial_number: null // Will be assigned by database
+      }
+      
+      // Update original caption with new end time
+      const newCaptions = [...captions]
+      newCaptions[captionIndex] = {
+        ...newCaptions[captionIndex],
+        endTime: newOriginalEndTimeFormatted
+      }
+      
+      // Add duplicate caption
+      newCaptions.push(duplicateCaption)
+      
+      // Update state
+      setCaptions(newCaptions)
+      
+      // Sort by start time and reassign serial numbers
+      const sortedCaptions = newCaptions.sort((a, b) => {
+        const timeA = parseTimeToSeconds(a.startTime)
+        const timeB = parseTimeToSeconds(b.startTime)
+        return timeA - timeB
+      }).map((caption, index) => ({
+        ...caption,
+        serial_number: index + 1
+      }))
+      
+      // Update state with sorted captions and new serial numbers
+      setCaptions(sortedCaptions)
+      
+      console.log('🔄 Caption duplicated successfully with refreshed serial numbers')
+      
+      // TODO: Maintain user focus on duplicate record
+      
+    } catch (error) {
+      console.error('❌ Error duplicating caption:', error)
+      setDbError('Failed to duplicate caption')
+    }
   }
 
   // Handle delete caption confirmation
@@ -2933,7 +3014,7 @@ export default function Watch() {
           <div className="bg-black rounded-2xl shadow-2xl max-w-sm w-full relative text-white p-6">
             {/* Modal Content */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-4">🗑️ Delete Caption?</h2>
+              <h2 className="text-2xl font-bold mb-4">Delete Caption?</h2>
               <p className="text-gray-300 text-sm">
                 This action cannot be undone. Are you sure you want to delete this caption?
               </p>
@@ -2969,31 +3050,66 @@ export default function Watch() {
           }}
         >
           <div className="bg-black rounded-2xl shadow-2xl max-w-4xl w-full relative text-white p-6 max-h-[90vh] overflow-y-auto">
-            {/* Add Caption Button - Upper Left */}
-            <button
-              onClick={handleAddCaptionFromTimeline}
-              className="absolute top-4 left-4 z-20 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg"
-              title="Add new caption at current time"
-            >
-              <FaPlus className="w-5 h-5" />
-            </button>
-            
-            {/* Close Button */}
-            <button
-              onClick={handleCancelCaptions}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Modal Header */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-2">
-                {editingCaption?.rowName} Editor
-              </h2>
-              <p className="text-gray-300 text-sm">
-                Manage your captions with start/stop times and content
-              </p>
+            {/* Header with all action buttons */}
+            <div className="flex items-center justify-between mb-6">
+              {/* Left side - Modal Title */}
+              <div className="text-left">
+                <h2 className="text-3xl font-bold">
+                  {editingCaption?.rowName} Editor
+                </h2>
+              </div>
+              
+              {/* Center - Empty for spacing */}
+              <div className="flex-1"></div>
+              
+              {/* Right side - Action Buttons */}
+              <div className="flex items-center space-x-2">
+                {/* Add Caption Button */}
+                <button
+                  onClick={handleAddCaptionFromTimeline}
+                  className="bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-2 flex items-center space-x-2 transition-all duration-200 hover:scale-105 shadow-lg"
+                  title="Add new caption at current time"
+                >
+                  <FaPlus className="w-4 h-4" />
+                  <span className="text-sm">Add Caption</span>
+                </button>
+                
+                {/* Delete All Button */}
+                {captions.length > 0 && (
+                  <button
+                    onClick={handleDeleteAllCaptions}
+                    className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+                    title="Delete all captions"
+                  >
+                    <MdDeleteSweep className="w-5 h-5" />
+                    <span className="text-sm">Delete All</span>
+                  </button>
+                )}
+                
+                {/* Cancel Button */}
+                <button
+                  onClick={handleCancelCaptions}
+                  className="px-3 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                
+                {/* Save Button */}
+                <button
+                  onClick={handleSaveCaptions}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Save
+                </button>
+                
+                {/* Close Button */}
+                <button
+                  onClick={handleCancelCaptions}
+                  className="px-3 py-2 text-gray-300 hover:text-white transition-colors text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
             </div>
             
             {/* Captions List */}
@@ -3012,74 +3128,96 @@ export default function Watch() {
                         : 'border-white/20 bg-white/5'
                     }`}
                   >
-                    <div className="flex items-start space-x-3">
-                      {/* Start Time - 50% narrower */}
-                      <div className="w-16">
-                        <input
-                          type="text"
-                          value={caption.startTime}
-                          onChange={(e) => {
-                            const newCaptions = [...captions]
-                            newCaptions[index].startTime = e.target.value
-                            setCaptions(newCaptions)
-                          }}
-                          className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
-                          placeholder="Start"
-                        />
+                    <div className="flex items-start space-x-4">
+                      {/* Serial Number - Far left, spanning all 3 rows */}
+                      <div className="flex-shrink-0 w-12 text-center">
+                        <div className="text-2xl font-bold text-blue-400 bg-white/10 rounded-lg p-2 min-h-[80px] flex items-center justify-center">
+                          {caption.serial_number || index + 1}
+                        </div>
                       </div>
                       
-                      {/* End Time - 50% narrower */}
-                      <div className="w-16">
-                        <input
-                          type="text"
-                          value={caption.endTime}
-                          onChange={(e) => {
-                            const newCaptions = [...captions]
-                            newCaptions[index].endTime = e.target.value
-                            setCaptions(newCaptions)
-                          }}
-                          className="w-full px-2 py-1 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
-                          placeholder="End"
-                        />
-                      </div>
-                      
-                      {/* Caption Lines - Stacked and stretched */}
-                      <div className="flex-1 space-y-2">
-                        {/* Line 1 */}
-                        <input
-                          type="text"
-                          value={caption.line1}
-                          onChange={(e) => {
-                            const newCaptions = [...captions]
-                            newCaptions[index].line1 = e.target.value
-                            setCaptions(newCaptions)
-                          }}
-                          className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
-                          placeholder="First line of caption"
-                        />
+                      {/* Caption Content - 3-row layout, left-justified */}
+                      <div className="flex-1 space-y-3">
+                        {/* Row 1: Time-start and Time-stop */}
+                        <div className="flex items-center space-x-3">
+                          <div className="w-20">
+                            <input
+                              type="text"
+                              value={caption.startTime}
+                              onChange={(e) => {
+                                const newCaptions = [...captions]
+                                newCaptions[index].startTime = e.target.value
+                                setCaptions(newCaptions)
+                              }}
+                              className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                              placeholder="Start"
+                            />
+                          </div>
+                          <span className="text-gray-400">to</span>
+                          <div className="w-20">
+                            <input
+                              type="text"
+                              value={caption.endTime}
+                              onChange={(e) => {
+                                const newCaptions = [...captions]
+                                newCaptions[index].endTime = e.target.value
+                                setCaptions(newCaptions)
+                              }}
+                              className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                              placeholder="End"
+                            />
+                          </div>
+                        </div>
                         
-                        {/* Line 2 */}
-                        <input
-                          type="text"
-                          value={caption.line2}
-                          onChange={(e) => {
-                            const newCaptions = [...captions]
-                            newCaptions[index].line2 = e.target.value
-                            setCaptions(newCaptions)
-                          }}
-                          className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
-                          placeholder="Second line of caption"
-                        />
+                        {/* Row 2: Text Caption Line 1 */}
+                        <div>
+                          <input
+                            type="text"
+                            value={caption.line1}
+                            onChange={(e) => {
+                              const newCaptions = [...captions]
+                              newCaptions[index].line1 = e.target.value
+                              setCaptions(newCaptions)
+                            }}
+                            className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                            placeholder="First line of caption"
+                          />
+                        </div>
+                        
+                        {/* Row 3: Text Caption Line 2 */}
+                        <div>
+                          <input
+                            type="text"
+                            value={caption.line2}
+                            onChange={(e) => {
+                              const newCaptions = [...captions]
+                              newCaptions[index].line2 = e.target.value
+                              setCaptions(newCaptions)
+                            }}
+                            className="w-full px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
+                            placeholder="Second line of caption"
+                          />
+                        </div>
                       </div>
                       
-                      {/* Delete Icon */}
-                      <div className="flex-shrink-0">
+                      {/* Action Buttons - Stacked vertically */}
+                      <div className="flex-shrink-0 flex flex-col space-y-2">
+                        {/* Duplicate Button */}
+                        <button
+                          onClick={() => handleDuplicateCaption(index)}
+                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-white/10 rounded-lg transition-colors"
+                          title="Duplicate caption"
+                        >
+                          <IoDuplicate className="w-6 h-6" />
+                        </button>
+                        
+                        {/* Delete Button */}
                         <button
                           onClick={() => handleDeleteCaption(index)}
                           className="p-2 text-red-400 hover:text-red-300 hover:bg-white/10 rounded-lg transition-colors"
                           title="Delete caption"
                         >
-                          <TiDeleteOutline className="w-6 h-6" />
+                          <MdDeleteSweep className="w-6 h-6" />
                         </button>
                       </div>
                     </div>
@@ -3088,35 +3226,97 @@ export default function Watch() {
               )}
             </div>
             
-            {/* Action Buttons Row */}
-            <div className="flex justify-between items-center">
-              {/* Delete All Button - Left Side */}
-              {captions.length > 0 && (
-                <button
-                  onClick={handleDeleteAllCaptions}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
-                  title="Delete all captions"
+            {/* Footer removed - all buttons moved to header */}
+          </div>
+        </div>
+      )}
+
+      {/* New Caption Placement Dialog */}
+      {showAddCaptionDialog && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddCaptionDialog(false)
+              setSelectedSerialNumber(null)
+            }
+          }}
+        >
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-6">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowAddCaptionDialog(false)
+                setSelectedSerialNumber(null)
+              }}
+              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
+            >
+              ×
+            </button>
+            
+            {/* Modal Content */}
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold mb-4">Add New Caption</h2>
+            </div>
+            
+            {/* Serial Number Selection */}
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-center space-x-3">
+                <span className="text-gray-300 text-sm">
+                  Add new Caption after Caption #:
+                </span>
+                
+                <select
+                  value={selectedSerialNumber || ''}
+                  onChange={(e) => setSelectedSerialNumber(parseInt(e.target.value))}
+                  className="px-3 py-2 text-sm bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none w-20"
                 >
-                  <TiDeleteOutline className="w-5 h-5" />
-                  <span>Delete All Captions</span>
-                </button>
-              )}
-              
-              {/* Right Side Buttons */}
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleCancelCaptions}
-                  className="px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveCaptions}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Save Captions
-                </button>
+                  <option value="">#</option>
+                  {captions.map((caption) => (
+                    <option key={caption.serial_number} value={caption.serial_number}>
+                      {caption.serial_number}
+                    </option>
+                  ))}
+                </select>
               </div>
+              
+              {/* Help Text */}
+              <div className="text-xs text-gray-400 text-center">
+                {selectedSerialNumber && (
+                  <div>
+                    {selectedSerialNumber === Math.max(...captions.map(c => c.serial_number)) ? (
+                      <span>New caption will be added after the last caption with 10 seconds duration.</span>
+                    ) : (
+                      <span>New caption will be inserted between existing captions, splitting the selected caption in half.</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex justify-center space-x-3">
+              <button
+                onClick={handleAddCaptionAtPosition}
+                disabled={!selectedSerialNumber}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  selectedSerialNumber 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                ADD
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowAddCaptionDialog(false)
+                  setSelectedSerialNumber(null)
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
