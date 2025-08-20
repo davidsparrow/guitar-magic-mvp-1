@@ -249,7 +249,18 @@ export default function Watch() {
 
   // Helper functions to get messages from Admin Settings
   const getAdminMessage = (messageKey, fallback) => {
-    return featureGates?.global_settings?.[messageKey] || fallback
+    // First check if it's an error message
+    if (featureGates?.error_messages?.[messageKey]) {
+      return featureGates.error_messages[messageKey]
+    }
+    
+    // Then check if it's a global setting (feature gates related)
+    if (featureGates?.global_settings?.[messageKey]) {
+      return featureGates.global_settings[messageKey]
+    }
+    
+    // Fallback to provided default
+    return fallback
   }
 
   // Show video playing restriction modal
@@ -577,25 +588,39 @@ export default function Watch() {
   const loadFeatureGates = async () => {
     try {
       setFeatureGatesLoading(true)
-      console.log('🚪 Loading feature gates configuration...')
+      console.log('🚪 Loading feature gates and error messages configuration...')
       
-      const { data, error } = await supabase
+      // Load feature gates
+      const { data: featureGatesData, error: featureGatesError } = await supabase
         .from('admin_settings')
         .select('*')
         .eq('setting_key', 'feature_gates')
         .single()
 
-      if (error) {
-        console.error('❌ Error loading feature gates:', error)
+      if (featureGatesError) {
+        console.error('❌ Error loading feature gates:', featureGatesError)
         return
       }
 
-      if (data && data.setting_value) {
-        setFeatureGates(data.setting_value)
-        console.log('✅ Feature gates loaded:', data.setting_value)
-      } else {
-        console.log('⚠️ No feature gates configuration found')
+      // Load error messages
+      const { data: errorMessagesData, error: errorMessagesError } = await supabase
+        .from('admin_settings')
+        .select('*')
+        .eq('setting_key', 'error_messages')
+        .single()
+
+      if (errorMessagesError && errorMessagesError.code !== 'PGRST116') {
+        console.error('❌ Error loading error messages:', errorMessagesError)
       }
+
+      // Combine both configurations
+      const combinedConfig = {
+        ...(featureGatesData?.setting_value || {}),
+        error_messages: errorMessagesData?.setting_value || {}
+      }
+
+      setFeatureGates(combinedConfig)
+      console.log('✅ Feature gates and error messages loaded:', combinedConfig)
     } catch (error) {
       console.error('❌ Error in loadFeatureGates:', error)
     } finally {
@@ -1584,22 +1609,90 @@ export default function Watch() {
     })
 
     if (currentCaption) {
-      // Cut the existing caption - reduce end time to current time - 1 second
-      const newEndTime = Math.max(0, currentTime - 1)
-      const newEndTimeString = `${Math.floor(newEndTime / 60)}:${(newEndTime % 60).toString().padStart(2, '0')}`
-      
-      setCaptions(prev => prev.map(caption => 
-        caption.id === currentCaption.id 
-          ? { ...caption, endTime: newEndTimeString }
-          : caption
-      ))
-      
-      console.log('✂️ Cut existing caption end time to:', newEndTimeString)
+      try {
+        // Rule 4: Trim existing caption to current time (new caption start time)
+        const newEndTime = Math.max(0, currentTime)
+        const newEndTimeString = `${Math.floor(newEndTime / 60)}:${(newEndTime % 60).toString().padStart(2, '0')}`
+        
+        // Trim existing caption in local state
+        setCaptions(prev => prev.map(caption => 
+          caption.id === currentCaption.id 
+            ? { ...caption, endTime: newEndTimeString }
+            : caption
+        ))
+        
+        // IMMEDIATELY save trimmed caption to database
+        const trimmedCaption = {
+          startTime: currentCaption.startTime,
+          endTime: newEndTimeString,
+          line1: currentCaption.line1,
+          line2: currentCaption.line2
+        }
+        
+        // Save trimmed caption to database
+        const updatedCaption = await updateCaption(currentCaption.id, trimmedCaption)
+        
+        if (!updatedCaption) {
+          // Trimming failed - revert to Watch state
+          throw new Error('Failed to save trimmed caption to database')
+        }
+        
+        console.log('✂️ Cut existing caption end time to:', newEndTimeString)
+        console.log('💾 Trimmed caption saved to database')
+        
+      } catch (error) {
+        // Show admin-editable error message
+        const errorMessage = getAdminMessage('caption_trim_error', 'An internal error has occurred: ') + error.message
+        showCustomAlertModal(errorMessage, [
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
+        
+        // Exit caption mode and return to Watch state
+        setIsInCaptionMode(false)
+        setEditingCaptionId(null)
+        return // Don't create new caption
+      }
     }
 
-    // Add new caption starting at current time
-    const startTimeString = `${Math.floor(currentTime / 60)}:${(currentTime % 60).toString().padStart(2, '0')}`
-    const endTimeString = `${Math.floor((currentTime + 5) / 60)}:${((currentTime + 5) % 60).toString().padStart(2, '0')}`
+    // Sort captions by start time to determine if current caption is last
+    const sortedCaptions = [...captions].sort((a, b) => {
+      const timeA = timeToSeconds(a.startTime)
+      const timeB = timeToSeconds(b.startTime)
+      return timeA - timeB
+    })
+
+    // Find if current caption is last in the sorted list
+    const isCurrentCaptionLast = currentCaption && 
+      sortedCaptions[sortedCaptions.length - 1]?.id === currentCaption.id
+
+    // Calculate new caption timing based on Rules 4a/4b
+    let newCaptionStartTime = currentTime
+    let newCaptionEndTime = 0
+
+    if (isCurrentCaptionLast) {
+      // Rule 4a: Current caption is LAST in list
+      newCaptionEndTime = currentTime + 10 // Add 10 seconds
+      console.log('📝 Rule 4a: Current caption is LAST, new caption gets 10 second duration')
+    } else {
+      // Rule 4b: Current caption is NOT LAST in list
+      // Find next caption by start time
+      const currentCaptionIndex = sortedCaptions.findIndex(c => c.id === currentCaption?.id)
+      const nextCaption = sortedCaptions[currentCaptionIndex + 1]
+      
+      if (nextCaption) {
+        const nextCaptionStartTime = timeToSeconds(nextCaption.startTime)
+        newCaptionEndTime = nextCaptionStartTime - 1 // 1 second before next caption
+        console.log('📝 Rule 4b: Current caption is NOT LAST, new caption ends 1s before next caption')
+      } else {
+        // Fallback: add 10 seconds if no next caption found
+        newCaptionEndTime = currentTime + 10
+        console.log('📝 Fallback: No next caption found, using 10 second duration')
+      }
+    }
+
+    // Convert to MM:SS format (clean, no decimals)
+    const startTimeString = `${Math.floor(newCaptionStartTime / 60)}:${(newCaptionStartTime % 60).toString().padStart(2, '0')}`
+    const endTimeString = `${Math.floor(newCaptionEndTime / 60)}:${(newCaptionEndTime % 60).toString().padStart(2, '0')}`
 
     const newCaption = {
       startTime: startTimeString,
@@ -1759,6 +1852,44 @@ export default function Watch() {
   const handleDeleteCaption = (captionIndex) => {
     setCaptionToDelete(captionIndex)
     setShowDeleteConfirm(true)
+  }
+
+  // Handle delete all captions
+  const handleDeleteAllCaptions = () => {
+    if (captions.length === 0) return
+    
+    // Show confirmation dialog
+    showCustomAlertModal(
+      'Are you sure you want to delete ALL captions? This action cannot be undone.',
+      [
+        { 
+          text: 'DELETE ALL', 
+          action: async () => {
+            try {
+              // Delete all captions from database
+              for (const caption of captions) {
+                if (caption.id) {
+                  await deleteCaption(caption.id)
+                }
+              }
+              
+              // Clear local state
+              setCaptions([])
+              hideCustomAlertModal()
+              
+              console.log('🗑️ All captions deleted successfully')
+            } catch (error) {
+              console.error('❌ Error deleting all captions:', error)
+              setDbError('Failed to delete all captions')
+            }
+          }
+        },
+        { 
+          text: 'CANCEL', 
+          action: hideCustomAlertModal 
+        }
+      ]
+    )
   }
 
   // Confirm caption deletion
@@ -2957,20 +3088,35 @@ export default function Watch() {
               )}
             </div>
             
-            {/* Action Buttons */}
-            <div className="flex space-x-3 justify-end">
-              <button
-                onClick={handleCancelCaptions}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveCaptions}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                Save Captions
-              </button>
+            {/* Action Buttons Row */}
+            <div className="flex justify-between items-center">
+              {/* Delete All Button - Left Side */}
+              {captions.length > 0 && (
+                <button
+                  onClick={handleDeleteAllCaptions}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+                  title="Delete all captions"
+                >
+                  <TiDeleteOutline className="w-5 h-5" />
+                  <span>Delete All Captions</span>
+                </button>
+              )}
+              
+              {/* Right Side Buttons */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCancelCaptions}
+                  className="px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveCaptions}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Save Captions
+                </button>
+              </div>
             </div>
           </div>
         </div>
