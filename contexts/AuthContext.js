@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [hasShownResumePrompt, setHasShownResumePrompt] = useState(false)
 
   // SEPARATE useEffect for timeout (not nested!)
   useEffect(() => {
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setUser(null)
           setProfile(null)
+          setHasShownResumePrompt(false) // Reset resume prompt state on logout
         }
         
         // ALWAYS set loading to false regardless of profile fetch
@@ -110,6 +112,12 @@ export const AuthProvider = ({ children }) => {
   // Check for saved session data and offer resume after login
   const checkForLoginResume = async (userProfile) => {
     try {
+      // Prevent multiple resume checks - only show once per login session
+      if (hasShownResumePrompt) {
+        console.log('📝 Resume prompt already shown this session, skipping')
+        return
+      }
+
       // Only check if user has resume feature enabled and has saved session data
       if (!userProfile.resume_enabled || !userProfile.last_video_id || !userProfile.last_video_timestamp) {
         console.log('📝 No resume data or feature disabled for user')
@@ -124,6 +132,9 @@ export const AuthProvider = ({ children }) => {
         sessionDate: userProfile.last_session_date
       })
 
+      // Mark that we've shown the resume prompt
+      setHasShownResumePrompt(true)
+      
       // Show resume prompt to user
       showLoginResumePrompt(userProfile)
     } catch (error) {
@@ -155,7 +166,7 @@ export const AuthProvider = ({ children }) => {
   // Navigate to saved video for resume
   const navigateToResumeVideo = (userProfile) => {
     try {
-      // Use window.location for navigation since we're in a context
+      // Build the video URL with parameters
       const videoUrl = `/watch?v=${userProfile.last_video_id}`
       const titleParam = userProfile.last_video_title ? `&title=${encodeURIComponent(userProfile.last_video_title)}` : ''
       const channelParam = userProfile.last_video_channel_name ? `&channel=${encodeURIComponent(userProfile.last_video_channel_name)}` : ''
@@ -163,7 +174,9 @@ export const AuthProvider = ({ children }) => {
       const fullUrl = videoUrl + titleParam + channelParam
       console.log('🌐 Navigating to resume video:', fullUrl)
       
-      window.location.href = fullUrl
+      // Use window.location.href but with replace to prevent back button issues
+      // This is the safest method for navigation from a context
+      window.location.replace(fullUrl)
     } catch (error) {
       console.error('❌ Error navigating to resume video:', error)
     }
