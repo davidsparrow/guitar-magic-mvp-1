@@ -46,6 +46,47 @@ export default function Watch() {
     }
   }
 
+  // Save session data when user pauses video for Login-Resume functionality
+  const saveSessionOnPause = async () => {
+    if (!user?.id || !player || !isVideoReady || !videoId) return
+    
+    try {
+      const currentTime = player.getCurrentTime()
+      const videoTitle = player.getVideoData().title || videoTitle
+      const channelName = player.getVideoData().author || videoChannel
+      
+      console.log('💾 Saving session data on pause:', {
+        videoId,
+        timestamp: currentTime,
+        title: videoTitle,
+        channel: channelName
+      })
+      
+      const response = await fetch('/api/user/update-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          videoId,
+          timestamp: currentTime,
+          title: videoTitle,
+          channelId: '', // YouTube doesn't provide channel ID easily
+          channelName
+        })
+      })
+      
+      if (response.ok) {
+        console.log('✅ Session data saved successfully on pause')
+      } else {
+        console.error('❌ Failed to save session data on pause:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Save session on pause error:', error)
+    }
+  }
+
 
 
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
@@ -1200,9 +1241,10 @@ export default function Watch() {
       console.log('▶️ Video started playing')
     } else if (event.data === 2) { // PAUSED
       console.log('⏸️ Video paused')
-      // Save session data when user pauses
+      
+      // Save session data for Login-Resume functionality when user pauses
       if (user?.id && profile?.subscription_tier !== 'free') {
-        autoSaveSession()
+        saveSessionOnPause()
       }
     } else if (event.data === 3) { // BUFFERING
       console.log('🔄 Video buffering')
