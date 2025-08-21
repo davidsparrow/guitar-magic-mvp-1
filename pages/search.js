@@ -285,7 +285,7 @@ export default function Search() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0">
           {/* Row 1: Logo + Favorites (Left) + Auth Buttons (Right) - Mobile Only */}
           <div className="flex md:hidden justify-between items-center w-full">
-            {/* Left side: Logo + Favorites */}
+            {/* Left side: Logo + Favorites + Resume */}
             <div className="flex items-center space-x-2">
               <a 
                 href="/?home=true" 
@@ -309,6 +309,15 @@ export default function Search() {
                 title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
               >
                 <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+              </button>
+              
+              {/* Resume Button - Mobile */}
+              <button
+                onClick={() => console.log('Resume button clicked - not implemented yet')}
+                className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
+                title="Resume Last Video"
+              >
+                <span className="text-white text-xs font-medium">▶️ Resume</span>
               </button>
             </div>
 
@@ -429,6 +438,15 @@ export default function Search() {
                 title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
               >
                 <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+              </button>
+              
+              {/* Resume Button - Desktop */}
+              <button
+                onClick={() => console.log('Resume button clicked - not implemented yet')}
+                className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
+                title="Resume Last Video"
+              >
+                <span className="text-white text-sm font-medium">▶️ Resume</span>
               </button>
 
               {/* Search Bar - Positioned BETWEEN logo/favorites and sort dropdown */}
