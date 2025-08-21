@@ -63,6 +63,7 @@ export default function Watch() {
   const [isVideoReady, setIsVideoReady] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [player, setPlayer] = useState(null)
+  const playerRef = useRef(null) // Add ref to track player instance
   
   // Control strip states - Individual row visibility
   const [showControlStrips, setShowControlStrips] = useState(false)
@@ -1259,10 +1260,11 @@ export default function Watch() {
     setIsVideoReady(true)
     console.log('🎥 YouTube player ready and methods available')
     
-    // Set the fully ready player in state
+    // Set the fully ready player in both state and ref for immediate access
     if (playerInstance) {
-      console.log('✅ Setting fully ready player in state...')
+      console.log('✅ Setting fully ready player in state and ref...')
       setPlayer(playerInstance)
+      playerRef.current = playerInstance
     } else {
       console.log('⚠️ No player instance provided to handleVideoReady')
     }
@@ -1298,8 +1300,30 @@ export default function Watch() {
       })
       
       if (user?.id && profile?.subscription_tier !== 'free') {
-        // Use the same player readiness check that works throughout the codebase
-        if (isPlayerReady()) {
+        // Debug: Log player state details to understand why isPlayerReady() is failing
+        console.log('🔍 Debug - Player state check:', {
+          hasPlayer: !!player,
+          hasPlayerRef: !!playerRef.current,
+          playerType: typeof player,
+          playerRefType: typeof playerRef.current,
+          playerMethods: player ? {
+            getPlayerState: typeof player.getPlayerState,
+            playVideo: typeof player.playVideo,
+            pauseVideo: typeof player.pauseVideo,
+            getCurrentTime: typeof player.getCurrentTime
+          } : 'No player',
+          playerRefMethods: playerRef.current ? {
+            getPlayerState: typeof playerRef.current.getPlayerState,
+            playVideo: typeof playerRef.current.playVideo,
+            pauseVideo: typeof playerRef.current.pauseVideo,
+            getCurrentTime: typeof playerRef.current.getCurrentTime
+          } : 'No player ref',
+          isPlayerReadyResult: isPlayerReady(),
+          playerState: player?.getPlayerState ? player.getPlayerState() : 'Method not available'
+        })
+        
+        // Use the ref for immediate access to the player instance
+        if (playerRef.current && playerRef.current.getPlayerState && typeof playerRef.current.getPlayerState === 'function') {
           console.log('✅ Save conditions met, calling saveSessionOnPause()')
           saveSessionOnPause()
         } else {
