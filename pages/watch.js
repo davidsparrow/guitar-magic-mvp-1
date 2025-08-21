@@ -48,7 +48,26 @@ export default function Watch() {
 
   // Auto-save session data for Login-Resume functionality
   const autoSaveSession = async () => {
-    if (!user?.id || !player || !isVideoReady || !videoId) return
+    console.log('🔍 autoSaveSession function called - checking conditions...')
+    
+    if (!user?.id) {
+      console.log('❌ Auto-save blocked: No user ID')
+      return
+    }
+    if (!player) {
+      console.log('❌ Auto-save blocked: No player')
+      return
+    }
+    if (!isVideoReady) {
+      console.log('❌ Auto-save blocked: Video not ready')
+      return
+    }
+    if (!videoId) {
+      console.log('❌ Auto-save blocked: No video ID')
+      return
+    }
+    
+    console.log('✅ All conditions met, proceeding with auto-save...')
     
     try {
       const currentTime = player.getCurrentTime()
