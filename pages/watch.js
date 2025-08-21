@@ -90,6 +90,9 @@ export default function Watch() {
   const [userPlan, setUserPlan] = useState('free') // 'free', 'basic', 'premium'
   const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
   
+  // Resume tracking state - prevents infinite loops
+  const [resumePromptShown, setResumePromptShown] = useState(false)
+  
   // Caption management states
   const [showCaptionModal, setShowCaptionModal] = useState(false)
   const [captions, setCaptions] = useState([])
@@ -1261,6 +1264,8 @@ export default function Watch() {
         await signOut()
         setShowAuthModal(false)
         setShowRightMenuModal(false)
+        // Reset resume state on logout so user can see resume prompt on next login
+        setResumePromptShown(false)
       } catch (error) {
         console.error('Sign out failed:', error)
       }
@@ -1293,6 +1298,12 @@ export default function Watch() {
   const checkForSavedSession = async (currentVideoId) => {
     if (!user?.id || !currentVideoId) return
     
+    // Prevent showing resume prompt multiple times in same session
+    if (resumePromptShown) {
+      console.log('🔄 Resume prompt already shown this session, skipping...')
+      return
+    }
+    
     try {
       console.log('🔍 Checking for saved session data for video:', currentVideoId)
       
@@ -1317,8 +1328,9 @@ export default function Watch() {
           sessionDate: profile.last_session_date
         })
         
-        // Show resume prompt to user
+        // Show resume prompt to user and mark as shown
         showResumePrompt(profile.last_video_timestamp, profile.last_video_title)
+        setResumePromptShown(true)
       } else {
         console.log('📝 No saved session for this video or no timestamp')
       }
