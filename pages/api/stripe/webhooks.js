@@ -2,6 +2,27 @@
 import Stripe from 'stripe';
 import { supabase } from '../../../lib/supabase';
 
+// Disable body parsing for webhook signature verification
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// Helper function to read raw body
+function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', chunk => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      resolve(Buffer.from(data));
+    });
+    req.on('error', reject);
+  });
+}
+
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -38,8 +59,11 @@ export default async function handler(req, res) {
   let event;
 
   try {
+    // Read raw body for signature verification
+    const rawBody = await getRawBody(req);
+    
     // Verify webhook signature
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).json({ message: 'Webhook signature verification failed' });
