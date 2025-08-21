@@ -98,9 +98,74 @@ export const AuthProvider = ({ children }) => {
       if (data) {
         setProfile(data)
         console.log('Profile loaded:', data.email, data.subscription_tier)
+        
+        // Check for saved session data to offer resume after login
+        checkForLoginResume(data)
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error)
+    }
+  }
+
+  // Check for saved session data and offer resume after login
+  const checkForLoginResume = async (userProfile) => {
+    try {
+      // Only check if user has resume feature enabled and has saved session data
+      if (!userProfile.resume_enabled || !userProfile.last_video_id || !userProfile.last_video_timestamp) {
+        console.log('📝 No resume data or feature disabled for user')
+        return
+      }
+
+      console.log('🎯 Found saved session data after login:', {
+        videoId: userProfile.last_video_id,
+        timestamp: userProfile.last_video_timestamp,
+        title: userProfile.last_video_title,
+        channel: userProfile.last_video_channel_name,
+        sessionDate: userProfile.last_session_date
+      })
+
+      // Show resume prompt to user
+      showLoginResumePrompt(userProfile)
+    } catch (error) {
+      console.error('❌ Error checking login resume:', error)
+    }
+  }
+
+  // Show resume prompt after login
+  const showLoginResumePrompt = (userProfile) => {
+    const minutes = Math.floor(userProfile.last_video_timestamp / 60)
+    const seconds = Math.floor(userProfile.last_video_timestamp % 60)
+    const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`
+    
+    const title = userProfile.last_video_title || 'your last video'
+    const message = `Welcome back! Would you like to resume ${title} from ${timeString}?`
+    
+    // Use browser confirm for now (can be enhanced with custom modal later)
+    const shouldResume = window.confirm(message)
+    
+    if (shouldResume) {
+      console.log('✅ User chose to resume after login')
+      // Navigate to the saved video with resume parameters
+      navigateToResumeVideo(userProfile)
+    } else {
+      console.log('❌ User chose not to resume after login')
+    }
+  }
+
+  // Navigate to saved video for resume
+  const navigateToResumeVideo = (userProfile) => {
+    try {
+      // Use window.location for navigation since we're in a context
+      const videoUrl = `/watch?v=${userProfile.last_video_id}`
+      const titleParam = userProfile.last_video_title ? `&title=${encodeURIComponent(userProfile.last_video_title)}` : ''
+      const channelParam = userProfile.last_video_channel_name ? `&channel=${encodeURIComponent(userProfile.last_video_channel_name)}` : ''
+      
+      const fullUrl = videoUrl + titleParam + channelParam
+      console.log('🌐 Navigating to resume video:', fullUrl)
+      
+      window.location.href = fullUrl
+    } catch (error) {
+      console.error('❌ Error navigating to resume video:', error)
     }
   }
 
