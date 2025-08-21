@@ -46,6 +46,47 @@ export default function Watch() {
     }
   }
 
+  // Auto-save session data for Login-Resume functionality
+  const autoSaveSession = async () => {
+    if (!user?.id || !player || !isVideoReady || !videoId) return
+    
+    try {
+      const currentTime = player.getCurrentTime()
+      const videoTitle = player.getVideoData().title || videoTitle
+      const channelName = player.getVideoData().author || videoChannel
+      
+      console.log('💾 Auto-saving session data:', {
+        videoId,
+        timestamp: currentTime,
+        title: videoTitle,
+        channel: channelName
+      })
+      
+      const response = await fetch('/api/user/update-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          videoId,
+          timestamp: currentTime,
+          title: videoTitle,
+          channelId: '', // YouTube doesn't provide channel ID easily
+          channelName
+        })
+      })
+      
+      if (response.ok) {
+        console.log('✅ Session data auto-saved successfully')
+      } else {
+        console.error('❌ Failed to auto-save session data:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Auto-save session error:', error)
+    }
+  }
+
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
@@ -1194,46 +1235,7 @@ export default function Watch() {
     // Handle video loading errors
   }
 
-  // Auto-save session data every 30 seconds
-  const autoSaveSession = async () => {
-    if (!user?.id || !player || !isVideoReady || !videoId) return
-    
-    try {
-      const currentTime = player.getCurrentTime()
-      const videoTitle = player.getVideoData().title || videoTitle
-      const channelName = player.getVideoData().author || videoChannel
-      
-      console.log('💾 Auto-saving session data:', {
-        videoId,
-        timestamp: currentTime,
-        title: videoTitle,
-        channel: channelName
-      })
-      
-      const response = await fetch('/api/user/update-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          videoId,
-          timestamp: currentTime,
-          title: videoTitle,
-          channelId: '', // YouTube doesn't provide channel ID easily
-          channelName
-        })
-      })
-      
-      if (response.ok) {
-        console.log('✅ Session data auto-saved successfully')
-      } else {
-        console.error('❌ Failed to auto-save session data:', response.status)
-      }
-    } catch (error) {
-      console.error('❌ Auto-save session error:', error)
-    }
-  }
+
 
   // Handle YouTube player state changes - Global event handler for all play/pause actions
   const handlePlayerStateChange = (event) => {
