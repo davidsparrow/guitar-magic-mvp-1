@@ -1092,6 +1092,48 @@
     "column_default": "'[]'::jsonb"
   },
   {
+    "table_name": "user_profiles",
+    "column_name": "last_video_id",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "last_video_timestamp",
+    "data_type": "double precision",
+    "is_nullable": "YES",
+    "column_default": "0"
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "last_video_title",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "last_video_channel_name",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "last_session_date",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "resume_enabled",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "true"
+  },
+  {
     "table_name": "user_usage",
     "column_name": "id",
     "data_type": "uuid",
