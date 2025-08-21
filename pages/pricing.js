@@ -9,6 +9,7 @@ import { FaRegCreditCard } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
 import { FaTimes, FaSearch } from "react-icons/fa"
+import { loadStripe } from '@stripe/stripe-js'
 export default function Home() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -20,9 +21,24 @@ export default function Home() {
   const [showPlanModal, setShowPlanModal] = useState(false)
   const searchInputRef = useRef(null)
   const router = useRouter()
+  
+  // Stripe initialization
+  const [stripe, setStripe] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
+    
+    // Initialize Stripe
+    const initStripe = async () => {
+      const stripeInstance = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+      setStripe(stripeInstance)
+    }
+    
+    if (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+      initStripe()
+    }
   }, [])
   // Smart redirect logic for authenticated users
   useEffect(() => {
@@ -79,6 +95,55 @@ export default function Home() {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch()
+    }
+  }
+
+  // Handle Stripe checkout
+  const handleCheckout = async (plan) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
+
+    if (!stripe) {
+      console.error('Stripe not initialized')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan: plan,
+          billingCycle: isAnnualBilling ? 'annual' : 'monthly',
+          userEmail: user.email,
+          userId: user.id
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url
+      } else {
+        // Handle errors (like duplicate subscription)
+        if (data.message === 'You already have an active subscription') {
+          alert(`You already have an active ${data.currentPlan} subscription.`)
+        } else {
+          alert('Failed to create checkout session. Please try again.')
+        }
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      alert('An error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -184,7 +249,12 @@ export default function Home() {
           {/* Pricing Tiers */}
           <div className="flex flex-col md:grid md:grid-cols-3 gap-6">
             {/* Freebird */}
-            <div className="border border-white/60 rounded-xl p-6 bg-black/75">
+            <div className="border border-white/60 rounded-xl p-6 relative bg-black/75">
+              
+              {/* No Credit Card Pill - Bottom Edge Overlap */}
+              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                No credit card
+              </div>
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold mb-2">Freebird</h3>
                 <div className="text-gray-400 font-bold text-base mb-4">free</div>
@@ -220,7 +290,7 @@ export default function Home() {
                 onClick={() => setShowAuthModal(true)}
                 className="w-full mt-6 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2"
               >
-                <span>Get Started Free</span>
+                <span>STAY FREE</span>
                 <img 
                   src="/images/no_credit_card2.png" 
                   alt="No Credit Card" 
@@ -233,6 +303,11 @@ export default function Home() {
             <div className="border border-yellow-500 rounded-xl p-6 relative bg-black">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full text-sm font-bold">
                 POPULAR
+              </div>
+              
+              {/* 30-day Trial Pill - Bottom Edge Overlap */}
+              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                30-day Free Trial
               </div>
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold mb-2">Roadie</h3>
@@ -267,20 +342,34 @@ export default function Home() {
                 <div>max daily searches: <span className="text-yellow-400">36</span></div>
                 <div>max daily watch time: <span className="text-yellow-400">3 Hrs.</span></div>
               </div>
+              
               <button 
-                onClick={() => setShowAuthModal(true)}
-                className="w-full mt-6 bg-yellow-500 text-black py-3 rounded-lg hover:bg-yellow-400 transition-colors font-bold"
+                onClick={() => handleCheckout('roadie')}
+                disabled={isLoading}
+                className="w-full mt-6 bg-yellow-500 text-black py-3 rounded-lg hover:bg-yellow-400 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Start Roadie
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  'STAY CHEAP'
+                )}
               </button>
             </div>
 
             {/* Hero */}
-            <div className="border border-green-500 rounded-xl p-6 bg-black/75">
+            <div className="border border-green-500 rounded-xl p-6 relative bg-black/75">
+              
+              {/* 30-day Trial Pill - Bottom Edge Overlap */}
+              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                30-day Free Trial
+              </div>
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold mb-2">Hero</h3>
                 <div className="text-green-400 font-bold text-base mb-4">
-                  ${isAnnualBilling ? '16' : '18'}/mo.
+                  ${isAnnualBilling ? '16' : '19'}/mo.
                 </div>
               </div>
               <div className="space-y-3 text-sm">
@@ -310,11 +399,20 @@ export default function Home() {
                 <div>max daily searches: <span className="text-green-400">UNLIMITED</span></div>
                 <div>max daily watch time: <span className="text-green-400">8 Hrs.</span></div>
               </div>
+              
               <button 
-                onClick={() => setShowAuthModal(true)}
-                className="w-full mt-6 bg-green-500 text-black py-3 rounded-lg hover:bg-green-400 transition-colors font-bold"
+                onClick={() => handleCheckout('hero')}
+                disabled={isLoading}
+                className="w-full mt-6 bg-green-500 text-black py-3 rounded-lg hover:bg-green-400 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Go Hero
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  'GO BROKE'
+                )}
               </button>
             </div>
           </div>
