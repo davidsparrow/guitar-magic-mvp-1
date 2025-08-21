@@ -1017,6 +1017,18 @@ export default function Watch() {
           console.log('📊 Video loaded - querying daily watch time total')
           getDailyWatchTimeTotal()
         }
+        
+        // Start auto-save timer for resume functionality
+        if (user?.id && profile?.subscription_tier !== 'free') {
+          console.log('💾 Starting auto-save timer for resume functionality')
+          const autoSaveInterval = setInterval(autoSaveSession, 30000) // Every 30 seconds
+          
+          // Cleanup interval when component unmounts or video changes
+          return () => {
+            clearInterval(autoSaveInterval)
+            console.log('🧹 Auto-save timer cleaned up')
+          }
+        }
       } else {
         console.log('❌ No video ID provided, redirecting to home')
         // No video ID provided, redirect to home
@@ -1182,6 +1194,47 @@ export default function Watch() {
     // Handle video loading errors
   }
 
+  // Auto-save session data every 30 seconds
+  const autoSaveSession = async () => {
+    if (!user?.id || !player || !isVideoReady || !videoId) return
+    
+    try {
+      const currentTime = player.getCurrentTime()
+      const videoTitle = player.getVideoData().title || videoTitle
+      const channelName = player.getVideoData().author || videoChannel
+      
+      console.log('💾 Auto-saving session data:', {
+        videoId,
+        timestamp: currentTime,
+        title: videoTitle,
+        channel: channelName
+      })
+      
+      const response = await fetch('/api/user/update-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          videoId,
+          timestamp: currentTime,
+          title: videoTitle,
+          channelId: '', // YouTube doesn't provide channel ID easily
+          channelName
+        })
+      })
+      
+      if (response.ok) {
+        console.log('✅ Session data auto-saved successfully')
+      } else {
+        console.error('❌ Failed to auto-save session data:', response.status)
+      }
+    } catch (error) {
+      console.error('❌ Auto-save session error:', error)
+    }
+  }
+
   // Handle YouTube player state changes - Global event handler for all play/pause actions
   const handlePlayerStateChange = (event) => {
     console.log('🎮 YouTube player state changed:', event.data)
@@ -1194,6 +1247,10 @@ export default function Watch() {
       console.log('▶️ Video started playing')
     } else if (event.data === 2) { // PAUSED
       console.log('⏸️ Video paused')
+      // Save session data when user pauses
+      if (user?.id && profile?.subscription_tier !== 'free') {
+        autoSaveSession()
+      }
     } else if (event.data === 3) { // BUFFERING
       console.log('🔄 Video buffering')
     } else if (event.data === 5) { // CUED
