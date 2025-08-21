@@ -93,7 +93,6 @@ export default async function handler(req, res) {
           last_video_id: videoId,
           last_video_timestamp: timestamp,
           last_video_title: title || null,
-          last_video_channel_id: channelId || null,
           last_video_channel_name: channelName || null,
           last_session_date: new Date().toISOString(),
           updated_at: new Date().toISOString()
