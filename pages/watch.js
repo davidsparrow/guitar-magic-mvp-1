@@ -46,65 +46,7 @@ export default function Watch() {
     }
   }
 
-  // Auto-save session data for Login-Resume functionality
-  const autoSaveSession = async () => {
-    console.log('🔍 autoSaveSession function called - checking conditions...')
-    
-    if (!user?.id) {
-      console.log('❌ Auto-save blocked: No user ID')
-      return
-    }
-    if (!player) {
-      console.log('❌ Auto-save blocked: No player')
-      return
-    }
-    if (!isVideoReady) {
-      console.log('❌ Auto-save blocked: Video not ready')
-      return
-    }
-    if (!videoId) {
-      console.log('❌ Auto-save blocked: No video ID')
-      return
-    }
-    
-    console.log('✅ All conditions met, proceeding with auto-save...')
-    
-    try {
-      const currentTime = player.getCurrentTime()
-      const videoTitle = player.getVideoData().title || videoTitle
-      const channelName = player.getVideoData().author || videoChannel
-      
-      console.log('💾 Auto-saving session data:', {
-        videoId,
-        timestamp: currentTime,
-        title: videoTitle,
-        channel: channelName
-      })
-      
-      const response = await fetch('/api/user/update-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          videoId,
-          timestamp: currentTime,
-          title: videoTitle,
-          channelId: '', // YouTube doesn't provide channel ID easily
-          channelName
-        })
-      })
-      
-      if (response.ok) {
-        console.log('✅ Session data auto-saved successfully')
-      } else {
-        console.error('❌ Failed to auto-save session data:', response.status)
-      }
-    } catch (error) {
-      console.error('❌ Auto-save session error:', error)
-    }
-  }
+
 
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -1078,27 +1020,7 @@ export default function Watch() {
           getDailyWatchTimeTotal()
         }
         
-        // Start auto-save timer for resume functionality
-        console.log('🔍 Debug auto-save conditions:', {
-          hasUser: !!user?.id,
-          userId: user?.id,
-          hasProfile: !!profile,
-          subscriptionTier: profile?.subscription_tier,
-          isNotFree: profile?.subscription_tier !== 'free'
-        })
-        
-        if (user?.id && profile?.subscription_tier !== 'free') {
-          console.log('💾 Starting auto-save timer for resume functionality')
-          const autoSaveInterval = setInterval(autoSaveSession, 30000) // Every 30 seconds
-          
-          // Cleanup interval when component unmounts or video changes
-          return () => {
-            clearInterval(autoSaveInterval)
-            console.log('🧹 Auto-save timer cleaned up')
-          }
-        } else {
-          console.log('❌ Auto-save timer NOT started - conditions not met')
-        }
+
       } else {
         console.log('❌ No video ID provided, redirecting to home')
         // No video ID provided, redirect to home
