@@ -1060,6 +1060,14 @@ export default function Watch() {
         }
         
         // Start auto-save timer for resume functionality
+        console.log('🔍 Debug auto-save conditions:', {
+          hasUser: !!user?.id,
+          userId: user?.id,
+          hasProfile: !!profile,
+          subscriptionTier: profile?.subscription_tier,
+          isNotFree: profile?.subscription_tier !== 'free'
+        })
+        
         if (user?.id && profile?.subscription_tier !== 'free') {
           console.log('💾 Starting auto-save timer for resume functionality')
           const autoSaveInterval = setInterval(autoSaveSession, 30000) // Every 30 seconds
@@ -1069,6 +1077,8 @@ export default function Watch() {
             clearInterval(autoSaveInterval)
             console.log('🧹 Auto-save timer cleaned up')
           }
+        } else {
+          console.log('❌ Auto-save timer NOT started - conditions not met')
         }
       } else {
         console.log('❌ No video ID provided, redirecting to home')
