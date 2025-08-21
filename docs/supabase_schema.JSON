@@ -952,6 +952,20 @@
     "column_default": "now()"
   },
   {
+    "table_name": "subscriptions",
+    "column_name": "trial_started_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "subscriptions",
+    "column_name": "trial_reminder_sent",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": "'[]'::jsonb"
+  },
+  {
     "table_name": "user_profiles",
     "column_name": "id",
     "data_type": "uuid",
@@ -1048,6 +1062,34 @@
     "data_type": "timestamp with time zone",
     "is_nullable": "YES",
     "column_default": "now()"
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "default_caption_duration_seconds",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "10"
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "plan_selected_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "trial_started_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "user_profiles",
+    "column_name": "trial_reminder_sent",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": "'[]'::jsonb"
   },
   {
     "table_name": "user_usage",
