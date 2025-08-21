@@ -1298,8 +1298,8 @@ export default function Watch() {
       })
       
       if (user?.id && profile?.subscription_tier !== 'free') {
-        // Additional check: ensure player is fully ready before saving
-        if (player && player.getCurrentTime && typeof player.getCurrentTime === 'function') {
+        // Use the same player readiness check that works throughout the codebase
+        if (isPlayerReady()) {
           console.log('✅ Save conditions met, calling saveSessionOnPause()')
           saveSessionOnPause()
         } else {
