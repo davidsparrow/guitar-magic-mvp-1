@@ -103,78 +103,6 @@ export default function Watch() {
   const [originalCaptionsSnapshot, setOriginalCaptionsSnapshot] = useState(null) // Store original state when modal opens
   const [userDefaultCaptionDuration, setUserDefaultCaptionDuration] = useState(10) // User's preferred caption duration in seconds
   
-  // Save session data when user pauses video for Login-Resume functionality
-  const saveSessionOnPause = async () => {
-    console.log('🔍 saveSessionOnPause function called - starting...')
-    
-    if (!user?.id) {
-      console.log('❌ Save blocked: No user ID')
-      return
-    }
-    if (!player) {
-      console.log('❌ Save blocked: No player')
-      return
-    }
-    if (!isVideoReady) {
-      console.log('❌ Save blocked: Video not ready')
-      return
-    }
-    if (!videoId) {
-      console.log('❌ Save blocked: No video ID')
-      return
-    }
-    
-    console.log('✅ All conditions met, proceeding with save...')
-    
-    try {
-      console.log('🔍 Getting player data...')
-      const currentTime = player.getCurrentTime()
-      console.log('⏰ Current time:', currentTime)
-      
-      const videoTitle = player.getVideoData().title || videoTitle
-      console.log('📺 Video title:', videoTitle)
-      
-      const channelName = player.getVideoData().author || videoChannel
-      console.log('👤 Channel name:', channelName)
-      
-      console.log('💾 Saving session data on pause:', {
-        videoId,
-        timestamp: currentTime,
-        title: videoTitle,
-        channel: channelName
-      })
-      
-      console.log('📡 Making API call to /api/user/update-session...')
-      const response = await fetch('/api/user/update-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          videoId,
-          timestamp: currentTime,
-          title: videoTitle,
-          channelId: '', // YouTube doesn't provide channel ID easily
-          channelName
-        })
-      })
-      
-      console.log('📡 API response received:', response.status, response.statusText)
-      
-      if (response.ok) {
-        console.log('✅ Session data saved successfully on pause')
-      } else {
-        console.error('❌ Failed to save session data on pause:', response.status)
-        const errorText = await response.text()
-        console.error('❌ Error details:', errorText)
-      }
-    } catch (error) {
-      console.error('❌ Save session on pause error:', error)
-      console.error('❌ Error stack:', error.stack)
-    }
-  }
-  
   // Load user's default caption duration from database
   const loadUserDefaultCaptionDuration = async () => {
     if (!user?.id) return
@@ -311,6 +239,78 @@ export default function Watch() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [dailyLimitInfo, setDailyLimitInfo] = useState(null)
   const [currentDailyTotal, setCurrentDailyTotal] = useState(0) // Track current daily watch time total
+
+  // Save session data when user pauses video for Login-Resume functionality
+  const saveSessionOnPause = async () => {
+    console.log('🔍 saveSessionOnPause function called - starting...')
+    
+    if (!user?.id) {
+      console.log('❌ Save blocked: No user ID')
+      return
+    }
+    if (!player) {
+      console.log('❌ Save blocked: No player')
+      return
+    }
+    if (!isVideoReady) {
+      console.log('❌ Save blocked: Video not ready')
+      return
+    }
+    if (!videoId) {
+      console.log('❌ Save blocked: No video ID')
+      return
+    }
+    
+    console.log('✅ All conditions met, proceeding with save...')
+    
+    try {
+      console.log('🔍 Getting player data...')
+      const currentTime = player.getCurrentTime()
+      console.log('⏰ Current time:', currentTime)
+      
+      const videoTitle = player.getVideoData().title || videoTitle
+      console.log('📺 Video title:', videoTitle)
+      
+      const channelName = player.getVideoData().author || videoChannel
+      console.log('👤 Channel name:', channelName)
+      
+      console.log('💾 Saving session data on pause:', {
+        videoId,
+        timestamp: currentTime,
+        title: videoTitle,
+        channel: channelName
+      })
+      
+      console.log('📡 Making API call to /api/user/update-session...')
+      const response = await fetch('/api/user/update-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          videoId,
+          timestamp: currentTime,
+          title: videoTitle,
+          channelId: '', // YouTube doesn't provide channel ID easily
+          channelName
+        })
+      })
+      
+      console.log('📡 API response received:', response.status, response.statusText)
+      
+      if (response.ok) {
+        console.log('✅ Session data saved successfully on pause')
+      } else {
+        console.error('❌ Failed to save session data on pause:', response.status)
+        const errorText = await response.text()
+        console.error('❌ Error details:', errorText)
+      }
+    } catch (error) {
+      console.error('❌ Save session on pause error:', error)
+      console.error('❌ Error stack:', error.stack)
+    }
+  }
 
 
 
