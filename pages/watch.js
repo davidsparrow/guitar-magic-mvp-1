@@ -1243,8 +1243,19 @@ export default function Watch() {
       console.log('⏸️ Video paused')
       
       // Save session data for Login-Resume functionality when user pauses
+      console.log('🔍 Pause detected - checking save conditions:', {
+        hasUser: !!user?.id,
+        userId: user?.id,
+        hasProfile: !!profile,
+        subscriptionTier: profile?.subscription_tier,
+        isNotFree: profile?.subscription_tier !== 'free'
+      })
+      
       if (user?.id && profile?.subscription_tier !== 'free') {
+        console.log('✅ Save conditions met, calling saveSessionOnPause()')
         saveSessionOnPause()
+      } else {
+        console.log('❌ Save conditions NOT met - session save blocked')
       }
     } else if (event.data === 3) { // BUFFERING
       console.log('🔄 Video buffering')
