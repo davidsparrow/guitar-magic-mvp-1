@@ -26,32 +26,36 @@ export default async function handler(req, res) {
 
     // Get user profile to check subscription tier
     // Use service role key for admin access to bypass RLS
-    const { data: profile, error: profileError } = await supabase
+    const { data: profiles, error: profileError } = await supabase
       .from('user_profiles')
       .select('subscription_tier, resume_enabled')
-      .eq('id', userId)
-      .single();
+      .eq('id', userId);
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError);
-      
-      // If it's a permission error, try to get basic user info from auth
-      if (profileError.code === 'PGRST301' || profileError.message.includes('permission')) {
-        console.log('⚠️ Permission error - trying alternative approach');
-        
-        // For now, assume hero tier users can use resume feature
-        // This is a temporary fix until RLS is properly configured
-        console.log('✅ Assuming user has access to resume feature');
-        
-        // Continue with the update using the provided user ID
-      } else {
-        return res.status(500).json({ 
-          message: 'Failed to fetch user profile',
-          error: profileError.message,
-          code: profileError.code
-        });
-      }
+      console.error('Error fetching user profiles:', profileError);
+      return res.status(500).json({ 
+        message: 'Failed to fetch user profile',
+        error: profileError.message,
+        code: profileError.code
+      });
     }
+
+    // Handle multiple profiles or no profiles
+    let profile = null;
+    if (profiles && profiles.length > 0) {
+      if (profiles.length > 1) {
+        console.log('⚠️ Multiple profiles found for user, using first one');
+        console.log('🔍 Profile count:', profiles.length);
+        console.log('🔍 First profile:', profiles[0]);
+        // Could also clean up duplicates here if needed
+      }
+      profile = profiles[0];
+      console.log('✅ Using profile:', profile);
+    } else {
+      console.log('⚠️ No profiles found for user');
+    }
+
+    // Profile fetching is now handled above
 
     if (!profile) {
       console.log('⚠️ No profile found - proceeding with basic access check');
