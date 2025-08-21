@@ -248,11 +248,17 @@ export default function Watch() {
       hasUser: !!user?.id,
       userId: user?.id,
       hasPlayer: !!player,
+      hasPlayerRef: !!playerRef.current,
       playerType: typeof player,
+      playerRefType: typeof playerRef.current,
       playerMethods: player ? {
         getCurrentTime: typeof player.getCurrentTime,
         getVideoData: typeof player.getVideoData
       } : 'No player',
+      playerRefMethods: playerRef.current ? {
+        getCurrentTime: typeof playerRef.current.getCurrentTime,
+        getVideoData: typeof playerRef.current.getVideoData
+      } : 'No player ref',
       isVideoReady,
       hasVideoId: !!videoId,
       videoId
@@ -262,8 +268,8 @@ export default function Watch() {
       console.log('❌ Save blocked: No user ID')
       return
     }
-    if (!player) {
-      console.log('❌ Save blocked: No player')
+    if (!playerRef.current) {
+      console.log('❌ Save blocked: No player ref')
       return
     }
     if (!isVideoReady) {
@@ -279,13 +285,13 @@ export default function Watch() {
     
     try {
       console.log('🔍 Getting player data...')
-      const currentTime = player.getCurrentTime()
+      const currentTime = playerRef.current.getCurrentTime()
       console.log('⏰ Current time:', currentTime)
       
-      const videoTitle = player.getVideoData().title || videoTitle
+      const videoTitle = playerRef.current.getVideoData().title || videoTitle
       console.log('📺 Video title:', videoTitle)
       
-      const channelName = player.getVideoData().author || videoChannel
+      const channelName = playerRef.current.getVideoData().author || videoChannel
       console.log('👤 Channel name:', channelName)
       
       console.log('💾 Saving session data on pause:', {
