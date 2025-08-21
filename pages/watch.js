@@ -46,6 +46,63 @@ export default function Watch() {
     }
   }
 
+
+
+
+
+  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showRightMenuModal, setShowRightMenuModal] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
+
+  // Video player states
+  const [videoId, setVideoId] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
+  const [videoChannel, setVideoChannel] = useState('')
+  const [isVideoReady, setIsVideoReady] = useState(false)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
+  const [player, setPlayer] = useState(null)
+  
+  // Control strip states - Individual row visibility
+  const [showControlStrips, setShowControlStrips] = useState(false)
+  const [showRow1, setShowRow1] = useState(false)
+  const [showRow2, setShowRow2] = useState(false)
+  const [showRow3, setShowRow3] = useState(false)
+
+  // Video flip states
+  const [flipState, setFlipState] = useState('normal') // 'normal', 'horizontal', 'vertical'
+  
+  // Loop segment states
+  const [isLoopActive, setIsLoopActive] = useState(false)
+  const [loopStartTime, setLoopStartTime] = useState('0:00')
+  const [loopEndTime, setLoopEndTime] = useState('0:00')
+  const [showLoopModal, setShowLoopModal] = useState(false)
+  const [tempLoopStart, setTempLoopStart] = useState('0:00')
+  const [tempLoopEnd, setTempLoopEnd] = useState('0:00')
+  
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  
+  // User access control states
+  const [isVideoFavorited, setIsVideoFavorited] = useState(false)
+  const [userPlan, setUserPlan] = useState('free') // 'free', 'basic', 'premium'
+  const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
+  
+  // Caption management states
+  const [showCaptionModal, setShowCaptionModal] = useState(false)
+  const [captions, setCaptions] = useState([])
+  const [editingCaption, setEditingCaption] = useState(null)
+  const [isAddingNewCaption, setIsAddingNewCaption] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [captionToDelete, setCaptionToDelete] = useState(null)
+  const [conflictRowIndex, setConflictRowIndex] = useState(-1)
+  const [isInCaptionMode, setIsInCaptionMode] = useState(false)
+  const [editingCaptionId, setEditingCaptionId] = useState(null)
+  const [originalCaptionState, setOriginalCaptionState] = useState(null) // Track original caption before editing
+  const [originalCaptionsSnapshot, setOriginalCaptionsSnapshot] = useState(null) // Store original state when modal opens
+  const [userDefaultCaptionDuration, setUserDefaultCaptionDuration] = useState(10) // User's preferred caption duration in seconds
+  
   // Save session data when user pauses video for Login-Resume functionality
   const saveSessionOnPause = async () => {
     console.log('🔍 saveSessionOnPause function called - starting...')
@@ -117,61 +174,6 @@ export default function Watch() {
       console.error('❌ Error stack:', error.stack)
     }
   }
-
-
-
-  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [showRightMenuModal, setShowRightMenuModal] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const router = useRouter()
-
-  // Video player states
-  const [videoId, setVideoId] = useState('')
-  const [videoTitle, setVideoTitle] = useState('')
-  const [videoChannel, setVideoChannel] = useState('')
-  const [isVideoReady, setIsVideoReady] = useState(false)
-  const [showMobileSearch, setShowMobileSearch] = useState(false)
-  const [player, setPlayer] = useState(null)
-  
-  // Control strip states - Individual row visibility
-  const [showControlStrips, setShowControlStrips] = useState(false)
-  const [showRow1, setShowRow1] = useState(false)
-  const [showRow2, setShowRow2] = useState(false)
-  const [showRow3, setShowRow3] = useState(false)
-
-  // Video flip states
-  const [flipState, setFlipState] = useState('normal') // 'normal', 'horizontal', 'vertical'
-  
-  // Loop segment states
-  const [isLoopActive, setIsLoopActive] = useState(false)
-  const [loopStartTime, setLoopStartTime] = useState('0:00')
-  const [loopEndTime, setLoopEndTime] = useState('0:00')
-  const [showLoopModal, setShowLoopModal] = useState(false)
-  const [tempLoopStart, setTempLoopStart] = useState('0:00')
-  const [tempLoopEnd, setTempLoopEnd] = useState('0:00')
-  
-  // Fullscreen state
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  
-  // User access control states
-  const [isVideoFavorited, setIsVideoFavorited] = useState(false)
-  const [userPlan, setUserPlan] = useState('free') // 'free', 'basic', 'premium'
-  const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
-  
-  // Caption management states
-  const [showCaptionModal, setShowCaptionModal] = useState(false)
-  const [captions, setCaptions] = useState([])
-  const [editingCaption, setEditingCaption] = useState(null)
-  const [isAddingNewCaption, setIsAddingNewCaption] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [captionToDelete, setCaptionToDelete] = useState(null)
-  const [conflictRowIndex, setConflictRowIndex] = useState(-1)
-  const [isInCaptionMode, setIsInCaptionMode] = useState(false)
-  const [editingCaptionId, setEditingCaptionId] = useState(null)
-  const [originalCaptionState, setOriginalCaptionState] = useState(null) // Track original caption before editing
-  const [originalCaptionsSnapshot, setOriginalCaptionsSnapshot] = useState(null) // Store original state when modal opens
-  const [userDefaultCaptionDuration, setUserDefaultCaptionDuration] = useState(10) // User's preferred caption duration in seconds
   
   // Load user's default caption duration from database
   const loadUserDefaultCaptionDuration = async () => {
