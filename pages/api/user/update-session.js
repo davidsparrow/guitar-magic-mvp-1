@@ -1,6 +1,7 @@
 // pages/api/user/update-session.js
 // Save user's current session data for resume functionality
 import { supabase } from '../../../lib/supabase';
+import { adminSupabase } from '../../../lib/adminSupabase';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -78,11 +79,11 @@ export default async function handler(req, res) {
       });
     }
 
-    // If no profile found, create one automatically
+    // If no profile found, create one automatically using admin client
     if (!profile) {
-      console.log('⚠️ No profile found - creating profile automatically');
+      console.log('⚠️ No profile found - creating profile automatically with admin privileges');
       
-      const { data: newProfile, error: createError } = await supabase
+      const { data: newProfile, error: createError } = await adminSupabase
         .from('user_profiles')
         .insert([
           {
@@ -98,18 +99,18 @@ export default async function handler(req, res) {
         .single();
 
       if (createError) {
-        console.error('❌ Error creating profile:', createError);
+        console.error('❌ Error creating profile with admin client:', createError);
         return res.status(500).json({ 
           message: 'Failed to create user profile',
           error: createError.message 
         });
       }
 
-      console.log('✅ Profile created automatically:', newProfile);
+      console.log('✅ Profile created automatically with admin privileges:', newProfile);
     }
 
-    // Update user profile with session data
-    const { error: updateError } = await supabase
+    // Update user profile with session data using admin client for write access
+    const { error: updateError } = await adminSupabase
       .from('user_profiles')
       .update({
         last_video_id: videoId,
