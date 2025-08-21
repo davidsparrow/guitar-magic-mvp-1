@@ -16,6 +16,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  
+  // Resume tracking state - prevents infinite loops
+  const [resumePromptShown, setResumePromptShown] = useState(false)
 
   // SEPARATE useEffect for timeout (not nested!)
   useEffect(() => {
@@ -116,6 +119,12 @@ export const AuthProvider = ({ children }) => {
   // Check for resume opportunity after login
   const checkForResumeOpportunity = async (profileData) => {
     try {
+      // Prevent showing resume prompt multiple times in same session
+      if (resumePromptShown) {
+        console.log('🔄 Resume prompt already shown this session, skipping...')
+        return
+      }
+      
       console.log('🔍 checkForResumeOpportunity called with profile data:', {
         hasProfile: !!profileData,
         lastVideoId: profileData?.last_video_id,
@@ -128,7 +137,7 @@ export const AuthProvider = ({ children }) => {
       if (profileData?.last_video_id && profileData?.last_video_timestamp) {
         console.log('🎯 Found saved session data, checking if user wants to resume...')
         
-        // Show resume prompt to user
+        // Show resume prompt to user and mark as shown
         const shouldResume = window.confirm(
           `Resume "${profileData.last_video_title || 'your video'}" from ${Math.floor(profileData.last_video_timestamp / 60)}:${Math.floor(profileData.last_video_timestamp % 60).toString().padStart(2, '0')}?`
         )
@@ -140,6 +149,9 @@ export const AuthProvider = ({ children }) => {
         } else {
           console.log('❌ User chose not to resume')
         }
+        
+        // Mark resume prompt as shown to prevent infinite loops
+        setResumePromptShown(true)
       } else {
         console.log('📝 No saved session data found, no resume opportunity')
         console.log('📊 Profile data available:', profileData)
@@ -205,6 +217,8 @@ const signOut = async () => {
     }
 
     console.log('Sign out successful - forcing reload')
+    // Reset resume state on logout so user can see resume prompt on next login
+    setResumePromptShown(false)
     // Force page reload to clear all state
     window.location.href = '/'
     return { error: null }
