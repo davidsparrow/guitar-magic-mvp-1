@@ -1112,6 +1112,9 @@ export default function Watch() {
         if (user?.id) {
           console.log('📊 Video loaded - querying daily watch time total')
           getDailyWatchTimeTotal()
+          
+          // Check for saved session data to resume video
+          checkForSavedSession(v)
         }
         
 
@@ -1140,6 +1143,11 @@ export default function Watch() {
         setVideoTitle(title ? decodeURIComponent(title) : '')
         setVideoChannel(channel ? decodeURIComponent(channel) : '')
         setIsVideoReady(true)
+        
+        // Check for saved session data in fallback case too
+        if (user?.id) {
+          checkForSavedSession(v)
+        }
       }
     }
   }, [mounted, videoId])
@@ -1279,6 +1287,70 @@ export default function Watch() {
   const handleVideoError = (error) => {
     console.error('Video error:', error)
     // Handle video loading errors
+  }
+
+  // Check for saved session data and resume video if available
+  const checkForSavedSession = async (currentVideoId) => {
+    if (!user?.id || !currentVideoId) return
+    
+    try {
+      console.log('🔍 Checking for saved session data for video:', currentVideoId)
+      
+      // Get user profile to check for saved session
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('last_video_id, last_video_timestamp, last_video_title, last_video_channel_name, last_session_date')
+        .eq('id', user.id)
+        .single()
+      
+      if (error) {
+        console.log('⚠️ No saved session data found:', error.message)
+        return
+      }
+      
+      if (profile?.last_video_id === currentVideoId && profile?.last_video_timestamp) {
+        console.log('🎯 Found saved session data:', {
+          videoId: profile.last_video_id,
+          timestamp: profile.last_video_timestamp,
+          title: profile.last_video_title,
+          channel: profile.last_video_channel_name,
+          sessionDate: profile.last_session_date
+        })
+        
+        // Show resume prompt to user
+        showResumePrompt(profile.last_video_timestamp, profile.last_video_title)
+      } else {
+        console.log('📝 No saved session for this video or no timestamp')
+      }
+    } catch (error) {
+      console.error('❌ Error checking saved session:', error)
+    }
+  }
+
+  // Show resume prompt to user
+  const showResumePrompt = (timestamp, title) => {
+    const minutes = Math.floor(timestamp / 60)
+    const seconds = Math.floor(timestamp % 60)
+    const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`
+    
+    const message = `Resume "${title}" from ${timeString}?`
+    const buttons = [
+      { text: 'Resume', action: () => resumeVideo(timestamp) },
+      { text: 'Start from beginning', action: () => console.log('User chose to start from beginning') }
+    ]
+    
+    showCustomAlertModal(message, buttons)
+  }
+
+  // Resume video at saved timestamp
+  const resumeVideo = (timestamp) => {
+    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+      console.log('⏩ Resuming video at timestamp:', timestamp)
+      playerRef.current.seekTo(timestamp, true)
+      hideCustomAlertModal()
+    } else {
+      console.log('⚠️ Player not ready for resume')
+    }
   }
 
 
