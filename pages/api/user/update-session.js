@@ -79,53 +79,41 @@ export default async function handler(req, res) {
       });
     }
 
-    // If no profile found, create one automatically using admin client
-    if (!profile) {
-      console.log('⚠️ No profile found - creating profile automatically with admin privileges');
-      
-      const { data: newProfile, error: createError } = await adminSupabase
-        .from('user_profiles')
-        .insert([
-          {
-            id: userId,
-            email: `${userId}@user.com`, // Placeholder email
-            subscription_tier: 'hero', // Default to hero tier
-            resume_enabled: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ])
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('❌ Error creating profile with admin client:', createError);
-        return res.status(500).json({ 
-          message: 'Failed to create user profile',
-          error: createError.message 
-        });
-      }
-
-      console.log('✅ Profile created automatically with admin privileges:', newProfile);
-    }
-
-    // Update user profile with session data using admin client for write access
-    const { error: updateError } = await adminSupabase
+    // Use UPSERT to either create or update the profile
+    console.log('🔄 Using UPSERT to ensure profile exists and update session data');
+    
+    const { data: upsertResult, error: upsertError } = await adminSupabase
       .from('user_profiles')
-      .update({
-        last_video_id: videoId,
-        last_video_timestamp: timestamp,
-        last_video_title: title || null,
-        last_video_channel_id: channelId || null,
-        last_video_channel_name: channelName || null,
-        last_session_date: new Date().toISOString()
+      .upsert([
+        {
+          id: userId,
+          email: `${userId}@user.com`, // Placeholder email
+          subscription_tier: profile?.subscription_tier || 'hero', // Use existing or default
+          resume_enabled: profile?.resume_enabled !== false, // Default to true unless explicitly false
+          last_video_id: videoId,
+          last_video_timestamp: timestamp,
+          last_video_title: title || null,
+          last_video_channel_id: channelId || null,
+          last_video_channel_name: channelName || null,
+          last_session_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ], {
+        onConflict: 'id', // Handle conflicts on the primary key
+        ignoreDuplicates: false // Update existing records
       })
-      .eq('id', userId);
+      .select()
+      .single();
 
-    if (updateError) {
-      console.error('Error updating session data:', updateError);
-      return res.status(500).json({ message: 'Failed to update session data' });
+    if (upsertError) {
+      console.error('❌ Error with UPSERT operation:', upsertError);
+      return res.status(500).json({ 
+        message: 'Failed to upsert user profile',
+        error: upsertError.message 
+      });
     }
+
+    console.log('✅ Profile upserted successfully:', upsertResult);
 
     res.status(200).json({ 
       message: 'Session data updated successfully',
