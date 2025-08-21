@@ -359,46 +359,46 @@ ALTER TABLE public.user_usage ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Only admins can manage admin settings" ON public.admin_settings
     FOR ALL USING (auth.jwt() ->> 'role' = 'service_role');
 
--- User profiles policies
+-- User profiles policies (OPTIMIZED for performance)
 CREATE POLICY "Users can view own profile" ON public.user_profiles
-    FOR SELECT USING (auth.uid() = id);
+    FOR SELECT USING (id = (SELECT auth.uid()));
 
 CREATE POLICY "Users can update own profile" ON public.user_profiles
-    FOR UPDATE USING (auth.uid() = id);
+    FOR UPDATE USING (id = (SELECT auth.uid()));
 
 CREATE POLICY "Users can insert own profile" ON public.user_profiles
-    FOR INSERT WITH CHECK (auth.uid() = id);
+    FOR INSERT WITH CHECK (id = (SELECT auth.uid()));
 
--- Subscriptions policies
+-- Subscriptions policies (OPTIMIZED for performance)
 CREATE POLICY "Users can view own subscriptions" ON public.subscriptions
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (user_id = (SELECT auth.uid()));
 
--- Billing history policies
+-- Billing history policies (OPTIMIZED for performance)
 CREATE POLICY "Users can view own billing history" ON public.billing_history
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (user_id = (SELECT auth.uid()));
 
--- Captions policies
+-- Captions policies (OPTIMIZED for performance)
 CREATE POLICY "Users can manage own captions" ON public.captions
-    FOR ALL USING (auth.uid() = user_id);
+    FOR ALL USING (user_id = (SELECT auth.uid()));
 
--- Channel watch time policies
+-- Channel watch time policies (OPTIMIZED for performance)
 CREATE POLICY "Users can manage own watch time" ON public.channel_watch_time
-    FOR ALL USING (auth.uid() = user_id);
+    FOR ALL USING (user_id = (SELECT auth.uid()));
 
 -- Creator payouts policies (read-only for all)
 CREATE POLICY "Anyone can view creator payouts" ON public.creator_payouts
     FOR SELECT USING (true);
 
--- Custom loops policies
+-- Custom loops policies (OPTIMIZED for performance)
 CREATE POLICY "Users can manage own loops" ON public.custom_loops
-    FOR ALL USING (auth.uid() = user_id);
+    FOR ALL USING (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "Anyone can view public loops" ON public.custom_loops
     FOR SELECT USING (is_public = TRUE);
 
--- Favorites policies
+-- Favorites policies (OPTIMIZED for performance)
 CREATE POLICY "Users can manage own favorites" ON public.favorites
-    FOR ALL USING (auth.uid() = user_id);
+    FOR ALL USING (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "Anyone can view public favorites" ON public.favorites
     FOR SELECT USING (is_public = TRUE);
@@ -411,26 +411,26 @@ CREATE POLICY "Authenticated users can view feature gates" ON public.feature_gat
 CREATE POLICY "Anyone can view public leaderboard" ON public.public_leaderboard
     FOR SELECT USING (true);
 
--- Saved searches policies
+-- Saved searches policies (OPTIMIZED for performance)
 CREATE POLICY "Users can manage own searches" ON public.saved_searches
-    FOR ALL USING (auth.uid() = user_id);
+    FOR ALL USING (user_id = (SELECT auth.uid()));
 
--- Sharing links policies
+-- Sharing links policies (OPTIMIZED for performance)
 CREATE POLICY "Users can manage own sharing links" ON public.sharing_links
-    FOR ALL USING (auth.uid() = created_by_user_id);
+    FOR ALL USING (created_by_user_id = (SELECT auth.uid()));
 
 CREATE POLICY "Anyone can view active sharing links" ON public.sharing_links
     FOR SELECT USING (is_active = TRUE);
 
--- Usage tracking policies
+-- Usage tracking policies (OPTIMIZED for performance)
 CREATE POLICY "Users can view own usage" ON public.user_usage
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "Users can insert own usage" ON public.user_usage
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT WITH CHECK (user_id = (SELECT auth.uid()));
 
 CREATE POLICY "Users can update own usage" ON public.user_usage
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING (user_id = (SELECT auth.uid()));
 
 -- =====================================================
 -- FUNCTIONS
