@@ -243,6 +243,19 @@ export default function Watch() {
   // Save session data when user pauses video for Login-Resume functionality
   const saveSessionOnPause = async () => {
     console.log('🔍 saveSessionOnPause function called - starting...')
+    console.log('🔍 Debug - State check:', {
+      hasUser: !!user?.id,
+      userId: user?.id,
+      hasPlayer: !!player,
+      playerType: typeof player,
+      playerMethods: player ? {
+        getCurrentTime: typeof player.getCurrentTime,
+        getVideoData: typeof player.getVideoData
+      } : 'No player',
+      isVideoReady,
+      hasVideoId: !!videoId,
+      videoId
+    })
     
     if (!user?.id) {
       console.log('❌ Save blocked: No user ID')
@@ -1285,8 +1298,13 @@ export default function Watch() {
       })
       
       if (user?.id && profile?.subscription_tier !== 'free') {
-        console.log('✅ Save conditions met, calling saveSessionOnPause()')
-        saveSessionOnPause()
+        // Additional check: ensure player is fully ready before saving
+        if (player && player.getCurrentTime && typeof player.getCurrentTime === 'function') {
+          console.log('✅ Save conditions met, calling saveSessionOnPause()')
+          saveSessionOnPause()
+        } else {
+          console.log('⚠️ Player not fully ready yet, skipping session save')
+        }
       } else {
         console.log('❌ Save conditions NOT met - session save blocked')
       }
