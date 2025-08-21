@@ -9,6 +9,7 @@ import { RiLogoutCircleRLine } from "react-icons/ri"
 import { TbGuitarPick, TbGuitarPickFilled } from "react-icons/tb"
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
 import TopBanner from '../components/TopBanner'
+import { supabase } from '../lib/supabase'
 
 export default function Search() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
@@ -32,6 +33,7 @@ export default function Search() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [userFavorites, setUserFavorites] = useState([]) // This would be populated from your backend
   const [pendingVideo, setPendingVideo] = useState(null) // Store video for post-login navigation
+  const [savedSession, setSavedSession] = useState(null) // Store saved video session data
 
   // Prevent hydration issues
   useEffect(() => {
@@ -76,6 +78,20 @@ export default function Search() {
       setPendingVideo(null)
     }
   }, [isAuthenticated, pendingVideo, loading, router])
+
+  // Check for saved session when user logs in
+  useEffect(() => {
+    if (isAuthenticated && user?.id && !loading) {
+      console.log('🔍 User authenticated, checking for saved session...')
+      checkForSavedSession().then(sessionData => {
+        setSavedSession(sessionData)
+        console.log('💾 Saved session state updated:', sessionData ? 'Found' : 'None')
+      })
+    } else {
+      // Clear saved session when user logs out
+      setSavedSession(null)
+    }
+  }, [isAuthenticated, user?.id, loading])
 
   // Handle login/logout
   const handleAuthClick = async () => {
@@ -176,6 +192,47 @@ export default function Search() {
     if (searchInputRef.current) {
       searchInputRef.current.focus()
       searchInputRef.current.setSelectionRange(0, 0)
+    }
+  }
+
+  // Check for saved video session data
+  const checkForSavedSession = async () => {
+    if (!user?.id) {
+      console.log('❌ No user ID, cannot check for saved session')
+      return null
+    }
+
+    try {
+      console.log('🔍 Checking for saved session data for user:', user.id)
+      
+      // Query the database for saved session data
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('last_video_id, last_video_timestamp, last_video_title, last_video_channel_name, last_session_date')
+        .eq('id', user.id)
+        .single()
+      
+      if (error) {
+        console.log('⚠️ No saved session data found:', error.message)
+        return null
+      }
+      
+      if (profile?.last_video_id && profile?.last_video_timestamp) {
+        console.log('🎯 Found saved session data:', {
+          videoId: profile.last_video_id,
+          timestamp: profile.last_video_timestamp,
+          title: profile.last_video_title,
+          channel: profile.last_video_channel_name,
+          sessionDate: profile.last_session_date
+        })
+        return profile
+      } else {
+        console.log('📝 No saved session data found')
+        return null
+      }
+    } catch (error) {
+      console.error('❌ Error checking saved session:', error)
+      return null
     }
   }
 
@@ -311,13 +368,38 @@ export default function Search() {
                 <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
               </button>
               
-              {/* Resume Button - Mobile */}
+              {/* Resume Button - Mobile - Only show when saved session exists */}
+              {savedSession && (
+                <button
+                  onClick={() => {
+                    console.log('🚀 Resume button clicked - navigating to saved video...')
+                    console.log('📺 Video details:', {
+                      id: savedSession.last_video_id,
+                      title: savedSession.last_video_title,
+                      channel: savedSession.last_video_channel_name,
+                      timestamp: savedSession.last_video_timestamp
+                    })
+                    
+                    // Navigate to video page with resume parameters
+                    router.push(`/watch?v=${savedSession.last_video_id}&title=${encodeURIComponent(savedSession.last_video_title || '')}&channel=${encodeURIComponent(savedSession.last_video_channel_name || '')}`)
+                  }}
+                  className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
+                  title="Resume Last Video"
+                >
+                  <span className="text-white text-xs font-medium">▶️ Resume</span>
+                </button>
+              )}
+              
+              {/* Debug Button - Temporary - Clear session to test conditional behavior */}
               <button
-                onClick={() => console.log('Resume button clicked - not implemented yet')}
-                className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
-                title="Resume Last Video"
+                onClick={() => {
+                  console.log('🧪 Debug: Clearing saved session to test conditional button')
+                  setSavedSession(null)
+                }}
+                className="p-2 rounded-lg transition-colors duration-300 hover:bg-red-500/20 border border-red-500/30"
+                title="Debug: Clear Session (Temporary)"
               >
-                <span className="text-white text-xs font-medium">▶️ Resume</span>
+                <span className="text-red-400 text-xs font-medium">🧪 Clear</span>
               </button>
             </div>
 
@@ -440,13 +522,38 @@ export default function Search() {
                 <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
               </button>
               
-              {/* Resume Button - Desktop */}
+              {/* Resume Button - Desktop - Only show when saved session exists */}
+              {savedSession && (
+                <button
+                  onClick={() => {
+                    console.log('🚀 Resume button clicked - navigating to saved video...')
+                    console.log('📺 Video details:', {
+                      id: savedSession.last_video_id,
+                      title: savedSession.last_video_title,
+                      channel: savedSession.last_video_channel_name,
+                      timestamp: savedSession.last_video_timestamp
+                    })
+                    
+                    // Navigate to video page with resume parameters
+                    router.push(`/watch?v=${savedSession.last_video_id}&title=${encodeURIComponent(savedSession.last_video_title || '')}&channel=${encodeURIComponent(savedSession.last_video_channel_name || '')}`)
+                  }}
+                  className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
+                  title="Resume Last Video"
+                >
+                  <span className="text-white text-sm font-medium">▶️ Resume</span>
+                </button>
+              )}
+              
+              {/* Debug Button - Temporary - Clear session to test conditional behavior */}
               <button
-                onClick={() => console.log('Resume button clicked - not implemented yet')}
-                className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
-                title="Resume Last Video"
+                onClick={() => {
+                  console.log('🧪 Debug: Clearing saved session to test conditional button')
+                  setSavedSession(null)
+                }}
+                className="p-2 rounded-lg transition-colors duration-300 hover:bg-red-500/20 border border-red-500/30"
+                title="Debug: Clear Session (Temporary)"
               >
-                <span className="text-white text-sm font-medium">▶️ Resume</span>
+                <span className="text-red-400 text-xs font-medium">🧪 Clear</span>
               </button>
 
               {/* Search Bar - Positioned BETWEEN logo/favorites and sort dropdown */}
