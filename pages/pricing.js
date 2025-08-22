@@ -217,22 +217,28 @@ export default function Home() {
             {/* Freebird */}
             <div className="border border-white/60 rounded-xl p-6 relative bg-black/75">
               
+              {/* Plan Icon - Upper Right */}
+              <div className="absolute top-4 right-4">
+                <img 
+                  src="/images/plan_icon_freebird.png" 
+                  alt="Freebird Plan Icon" 
+                  className="w-12 h-12 filter brightness-0 invert"
+                />
+              </div>
+              
               {/* No Credit Card Pill - Bottom Edge Overlap */}
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                 No credit card
               </div>
               <div className="mb-6">
-                <div className="flex items-start space-x-3 mb-2">
-                  <GiChickenOven className="w-10 h-10 text-yellow-400 flex-shrink-0 -mt-1" />
-                  <div>
-                    <h3 className="text-2xl font-bold text-left">Freebird</h3>
-                    <div className="text-gray-400 font-bold text-base">free</div>
-                  </div>
+                <div className="-mt-2">
+                  <h3 className="text-2xl font-bold text-left">Freebird</h3>
+                  <div className="text-gray-400 font-bold text-base">free</div>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Flippin some vids</span>
                 </div>
                 <div className="flex items-center text-gray-500">
@@ -276,36 +282,43 @@ export default function Home() {
                 POPULAR
               </div>
               
+              {/* Plan Icon - Upper Right */}
+              <div className="absolute top-4 right-4">
+                <img 
+                  src="/images/plan_icon_roadie.png" 
+                  alt="Roadie Plan Icon" 
+                  className="w-12 h-12"
+                  style={{ filter: 'hue-rotate(45deg) saturate(200%) brightness(1.6)' }}
+                />
+              </div>
+              
               {/* 30-day Trial Pill - Bottom Edge Overlap */}
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                 30-day Free Trial
               </div>
               <div className="mb-6">
-                <div className="flex items-start space-x-3 mb-2">
-                  <BsFillSpeakerFill className="w-10 h-10 text-yellow-400 flex-shrink-0 mt-0" />
-                  <div>
-                    <h3 className="text-2xl font-bold text-left">Roadie</h3>
-                    <div className="text-yellow-400 font-bold text-base">
-                      ${isAnnualBilling ? '8' : '10'}/mo.
-                    </div>
+                <div className="-mt-2">
+                  <h3 className="text-2xl font-bold text-left">Roadie</h3>
+                  <div className="text-yellow-400 font-bold text-base">
+                    ${isAnnualBilling ? '8' : '10'}/mo.
                   </div>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Everything in Freebird</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Loopin some segments</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Login Resume</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Custom 2-Line Captions</span>
                 </div>
                 <div className="flex items-center text-gray-500">
@@ -336,37 +349,44 @@ export default function Home() {
             </div>
 
             {/* Hero */}
-            <div className="border border-green-500 rounded-xl p-6 relative bg-black/75">
+            <div className="border rounded-xl p-6 relative bg-black/75" style={{ borderColor: '#8dc641' }}>
+              {/* Plan Icon - Upper Right */}
+              <div className="absolute top-4 right-4">
+                <img 
+                  src="/images/plan_icon_hero.png" 
+                  alt="Hero Plan Icon" 
+                  className="w-14 h-14"
+                  style={{ filter: 'brightness(0.8)' }}
+                />
+              </div>
+              
               {/* 30-day Trial Pill - Bottom Edge Overlap */}
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                 30-day Free Trial
               </div>
               <div className="mb-6">
-                <div className="flex items-start space-x-3 mb-2">
-                  <GiGuitar className="w-10 h-10 text-green-400 flex-shrink-0 mt-0" />
-                  <div>
-                    <h3 className="text-2xl font-bold text-left">Hero</h3>
-                    <div className="text-green-400 font-bold text-base">
-                      ${isAnnualBilling ? '16' : '19'}/mo.
-                    </div>
+                <div className="-mt-2">
+                  <h3 className="text-2xl font-bold text-left">Hero</h3>
+                  <div className="font-bold text-base" style={{ color: '#8dc641' }}>
+                    ${isAnnualBilling ? '16' : '19'}/mo.
                   </div>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Everything in Roadie</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Captioned Chord Diagrams</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Auto-Gen Chord Diagrams</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-green-400 mr-3">✓</span>
+                  <span className="mr-3" style={{ color: '#8dc641' }}>✓</span>
                   <span>Auto-Gen Tabs</span>
                 </div>
                 <div className="flex items-center">
@@ -375,15 +395,16 @@ export default function Home() {
                 </div>
               </div>
               <div className="mt-6 space-y-2 text-sm text-gray-400">
-                <div>max faves: <span className="text-green-400">UNLIMITED</span></div>
-                <div>max daily searches: <span className="text-green-400">UNLIMITED</span></div>
-                <div>max daily watch time: <span className="text-green-400">8 Hrs.</span></div>
+                <div>max faves: <span style={{ color: '#8dc641' }}>UNLIMITED</span></div>
+                <div>max daily searches: <span style={{ color: '#8dc641' }}>UNLIMITED</span></div>
+                <div>max daily watch time: <span style={{ color: '#8dc641' }}>8 Hrs.</span></div>
               </div>
               
               <button 
                 onClick={() => handleCheckout('hero')}
                 disabled={isLoading}
-                className="w-full mt-6 bg-green-500 text-black py-3 rounded-lg hover:bg-green-400 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full mt-6 text-black py-3 rounded-lg transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                style={{ backgroundColor: '#8dc641' }}
               >
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
