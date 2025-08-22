@@ -4,13 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import SupportModal from '../components/SupportModal'
 import MenuModal from '../components/MenuModal'
+import Header from '../components/Header'
 import { useRouter } from 'next/router'
-import { LuBrain } from "react-icons/lu"
-import { FaHamburger } from "react-icons/fa"
 import { FaRegCreditCard } from "react-icons/fa"
-import { IoMdPower } from "react-icons/io"
-import { RiLogoutCircleRLine } from "react-icons/ri"
-import { FaTimes, FaSearch } from "react-icons/fa"
 import { GiChickenOven, GiGuitar } from "react-icons/gi"
 import { BsFillSpeakerFill } from "react-icons/bs"
 import { loadStripe } from '@stripe/stripe-js'
@@ -173,54 +169,14 @@ export default function Home() {
           minHeight: '100vh',
         }}
       />
-            {/* Responsive Header - Mobile optimized, transparent on desktop */}
-      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
-        <div className="flex justify-between items-center">
-          {/* Logo - Upper Left - NEW WIDE LOGO */}
-          <a 
-            href="/?home=true" 
-            className="hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src="/images/gt_logo_wide_on_black_450x90.png" 
-              alt="VideoFlip Logo" 
-              className="h-8 md:h-10 w-auto" // Mobile: h-8, Desktop: h-10
-            />
-          </a>
-          {/* Right side buttons */}
-          <div className="flex items-center space-x-1 md:space-x-2"> {/* Mobile: space-x-1, Desktop: space-x-2 */}
-            {/* Brain Icon Button - Now in right flex container */}
-            <button
-              onClick={() => router.push('/features')}
-              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
-              title="GuitarTube Features"
-            >
-              <LuBrain className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-            </button>
-            
-            {/* Login/Logout Icon */}
-            <button 
-              onClick={handleAuthClick}
-              className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
-              title={isAuthenticated ? "End of the Party" : "Start Me Up"}
-            >
-              {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
-              ) : (
-                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
-              )}
-            </button>
-            {/* Menu Icon */}
-            <button 
-              onClick={() => setShowMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
-              title="Yummy!"
-            >
-              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Header Component */}
+      <Header 
+        showBrainIcon={false}
+        showSearchIcon={false}
+        onAuthClick={handleAuthClick}
+        onMenuClick={() => setShowMenuModal(true)}
+        isAuthenticated={isAuthenticated}
+      />
       {/* Main Content - Pricing */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
         height: 'calc(100vh - 100px)',
