@@ -397,14 +397,28 @@ export default function HowToFaqs() {
       </div>
 
       {/* Redesigned Footer - Sticky to Bottom with Padding */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm z-20">
-        <div className="px-6 py-8">
-          <div className="flex justify-center items-center space-x-4 text-white/60 text-xs" style={{ fontFamily: 'Futura, sans-serif' }}>
-            <span>© 2025 GuitarTube</span>
-            <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
-            <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
-            <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
-            <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
+      <footer className="fixed bottom-0 left-0 right-0 bg-black/55 backdrop-blur-sm z-20">
+        {/* Escher Geometric Pattern Background - Much Dimmer */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          style={{
+            backgroundImage: `url('/images/escher_geometric_pattern_GRN.png')`,
+            width: '100%',
+            height: '100%'
+          }}
+        />
+        <div className="px-6 py-8 relative z-10">
+          <div className="flex flex-col items-center space-y-4" style={{ fontFamily: 'Futura, sans-serif' }}>
+            <div className="flex justify-center items-center space-x-4 text-white/60 text-xs">
+              <span>© 2025 GuitarTube</span>
+              <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
+              <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
+              <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
+              <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
+            </div>
+            <div className="text-white text-xs">
+              Made with 🎸 in Millhatten, CA
+            </div>
           </div>
         </div>
       </footer>
