@@ -76,8 +76,8 @@ export default function CommunityGuidelines() {
             className="hover:opacity-80 transition-opacity"
           >
             <img 
-              src="/images/gt_logoM_wide_on_black.png" 
-              alt="VideoFlip Logo" 
+              src="/images/gt_logo_wide_on_black_450x90.png" 
+              alt="GuitarTube Logo" 
               className="h-10 w-auto"
             />
           </a>
