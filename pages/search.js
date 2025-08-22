@@ -3,10 +3,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import SupportModal from '../components/SupportModal'
+import MenuModal from '../components/MenuModal'
 import { useRouter } from 'next/router'
 import { FaHamburger, FaSearch, FaTimes, FaEllipsisV, FaCheck } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
-import { RiLogoutCircleRLine, RiRestartFill } from "react-icons/ri"
+import { RiLogoutCircleRLine } from "react-icons/ri"
+import { VscDebugRestart } from "react-icons/vsc"
 import { TbGuitarPick, TbGuitarPickFilled } from "react-icons/tb"
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
 import TopBanner from '../components/TopBanner'
@@ -15,9 +17,7 @@ import { supabase } from '../lib/supabase'
 export default function Search() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [showRightMenuModal, setShowRightMenuModal] = useState(false)
-  const [showProfileModal, setShowProfileModal] = useState(false)
-  const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [mounted, setMounted] = useState(false)
   const searchInputRef = useRef(null)
@@ -101,9 +101,7 @@ export default function Search() {
       try {
         await signOut()
         setShowAuthModal(false)
-        setShowRightMenuModal(false)
-        setShowProfileModal(false)
-        setShowPlanModal(false)
+        setShowMenuModal(false)
       } catch (error) {
         console.error('Sign out failed:', error)
       }
@@ -343,33 +341,36 @@ export default function Search() {
       <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0">
           {/* Row 1: Logo + Favorites (Left) + Auth Buttons (Right) - Mobile Only */}
-          <div className="flex md:hidden justify-between items-center w-full">
-            {/* Left side: Logo + Favorites + Resume */}
+                      <div className="flex md:hidden justify-between items-center w-full">
+              {/* Left side: Logo + Favorites */}
+              <div className="flex items-center space-x-2">
+                <a 
+                  href="/?home=true" 
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  <img 
+                    src="/images/gt_logoM_PlayButton.png" 
+                    alt="VideoFlip Logo" 
+                    className="h-8 w-auto"
+                  />
+                </a>
+                
+                {/* Favorites Icon */}
+                <button
+                  onClick={handleFavoritesToggle}
+                  className="p-2 rounded-lg transition-colors duration-300 mr-1"
+                  title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
+                >
+                  {showFavoritesOnly ? (
+                    <TbGuitarPickFilled className="w-6 h-6 text-[#8dc641]" />
+                  ) : (
+                    <TbGuitarPick className="w-6 h-6 text-[#8dc641]" />
+                  )}
+                </button>
+              </div>
+
+            {/* Right side: Resume + Auth buttons */}
             <div className="flex items-center space-x-2">
-              <a 
-                href="/?home=true" 
-                className="hover:opacity-80 transition-opacity"
-              >
-                <img 
-                  src="/images/gt_logoM_PlayButton.png" 
-                  alt="VideoFlip Logo" 
-                  className="h-8 w-auto"
-                />
-              </a>
-              
-              {/* Favorites Icon */}
-              <button
-                onClick={handleFavoritesToggle}
-                className={`p-2 rounded-lg transition-colors duration-300 ${
-                  showFavoritesOnly 
-                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
-                    : 'hover:bg-white/10'
-                }`}
-                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
-              >
-                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
-              </button>
-              
               {/* Resume Button - Mobile - Only show when saved session exists */}
               {savedSession && (
                 <button
@@ -388,13 +389,10 @@ export default function Search() {
                   className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
                   title="Resume Last Video"
                 >
-                  <RiRestartFill className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                  <VscDebugRestart className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
                 </button>
               )}
-            </div>
-
-            {/* Right side: Auth buttons */}
-            <div className="flex items-center space-x-2">
+              
               {/* Login/Logout Icon */}
               <button 
                 onClick={handleAuthClick}
@@ -410,7 +408,7 @@ export default function Search() {
               
               {/* Menu Icon */}
               <button 
-                onClick={() => setShowRightMenuModal(true)}
+                onClick={() => setShowMenuModal(true)}
                 className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
               >
                 <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
@@ -486,53 +484,31 @@ export default function Search() {
 
           {/* Desktop Layout - Hidden on Mobile */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Logo and Favorites Icon */}
-            <div className="flex items-center space-x-4">
-              <a 
-                href="/?home=true" 
-                className="hover:opacity-80 transition-opacity"
-              >
-                <img 
-                  src="/images/gt_logoM_PlayButton.png" 
-                  alt="VideoFlip Logo" 
-                  className="h-10 w-auto"
-                />
-              </a>
-              
-              {/* Favorites Icon */}
-              <button
-                onClick={handleFavoritesToggle}
-                className={`p-2 rounded-lg transition-colors duration-300 ${
-                  showFavoritesOnly 
-                    ? 'bg-[#8dc641]/20 border border-[#8dc641]/30' 
-                    : 'hover:bg-white/10'
-                }`}
-                title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
-              >
-                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
-              </button>
-              
-              {/* Resume Button - Desktop - Only show when saved session exists */}
-              {savedSession && (
-                <button
-                  onClick={() => {
-                    console.log('🚀 Resume button clicked - navigating to saved video...')
-                    console.log('📺 Video details:', {
-                      id: savedSession.last_video_id,
-                      title: savedSession.last_video_title,
-                      channel: savedSession.last_video_channel_name,
-                      timestamp: savedSession.last_video_timestamp
-                    })
-                    
-                    // Navigate to video page with resume parameters
-                    router.push(`/watch?v=${savedSession.last_video_id}&title=${encodeURIComponent(savedSession.last_video_title || '')}&channel=${encodeURIComponent(savedSession.last_video_channel_name || '')}`)
-                  }}
-                  className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
-                  title="Resume Last Video"
+                                        {/* Logo and Favorites Icon */}
+              <div className="flex items-center space-x-2">
+                <a 
+                  href="/?home=true" 
+                  className="hover:opacity-80 transition-opacity"
                 >
-                  <RiRestartFill className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                  <img 
+                    src="/images/gt_logoM_PlayButton.png" 
+                    alt="VideoFlip Logo" 
+                    className="h-10 w-auto"
+                  />
+                </a>
+                
+                {/* Favorites Icon */}
+                <button
+                  onClick={handleFavoritesToggle}
+                  className="p-2 rounded-lg transition-colors duration-300"
+                  title={showFavoritesOnly ? "Show All Videos" : "Show Favorites Only"}
+                >
+                  {showFavoritesOnly ? (
+                    <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+                  ) : (
+                    <TbGuitarPick className="w-8 h-8 text-[#8dc641]" />
+                  )}
                 </button>
-              )}
 
               {/* Search Bar - Positioned BETWEEN logo/favorites and sort dropdown */}
               <div className="relative">
@@ -605,6 +581,28 @@ export default function Search() {
 
           {/* Desktop Right side buttons */}
           <div className="hidden md:flex items-center space-x-2 relative" style={{ top: '-4px' }}>
+            {/* Resume Button - Desktop - Only show when saved session exists */}
+            {savedSession && (
+              <button
+                onClick={() => {
+                  console.log('🚀 Resume button clicked - navigating to saved video...')
+                  console.log('📺 Video details:', {
+                    id: savedSession.last_video_id,
+                    title: savedSession.last_video_title,
+                    channel: savedSession.last_video_channel_name,
+                    timestamp: savedSession.last_video_timestamp
+                  })
+                  
+                  // Navigate to video page with resume parameters
+                  router.push(`/watch?v=${savedSession.last_video_id}&title=${encodeURIComponent(savedSession.last_video_title || '')}&channel=${encodeURIComponent(savedSession.last_video_channel_name || '')}`)
+                }}
+                className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                title="Resume Last Video"
+              >
+                <VscDebugRestart className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+              </button>
+            )}
+            
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -614,13 +612,13 @@ export default function Search() {
               {isAuthenticated ? (
                 <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
               )}
             </button>
             
             {/* Menu Icon */}
             <button 
-              onClick={() => setShowRightMenuModal(true)}
+              onClick={() => setShowMenuModal(true)}
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
@@ -815,203 +813,17 @@ export default function Search() {
         onClose={() => setShowSupportModal(false)} 
       />
 
-      {/* Right-Side Menu Modal */}
-      {showRightMenuModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowRightMenuModal(false)
-            }
-          }}
-        >
-          <div 
-            className="w-[300px] h-full relative"
-            style={{
-              marginTop: '5px',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)'
-            }}
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setShowRightMenuModal(false)}
-              className="absolute top-3 right-9 text-white hover:text-yellow-400 transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Menu Content */}
-            <div className="p-6 pt-16">
-              <div className="text-white text-center space-y-8">
-                {/* TOP OF MENU */}
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setShowProfileModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PROFILE
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowPlanModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PLAN DEETS
-                  </button>
-                </div>
-                
-                {/* BOTTOM OF MENU */}
-                <div className="space-y-4 mt-auto">
-                  <button
-                    onClick={() => {
-                      setShowRightMenuModal(false) // Close menu modal first
-                      setShowSupportModal(true)    // Then open support modal
-                    }}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold bg-transparent border-none cursor-pointer text-left"
-                  >
-                    SUPPORT
-                  </button>
-                  
-                  <a 
-                    href="/terms"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    TERMS
-                  </a>
-                  
-                  <a 
-                    href="/privacy"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PRIVACY
-                  </a>
-                  
-                  <a 
-                    href="/community_guidelines"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    COMMUNITY GUIDELINES
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Menu Modal */}
+      <MenuModal
+        isOpen={showMenuModal}
+        onClose={() => setShowMenuModal(false)}
+        showSupportModal={showSupportModal}
+        setShowSupportModal={setShowSupportModal}
+      />
 
-      {/* Profile Modal */}
-      {showProfileModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowProfileModal(false)
-            }
-          }}
-        >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowProfileModal(false)}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Profile Content */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-4">Profile</h2>
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="space-y-4 text-gray-300">
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Name</p>
-                <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Email</p>
-                <p className="font-medium">{user?.email || 'No email'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Subscription</p>
-                <p className="font-medium capitalize">{profile?.subscription_tier || 'Free'}</p>
-              </div>
-              
-              <div className="pt-4">
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Settings
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
       
-      {/* Plan Modal */}
-      {showPlanModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowPlanModal(false)
-            }
-          }}
-        >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowPlanModal(false)}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Plan Content */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-4">Plan Details</h2>
-            </div>
-            
-            <div className="space-y-4 text-gray-300">
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Current Plan</p>
-                <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Free'}</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
-                <p className="font-medium">Monthly</p>
-              </div>
-              
-              <div className="bg-gray-800/50 p-4 rounded-lg">
-                <p className="text-sm text-gray-400 mb-1">Amount</p>
-                <p className="font-medium text-xl">
-                  ${profile?.subscription_tier === 'hero' ? '19' : 
-                    profile?.subscription_tier === 'roadie' ? '10' : '0'}/mo
-                </p>
-              </div>
-              
-              <div className="pt-4 space-y-3">
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Change Credit Card
-                </button>
-                
-                {profile?.subscription_tier !== 'hero' && (
-                  <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                    UPGRADE
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }
