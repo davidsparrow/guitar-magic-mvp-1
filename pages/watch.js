@@ -1336,7 +1336,7 @@ export default function Watch() {
     const message = `Resume "${title}" from ${timeString}?`
     const buttons = [
       { text: 'Resume', action: () => resumeVideo(timestamp) },
-      { text: 'Start from beginning', action: () => console.log('User chose to start from beginning') }
+      { text: 'Start from beginning', action: () => startFromBeginning() }
     ]
     
     showCustomAlertModal(message, buttons)
@@ -1350,6 +1350,17 @@ export default function Watch() {
       hideCustomAlertModal()
     } else {
       console.log('⚠️ Player not ready for resume')
+    }
+  }
+
+  // Start video from beginning
+  const startFromBeginning = () => {
+    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+      console.log('⏪ Starting video from beginning')
+      playerRef.current.seekTo(0, true)
+      hideCustomAlertModal()
+    } else {
+      console.log('⚠️ Player not ready for start from beginning')
     }
   }
 
@@ -2873,7 +2884,7 @@ export default function Watch() {
           </div>
           
           {/* Desktop Right side buttons */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2 relative" style={{ top: '-4px' }}>
             <button onClick={handleAuthClick} className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
               {isAuthenticated ? (
                 <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />

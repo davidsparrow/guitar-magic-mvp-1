@@ -51,23 +51,19 @@ export default function CommunityGuidelines() {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-black" style={{ 
+    <div className="relative min-h-screen bg-black" style={{ 
       backgroundColor: '#000000',
       minHeight: '100vh',
       minHeight: '100dvh',
-      width: '100vw',
-      overflow: 'hidden'
+      width: '100%'
     }}>
       {/* Full-Screen Background - NEW DARK IMAGE */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url('/images/gt_splashBG_dark.png')`,
           width: '100%',
-          height: '100%',
-          minWidth: '100vw',
-          minHeight: '100vh',
-          minHeight: '100dvh'
+          height: '100%'
         }}
       />
       
@@ -115,11 +111,10 @@ export default function CommunityGuidelines() {
       </header>
 
       {/* Main Content - Community Guidelines */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
-        height: 'calc(100vh - 140px)',
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 py-8" style={{ 
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-white">
+        <div className="max-w-4xl w-full bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-white my-4">
           <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">Community Guidelines</h1>
           
           <div className="space-y-6 text-lg leading-relaxed">

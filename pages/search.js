@@ -2,10 +2,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
+import SupportModal from '../components/SupportModal'
 import { useRouter } from 'next/router'
 import { FaHamburger, FaSearch, FaTimes, FaEllipsisV, FaCheck } from "react-icons/fa"
 import { IoMdPower } from "react-icons/io"
-import { RiLogoutCircleRLine } from "react-icons/ri"
+import { RiLogoutCircleRLine, RiRestartFill } from "react-icons/ri"
 import { TbGuitarPick, TbGuitarPickFilled } from "react-icons/tb"
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
 import TopBanner from '../components/TopBanner'
@@ -17,6 +18,7 @@ export default function Search() {
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
   const [mounted, setMounted] = useState(false)
   const searchInputRef = useRef(null)
   const router = useRouter()
@@ -383,24 +385,12 @@ export default function Search() {
                     // Navigate to video page with resume parameters
                     router.push(`/watch?v=${savedSession.last_video_id}&title=${encodeURIComponent(savedSession.last_video_title || '')}&channel=${encodeURIComponent(savedSession.last_video_channel_name || '')}`)
                   }}
-                  className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
+                  className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
                   title="Resume Last Video"
                 >
-                  <span className="text-white text-xs font-medium">▶️ Resume</span>
+                  <RiRestartFill className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
                 </button>
               )}
-              
-              {/* Debug Button - Temporary - Clear session to test conditional behavior */}
-              <button
-                onClick={() => {
-                  console.log('🧪 Debug: Clearing saved session to test conditional button')
-                  setSavedSession(null)
-                }}
-                className="p-2 rounded-lg transition-colors duration-300 hover:bg-red-500/20 border border-red-500/30"
-                title="Debug: Clear Session (Temporary)"
-              >
-                <span className="text-red-400 text-xs font-medium">🧪 Clear</span>
-              </button>
             </div>
 
             {/* Right side: Auth buttons */}
@@ -537,24 +527,12 @@ export default function Search() {
                     // Navigate to video page with resume parameters
                     router.push(`/watch?v=${savedSession.last_video_id}&title=${encodeURIComponent(savedSession.last_video_title || '')}&channel=${encodeURIComponent(savedSession.last_video_channel_name || '')}`)
                   }}
-                  className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
+                  className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
                   title="Resume Last Video"
                 >
-                  <span className="text-white text-sm font-medium">▶️ Resume</span>
+                  <RiRestartFill className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
                 </button>
               )}
-              
-              {/* Debug Button - Temporary - Clear session to test conditional behavior */}
-              <button
-                onClick={() => {
-                  console.log('🧪 Debug: Clearing saved session to test conditional button')
-                  setSavedSession(null)
-                }}
-                className="p-2 rounded-lg transition-colors duration-300 hover:bg-red-500/20 border border-red-500/30"
-                title="Debug: Clear Session (Temporary)"
-              >
-                <span className="text-red-400 text-xs font-medium">🧪 Clear</span>
-              </button>
 
               {/* Search Bar - Positioned BETWEEN logo/favorites and sort dropdown */}
               <div className="relative">
@@ -626,7 +604,7 @@ export default function Search() {
           </div>
 
           {/* Desktop Right side buttons */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2 relative" style={{ top: '-4px' }}>
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -830,6 +808,12 @@ export default function Search() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
+      
+      {/* Support Modal */}
+      <SupportModal 
+        isOpen={showSupportModal} 
+        onClose={() => setShowSupportModal(false)} 
+      />
 
       {/* Right-Side Menu Modal */}
       {showRightMenuModal && (
@@ -878,12 +862,15 @@ export default function Search() {
                 
                 {/* BOTTOM OF MENU */}
                 <div className="space-y-4 mt-auto">
-                  <a 
-                    href="mailto:support@guitartube.net"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  <button
+                    onClick={() => {
+                      setShowRightMenuModal(false) // Close menu modal first
+                      setShowSupportModal(true)    // Then open support modal
+                    }}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold bg-transparent border-none cursor-pointer text-left"
                   >
                     SUPPORT
-                  </a>
+                  </button>
                   
                   <a 
                     href="/terms"

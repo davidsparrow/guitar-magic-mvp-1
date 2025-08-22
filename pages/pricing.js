@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
+import SupportModal from '../components/SupportModal'
 import { useRouter } from 'next/router'
 import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
@@ -19,6 +20,7 @@ export default function Home() {
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
   const searchInputRef = useRef(null)
   const router = useRouter()
   
@@ -188,6 +190,15 @@ export default function Home() {
           </a>
           {/* Right side buttons */}
           <div className="flex items-center space-x-1 md:space-x-2"> {/* Mobile: space-x-1, Desktop: space-x-2 */}
+            {/* Brain Icon Button - Now in right flex container */}
+            <button
+              onClick={() => router.push('/features')}
+              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
+              title="GuitarTube Features"
+            >
+              <LuBrain className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+            </button>
+            
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -422,6 +433,8 @@ export default function Home() {
       <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
         <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:-mt-5" style={{ fontFamily: 'Futura, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
+          <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
+          <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
         </div>
@@ -430,6 +443,12 @@ export default function Home() {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+      />
+      
+      {/* Support Modal */}
+      <SupportModal 
+        isOpen={showSupportModal} 
+        onClose={() => setShowSupportModal(false)} 
       />
       {/* Right-Side Menu Modal */}
       {showRightMenuModal && (
@@ -478,12 +497,15 @@ export default function Home() {
                 
                 {/* BOTTOM OF MENU */}
                 <div className="space-y-4 mt-auto">
-                  <a 
-                    href="mailto:support@guitartube.net"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                                              <button
+                    onClick={() => {
+                      setShowRightMenuModal(false) // Close menu modal first
+                      setShowSupportModal(true)    // Then open support modal
+                    }}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold bg-transparent border-none cursor-pointer text-left"
                   >
                     SUPPORT
-                  </a>
+                  </button>
                   
                   <a 
                     href="/terms"

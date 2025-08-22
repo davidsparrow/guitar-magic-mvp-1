@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
+import SupportModal from '../components/SupportModal'
 import { useRouter } from 'next/router'
 import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
@@ -15,6 +16,7 @@ export default function Features() {
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
   const [showFeatureModal, setShowFeatureModal] = useState(null) // 'loops', 'resume', 'chords', 'tabs', 'scrambled-brain', 'lightbulb-brain', 'sloth', 'cheetah'
   const [showCaptionsModal, setShowCaptionsModal] = useState(false)
   const [showChordDiagramsModal, setShowChordDiagramsModal] = useState(false)
@@ -916,6 +918,12 @@ export default function Features() {
         onClose={() => setShowAuthModal(false)}
       />
       
+      {/* Support Modal */}
+      <SupportModal 
+        isOpen={showSupportModal} 
+        onClose={() => setShowSupportModal(false)} 
+      />
+      
       {/* Right-Side Menu Modal */}
       {showRightMenuModal && (
         <div 
@@ -963,12 +971,15 @@ export default function Features() {
                 
                 {/* BOTTOM OF MENU */}
                 <div className="space-y-4 mt-auto">
-                  <a 
-                    href="mailto:support@guitartube.net"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  <button
+                    onClick={() => {
+                      setShowRightMenuModal(false) // Close menu modal first
+                      setShowSupportModal(true)    // Then open support modal
+                    }}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold bg-transparent border-none cursor-pointer"
                   >
                     SUPPORT
-                  </a>
+                  </button>
                   
                   <a 
                     href="/terms"
@@ -1115,90 +1126,12 @@ export default function Features() {
       <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
         <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:-mt-5" style={{ fontFamily: 'Futura, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
+          <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
+          <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
         </div>
       </footer>
-      {/* Right-Side Menu Modal */}
-      {showRightMenuModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowRightMenuModal(false)
-            }
-          }}
-        >
-          <div 
-            className="w-[300px] h-full relative"
-            style={{
-              marginTop: '5px', // Position just below hamburger
-              backgroundColor: 'rgba(255, 255, 255, 0.08)' // Ghost-white with 8% transparency
-            }}
-          >
-            {/* Close Button - Same style as other modals */}
-            <button
-              onClick={() => setShowRightMenuModal(false)}
-              className="absolute top-3 right-9 text-white hover:text-yellow-400 transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Menu Content */}
-            <div className="p-6 pt-16">
-              <div className="text-white text-center space-y-8">
-                {/* TOP OF MENU */}
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setShowProfileModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PROFILE
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowPlanModal(true)}
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PLAN DEETS
-                  </button>
-                </div>
-                
-                {/* BOTTOM OF MENU */}
-                <div className="space-y-4 mt-auto">
-                  <a 
-                    href="mailto:support@guitartube.net"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    SUPPORT
-                  </a>
-                  
-                  <a 
-                    href="/terms"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    TERMS
-                  </a>
-                  
-                  <a 
-                    href="/privacy"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    PRIVACY
-                  </a>
-                  
-                  <a 
-                    href="/community_guidelines"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
-                  >
-                    COMMUNITY GUIDELINES
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* Profile Modal */}
       {showProfileModal && (

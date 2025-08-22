@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
+import SupportModal from '../components/SupportModal'
 import { useRouter } from 'next/router'
 import { LuBrain } from "react-icons/lu"
 import { FaHamburger } from "react-icons/fa"
@@ -19,8 +20,11 @@ export default function Home() {
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
   const searchInputRef = useRef(null)
   const router = useRouter()
+  
+
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
@@ -82,6 +86,8 @@ export default function Home() {
       handleSearch()
     }
   }
+  
+
 
   if (!mounted || (loading && !router.isReady)) {
     return (
@@ -244,6 +250,8 @@ export default function Home() {
       <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
         <div className="flex justify-center items-center space-x-4 text-white/60 text-xs" style={{ fontFamily: 'Futura, sans-serif' }}>
           <span>© 2025 GuitarTube</span>
+          <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
+          <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
           <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
           <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
         </div>
@@ -252,6 +260,12 @@ export default function Home() {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+      />
+      
+      {/* Support Modal */}
+      <SupportModal 
+        isOpen={showSupportModal} 
+        onClose={() => setShowSupportModal(false)} 
       />
       {/* Right-Side Menu Modal */}
       {showRightMenuModal && (
@@ -300,12 +314,15 @@ export default function Home() {
                 
                 {/* BOTTOM OF MENU */}
                 <div className="space-y-4 mt-auto">
-                  <a 
-                    href="mailto:support@guitartube.net"
-                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                  <button
+                    onClick={() => {
+                      setShowRightMenuModal(false) // Close menu modal first
+                      setShowSupportModal(true)    // Then open support modal
+                    }}
+                    className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold bg-transparent border-none cursor-pointer"
                   >
                     SUPPORT
-                  </a>
+                  </button>
                   
                   <a 
                     href="/terms"
