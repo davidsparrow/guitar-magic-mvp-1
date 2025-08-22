@@ -265,12 +265,14 @@ export default function Home() {
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                 No credit card
               </div>
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <h3 className="text-2xl font-bold">Freebird</h3>
-                  <GiChickenOven className="w-6 h-6 text-yellow-400" />
+              <div className="mb-6">
+                <div className="flex items-start space-x-3 mb-2">
+                  <GiChickenOven className="w-10 h-10 text-yellow-400 flex-shrink-0 -mt-1" />
+                  <div>
+                    <h3 className="text-2xl font-bold text-left">Freebird</h3>
+                    <div className="text-gray-400 font-bold text-base">free</div>
+                  </div>
                 </div>
-                <div className="text-gray-400 font-bold text-base mb-4">free</div>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center">
@@ -322,13 +324,15 @@ export default function Home() {
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                 30-day Free Trial
               </div>
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <h3 className="text-2xl font-bold">Roadie</h3>
-                  <BsFillSpeakerFill className="w-6 h-6 text-yellow-400" />
-                </div>
-                <div className="text-yellow-400 font-bold text-base mb-4">
-                  ${isAnnualBilling ? '8' : '10'}/mo.
+              <div className="mb-6">
+                <div className="flex items-start space-x-3 mb-2">
+                  <BsFillSpeakerFill className="w-10 h-10 text-yellow-400 flex-shrink-0 mt-0" />
+                  <div>
+                    <h3 className="text-2xl font-bold text-left">Roadie</h3>
+                    <div className="text-yellow-400 font-bold text-base">
+                      ${isAnnualBilling ? '8' : '10'}/mo.
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
@@ -377,18 +381,19 @@ export default function Home() {
 
             {/* Hero */}
             <div className="border border-green-500 rounded-xl p-6 relative bg-black/75">
-              
               {/* 30-day Trial Pill - Bottom Edge Overlap */}
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                 30-day Free Trial
               </div>
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <h3 className="text-2xl font-bold">Hero</h3>
-                  <GiGuitar className="w-6 h-6 text-green-400" />
-                </div>
-                <div className="text-green-400 font-bold text-base mb-4">
-                  ${isAnnualBilling ? '16' : '19'}/mo.
+              <div className="mb-6">
+                <div className="flex items-start space-x-3 mb-2">
+                  <GiGuitar className="w-10 h-10 text-green-400 flex-shrink-0 mt-0" />
+                  <div>
+                    <h3 className="text-2xl font-bold text-left">Hero</h3>
+                    <div className="text-green-400 font-bold text-base">
+                      ${isAnnualBilling ? '16' : '19'}/mo.
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="space-y-3 text-sm">
