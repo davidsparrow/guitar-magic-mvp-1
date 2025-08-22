@@ -214,7 +214,7 @@ export default function Home() {
             <button 
               onClick={() => setShowMenuModal(true)}
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
-              title="Yummy"
+              title="Yummy!"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>

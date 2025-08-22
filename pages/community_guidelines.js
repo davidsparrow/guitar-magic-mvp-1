@@ -51,26 +51,23 @@ export default function CommunityGuidelines() {
   }
 
   return (
-    <div className="relative min-h-screen bg-black" style={{ 
-      backgroundColor: '#000000',
-      minHeight: '100vh',
-      minHeight: '100dvh',
-      width: '100%'
+    <div className="relative min-h-screen" style={{ 
+      fontFamily: 'Poppins, sans-serif'
     }}>
-      {/* Full-Screen Background - NEW DARK IMAGE */}
+      {/* Full-Screen Background */}
       <div 
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/gt_splashBG_dark.png')`,
-          width: '100%',
-          height: '100%'
+          backgroundImage: `url('/images/dark_guitarPink.png')`,
+          width: '100vw',
+          height: '100vh'
         }}
       />
       
-      {/* Transparent Header */}
-      <header className="relative z-10 px-6 py-4" style={{ backgroundColor: 'transparent' }}>
+      {/* Header - Same as other pages */}
+      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
         <div className="flex justify-between items-center">
-          {/* Logo - Upper Left - NEW WIDE LOGO */}
+          {/* Logo */}
           <a 
             href="/?home=true" 
             className="hover:opacity-80 transition-opacity"
@@ -78,11 +75,12 @@ export default function CommunityGuidelines() {
             <img 
               src="/images/gt_logo_wide_on_black_450x90.png" 
               alt="GuitarTube Logo" 
-              className="h-10 w-auto"
+              className="h-8 md:h-10 w-auto"
             />
           </a>
+          
           {/* Right side buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 md:space-x-2">
             {/* Login/Logout Icon */}
             <button 
               onClick={handleAuthClick}
@@ -90,19 +88,17 @@ export default function CommunityGuidelines() {
               title={isAuthenticated ? "End of the Party" : "Start Me Up"}
             >
               {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-6 h-6 group-hover:text-yellow-400 transition-colors" />
+                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               ) : (
-                <IoMdPower className="w-6 h-6 group-hover:text-green-400 transition-colors" />
+                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
               )}
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 shadow-lg">
-                {isAuthenticated ? "End of the Party" : "Start Me Up"}
-              </div>
             </button>
+            
             {/* Menu Icon */}
             <button 
               onClick={() => setShowRightMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
+              title="Yummy!"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
@@ -111,52 +107,65 @@ export default function CommunityGuidelines() {
       </header>
 
       {/* Main Content - Community Guidelines */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6 py-8" style={{ 
+      <div className="relative px-6 pb-32" style={{ 
+        minHeight: 'calc(100vh - 200px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-white my-4">
-          <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">Community Guidelines</h1>
+        <div className="max-w-6xl mx-auto text-white px-6 md:px-36">
+          <h1 className="text-5xl font-bold text-center mb-12 mt-8">Community Guidelines</h1>
           
-          <div className="space-y-6 text-lg leading-relaxed">
-            <p>
-              Welcome to GuitarTube! We're building a community of guitar enthusiasts who support and inspire each other. 
-              To ensure everyone has a positive experience, please follow these guidelines:
-            </p>
-            
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold text-yellow-300">Be Respectful</h2>
-              <p>
-                Treat all community members with kindness and respect. We welcome players of all skill levels, 
-                from beginners to advanced musicians. Remember that everyone was a beginner once.
-              </p>
-              
-              <h2 className="text-2xl font-semibold text-yellow-300">Share Constructively</h2>
-              <p>
-                When sharing feedback or advice, be constructive and encouraging. Focus on helping others improve 
-                rather than pointing out mistakes. Celebrate progress and effort.
-              </p>
-              
-              <h2 className="text-2xl font-semibold text-yellow-300">Respect Copyright</h2>
-              <p>
-                Only share content that you have the right to use. Respect the intellectual property of artists, 
-                songwriters, and content creators. When in doubt, seek permission or use royalty-free materials.
-              </p>
-              
-              <h2 className="text-2xl font-semibold text-yellow-300">Keep It Musical</h2>
-              <p>
-                This is a space for guitar-related content and discussions. While we encourage friendly conversation, 
-                please keep discussions focused on music, learning, and the guitar community.
-              </p>
-              
-              <h2 className="text-2xl font-semibold text-yellow-300">Report Issues</h2>
-              <p>
-                If you encounter content that violates these guidelines, please report it to our support team. 
-                We're committed to maintaining a safe and welcoming environment for all members.
+          <div className="space-y-6">
+            <div className="bg-gray-800/30 rounded-lg p-6">
+              <p className="text-lg leading-relaxed mb-6">
+                Welcome to GuitarTube! We're building a community of guitar enthusiasts who support and inspire each other. 
+                To ensure everyone has a positive experience, please follow these guidelines:
               </p>
             </div>
             
-            <div className="mt-8 p-4 bg-yellow-400/20 rounded-lg border border-yellow-400/30">
-              <p className="text-yellow-300 text-center">
+            <div className="space-y-6">
+              <div className="bg-gray-800/30 rounded-lg p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-yellow-300">Be Respectful</h2>
+                <p className="text-lg leading-relaxed">
+                  Treat all community members with kindness and respect. We welcome players of all skill levels, 
+                  from beginners to advanced musicians. Remember that everyone was a beginner once.
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/30 rounded-lg p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-yellow-300">Share Constructively</h2>
+                <p className="text-lg leading-relaxed">
+                  When sharing feedback or advice, be constructive and encouraging. Focus on helping others improve 
+                  rather than pointing out mistakes. Celebrate progress and effort.
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/30 rounded-lg p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-yellow-300">Respect Copyright</h2>
+                <p className="text-lg leading-relaxed">
+                  Only share content that you have the right to use. Respect the intellectual property of artists, 
+                  songwriters, and content creators. When in doubt, seek permission or use royalty-free materials.
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/30 rounded-lg p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-yellow-300">Keep It Musical</h2>
+                <p className="text-lg leading-relaxed">
+                  This is a space for guitar-related content and discussions. While we encourage friendly conversation, 
+                  please keep discussions focused on music, learning, and the guitar community.
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/30 rounded-lg p-6">
+                <h2 className="text-2xl font-semibold mb-4 text-yellow-300">Report Issues</h2>
+                <p className="text-lg leading-relaxed">
+                  If you encounter content that violates these guidelines, please report it to our support team. 
+                  We're committed to maintaining a safe and welcoming environment for all members.
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-yellow-400/20 rounded-lg p-6 border border-yellow-400/30">
+              <p className="text-yellow-300 text-center text-lg">
                 <strong>Remember:</strong> The goal is to create a supportive community where guitarists can learn, 
                 grow, and share their passion for music together.
               </p>
@@ -165,12 +174,16 @@ export default function CommunityGuidelines() {
         </div>
       </div>
 
-      {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          <span>© 2025 GuitarTube</span>
-          <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
-          <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
+      {/* Redesigned Footer - Sticky to Bottom with Padding */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm z-20">
+        <div className="px-6 py-8">
+          <div className="flex justify-center items-center space-x-4 text-white/60 text-xs" style={{ fontFamily: 'Futura, sans-serif' }}>
+            <span>© 2025 GuitarTube</span>
+            <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
+            <a href="/support" className="hover:text-white transition-colors underline">support</a>
+            <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
+            <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
+          </div>
         </div>
       </footer>
 

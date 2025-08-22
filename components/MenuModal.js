@@ -57,6 +57,13 @@ export default function MenuModal({ isOpen, onClose, showSupportModal, setShowSu
               
               {/* BOTTOM OF MENU */}
               <div className="space-y-4 mt-auto">
+                <a 
+                  href="/how-to-faqs"
+                  className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold"
+                >
+                  HOW-TO & FAQS
+                </a>
+                
                 <button
                   onClick={() => {
                     onClose() // Close menu modal first

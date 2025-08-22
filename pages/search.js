@@ -410,6 +410,7 @@ export default function Search() {
               <button 
                 onClick={() => setShowMenuModal(true)}
                 className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                title="Yummy!"
               >
                 <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               </button>
@@ -620,6 +621,7 @@ export default function Search() {
             <button 
               onClick={() => setShowMenuModal(true)}
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group"
+              title="Yummy!"
             >
               <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
