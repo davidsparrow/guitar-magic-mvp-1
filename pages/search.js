@@ -43,6 +43,11 @@ export default function Search() {
   const [pendingVideo, setPendingVideo] = useState(null) // Store video for post-login navigation
   const [savedSession, setSavedSession] = useState(null) // Store saved video session data
 
+  // Standard Alert System State
+  const [showCustomAlert, setShowCustomAlert] = useState(false)
+  const [customAlertMessage, setCustomAlertMessage] = useState('')
+  const [customAlertButtons, setCustomAlertButtons] = useState([])
+
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
@@ -299,6 +304,25 @@ export default function Search() {
 
   // Handle favorites toggle
   const handleFavoritesToggle = () => {
+    // Only allow toggle if user is authenticated and has favorites
+    if (!isAuthenticated) {
+      console.log('❌ User not authenticated, cannot toggle favorites')
+      showCustomAlertModal('Please log in to view your saved favorites.', [
+        { text: 'Log In', action: () => setShowAuthModal(true) },
+        { text: 'Cancel', action: closeCustomAlertModal }
+      ])
+      return
+    }
+    
+    if (userFavorites.length === 0) {
+      console.log('❌ User has no favorites, cannot toggle favorites mode')
+      showCustomAlertModal('No Saved Faves found.', [
+        { text: 'OK', action: closeCustomAlertModal }
+      ])
+      return
+    }
+    
+    // User is authenticated and has favorites - allow toggle
     setShowFavoritesOnly(!showFavoritesOnly)
     console.log('🎯 Favorites filter toggled:', !showFavoritesOnly ? 'ON' : 'OFF')
   }
@@ -367,6 +391,19 @@ export default function Search() {
   // Check if video is favorited
   const isVideoFavorited = (video) => {
     return userFavorites.some(fav => fav.video_id === video.id.videoId)
+  }
+
+  // Standard Alert System Helper Function
+  const showCustomAlertModal = (message, buttons = []) => {
+    setCustomAlertMessage(message)
+    setCustomAlertButtons(buttons)
+    setShowCustomAlert(true)
+  }
+
+  const closeCustomAlertModal = () => {
+    setShowCustomAlert(false)
+    setCustomAlertMessage('')
+    setCustomAlertButtons([])
   }
 
   if (!mounted || (loading && !router.isReady)) {
@@ -480,12 +517,21 @@ export default function Search() {
 
               {/* Video Cards Grid */}
               {filteredResults.length === 0 && !isSearching ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🔍</div>
-                <h4 className="text-lg font-medium text-white mb-2">No videos found</h4>
-                <p className="text-white/60">Try different keywords or check your search terms.</p>
-              </div>
-            ) : (
+                // Show different messages based on whether we're in favorites mode or regular search
+                showFavoritesOnly ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🎸</div>
+                    <h4 className="text-lg font-medium text-white mb-2">No need to panic. yet..</h4>
+                    <p className="text-white/60">No Saved Faves found.</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h4 className="text-lg font-medium text-white mb-2">No videos found</h4>
+                    <p className="text-white/60">Try different keywords or check your search terms.</p>
+                  </div>
+                )
+              ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredResults.map((video, index) => (
@@ -641,6 +687,44 @@ export default function Search() {
         onClose={() => setShowMenuModal(false)}
         onSupportClick={() => setShowSupportModal(true)}
       />
+
+      {/* Standard Alert Modal */}
+      {showCustomAlert && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full border border-gray-600">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-600">
+              <h3 className="text-lg font-semibold text-white">
+                Alert, no need to panic. Yet.
+              </h3>
+            </div>
+            
+            {/* Message */}
+            <div className="px-6 py-4">
+              <p className="text-white text-base">{customAlertMessage}</p>
+            </div>
+            
+            {/* Action Buttons */}
+            {customAlertButtons.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-600 flex space-x-3 justify-end">
+                {customAlertButtons.map((button, index) => (
+                  <button
+                    key={index}
+                    onClick={button.action}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      index === 0 
+                        ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                  >
+                    {button.text}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
