@@ -20,6 +20,8 @@ import { BsReverseLayoutSidebarInsetReverse, BsArrowsFullscreen } from "react-ic
 import { IoGameControllerOutline } from "react-icons/io5"
 import TopBanner from '../components/TopBanner'
 import Header from '../components/Header'
+import MenuModal from '../components/MenuModal'
+import SupportModal from '../components/SupportModal'
 
 export default function Watch() {
   // Helper functions for time conversion
@@ -53,7 +55,8 @@ export default function Watch() {
 
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [showRightMenuModal, setShowRightMenuModal] = useState(false)
+  const [showMenuModal, setShowMenuModal] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
@@ -1264,7 +1267,7 @@ export default function Watch() {
       try {
         await signOut()
         setShowAuthModal(false)
-        setShowRightMenuModal(false)
+        setShowMenuModal(false)
       } catch (error) {
         console.error('Sign out failed:', error)
       }
@@ -2844,7 +2847,7 @@ export default function Watch() {
         onSortChange={() => {}}
         // Standard props
         onAuthClick={handleAuthClick}
-        onMenuClick={() => setShowRightMenuModal(true)}
+        onMenuClick={() => setShowMenuModal(true)}
         isAuthenticated={isAuthenticated}
       />
 
@@ -3330,44 +3333,7 @@ export default function Watch() {
         </div>
       </div>
 
-      {/* Right Menu Modal */}
-      {showRightMenuModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowRightMenuModal(false)
-            }
-          }}
-        >
-          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-8">
-            {/* Close Button */}
-            <button
-              onClick={() => setShowRightMenuModal(false)}
-              className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors text-2xl font-bold"
-            >
-              ×
-            </button>
-            
-            {/* Menu Content */}
-            <div className="text-center mb-6">
-              <h2 className="text-3xl font-bold mb-4">Menu</h2>
-            </div>
-            
-            <div className="space-y-4 text-gray-300">
-              <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                Go to Search
-              </button>
-              <button className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
-                Go to Features
-              </button>
-              <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors">
-                Go to Pricing
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Unfavorite Warning Modal */}
       {showUnfavoriteWarning && (
@@ -3945,6 +3911,19 @@ export default function Watch() {
           onClose={() => setShowAuthModal(false)} 
         />
       )}
+      
+      {/* Support Modal */}
+      <SupportModal 
+        isOpen={showSupportModal} 
+        onClose={() => setShowSupportModal(false)} 
+      />
+
+      {/* Menu Modal */}
+      <MenuModal
+        isOpen={showMenuModal}
+        onClose={() => setShowMenuModal(false)}
+        onSupportClick={() => setShowSupportModal(true)}
+      />
     </div>
   )
 }
