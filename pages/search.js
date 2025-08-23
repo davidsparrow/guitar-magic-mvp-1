@@ -372,7 +372,6 @@ export default function Search() {
           user_id: user.id,
           video_id: video.id.videoId,
           video_title: video.snippet.title,
-          video_thumbnail: getBestThumbnail(video.snippet.thumbnails),
           video_channel: video.snippet.channelTitle,
           video_duration_seconds: video.contentDetails?.duration ? parseDuration(video.contentDetails.duration) : null,
           video_channel_id: video.snippet.channelId,
@@ -564,9 +563,20 @@ export default function Search() {
                               onClick={() => handleVideoClick(video)}
                             >
                               <img
-                                src={video.snippet?.thumbnails ? getBestThumbnail(video.snippet.thumbnails) : video.video_thumbnail}
+                                src={video.snippet?.thumbnails 
+                                  ? getBestThumbnail(video.snippet.thumbnails) 
+                                  : `https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`
+                                }
                                 alt={video.snippet?.title || video.video_title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  // Fallback to a different thumbnail size if the first one fails
+                                  if (e.target.src.includes('hqdefault.jpg')) {
+                                    e.target.src = `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`
+                                  } else if (e.target.src.includes('mqdefault.jpg')) {
+                                    e.target.src = `https://img.youtube.com/vi/${video.video_id}/default.jpg`
+                                  }
+                                }}
                               />
                               
                               {/* Duration overlay */}
