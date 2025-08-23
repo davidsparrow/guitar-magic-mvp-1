@@ -7,6 +7,17 @@ import MenuModal from '../components/MenuModal'
 import Header from '../components/Header'
 import { useRouter } from 'next/router'
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
+
+// Helper function to parse YouTube duration format (PT1M30S) to seconds
+const parseDuration = (duration) => {
+  if (!duration) return null
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+  if (!match) return null
+  const hours = parseInt(match[1] || 0)
+  const minutes = parseInt(match[2] || 0) 
+  const seconds = parseInt(match[3] || 0)
+  return hours * 3600 + minutes * 60 + seconds
+}
 import TopBanner from '../components/TopBanner'
 import { supabase } from '../lib/supabase'
 
@@ -84,9 +95,13 @@ export default function Search() {
         setSavedSession(sessionData)
         console.log('💾 Saved session state updated:', sessionData ? 'Found' : 'None')
       })
+      
+      // Load user favorites from database
+      loadUserFavorites()
     } else {
-      // Clear saved session when user logs out
+      // Clear saved session and favorites when user logs out
       setSavedSession(null)
+      setUserFavorites([])
     }
   }, [isAuthenticated, user?.id, loading])
 
@@ -170,6 +185,35 @@ export default function Search() {
   }
 
 
+
+  // Load user favorites from database
+  const loadUserFavorites = async () => {
+    if (!user?.id) {
+      console.log('❌ No user ID, cannot load favorites')
+      return
+    }
+
+    try {
+      console.log('🎯 Loading user favorites for user:', user.id)
+      
+      const { data: favorites, error } = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('❌ Error loading favorites:', error)
+        return
+      }
+      
+      console.log('✅ Loaded favorites:', favorites?.length || 0, 'videos')
+      setUserFavorites(favorites || [])
+      
+    } catch (error) {
+      console.error('❌ Error loading favorites:', error)
+    }
+  }
 
   // Check for saved video session data
   const checkForSavedSession = async () => {
@@ -256,26 +300,73 @@ export default function Search() {
   // Handle favorites toggle
   const handleFavoritesToggle = () => {
     setShowFavoritesOnly(!showFavoritesOnly)
-    // Here you would filter results to show only favorites
-    // For now, just toggle the state
+    console.log('🎯 Favorites filter toggled:', !showFavoritesOnly ? 'ON' : 'OFF')
   }
 
   // Handle video favorite toggle
-  const handleVideoFavoriteToggle = (video, isFavorited) => {
-    if (isFavorited) {
-      // Remove from favorites
-      setUserFavorites(prev => prev.filter(fav => fav.id.videoId !== video.id.videoId))
-      // Here you would also call your backend to remove from favorites
-    } else {
-      // Add to favorites
-      setUserFavorites(prev => [...prev, video])
-      // Here you would also call your backend to add to favorites
+  const handleVideoFavoriteToggle = async (video, isFavorited) => {
+    if (!isAuthenticated || !user?.id) {
+      console.log('❌ User not authenticated, cannot toggle favorite')
+      return
+    }
+
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        console.log('🗑️ Removing from favorites:', video.snippet.title)
+        
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('video_id', video.id.videoId)
+        
+        if (error) {
+          console.error('❌ Error removing favorite:', error)
+          return
+        }
+        
+        // Update local state
+        setUserFavorites(prev => prev.filter(fav => fav.video_id !== video.id.videoId))
+        console.log('✅ Removed from favorites')
+        
+      } else {
+        // Add to favorites
+        console.log('💝 Adding to favorites:', video.snippet.title)
+        
+        const favoriteData = {
+          user_id: user.id,
+          video_id: video.id.videoId,
+          video_title: video.snippet.title,
+          video_thumbnail: getBestThumbnail(video.snippet.thumbnails),
+          video_channel: video.snippet.channelTitle,
+          video_duration_seconds: video.contentDetails?.duration ? parseDuration(video.contentDetails.duration) : null,
+          video_channel_id: video.snippet.channelId,
+          is_public: false
+        }
+        
+        const { data, error } = await supabase
+          .from('favorites')
+          .insert([favoriteData])
+          .select()
+        
+        if (error) {
+          console.error('❌ Error adding favorite:', error)
+          return
+        }
+        
+        // Update local state
+        setUserFavorites(prev => [...prev, data[0]])
+        console.log('✅ Added to favorites')
+      }
+    } catch (error) {
+      console.error('❌ Error toggling favorite:', error)
     }
   }
 
   // Check if video is favorited
   const isVideoFavorited = (video) => {
-    return userFavorites.some(fav => fav.id.videoId === video.id.videoId)
+    return userFavorites.some(fav => fav.video_id === video.id.videoId)
   }
 
   if (!mounted || (loading && !router.isReady)) {
@@ -367,22 +458,28 @@ export default function Search() {
         )}
 
         {/* Video Grid */}
-        {hasSearched && (
-          <div className="mt-6">
-            {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">
-                {showFavoritesOnly ? 'Favorites' : 'Search Results'}
-                {searchResults.length > 0 && (
-                  <span className="text-lg font-normal text-white/60 ml-2">
-                    ({searchResults.length} videos)
-                  </span>
-                )}
-              </h2>
-            </div>
+        {hasSearched && (() => {
+          // Filter results based on favorites toggle
+          const filteredResults = showFavoritesOnly 
+            ? searchResults.filter(video => isVideoFavorited(video))
+            : searchResults
+          
+          return (
+            <div className="mt-6">
+              {/* Results Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">
+                  {showFavoritesOnly ? 'Favorites' : 'Search Results'}
+                  {filteredResults.length > 0 && (
+                    <span className="text-lg font-normal text-white/60 ml-2">
+                      ({filteredResults.length} videos)
+                    </span>
+                  )}
+                </h2>
+              </div>
 
-            {/* Video Cards Grid */}
-            {searchResults.length === 0 && !isSearching ? (
+              {/* Video Cards Grid */}
+              {filteredResults.length === 0 && !isSearching ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🔍</div>
                 <h4 className="text-lg font-medium text-white mb-2">No videos found</h4>
@@ -391,7 +488,7 @@ export default function Search() {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {searchResults.map((video, index) => (
+                  {filteredResults.map((video, index) => (
                     <div
                       key={`${video.id.videoId}-${index}`}
                       className="group cursor-pointer bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:bg-white/10 hover:border-yellow-400/30 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-400/20 relative"
@@ -508,9 +605,10 @@ export default function Search() {
                   </div>
                 )}
               </>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )
+        })()}
 
         {/* Initial State - Before Search */}
         {!hasSearched && (
