@@ -7,6 +7,8 @@ import MenuModal from '../components/MenuModal'
 import Header from '../components/Header'
 import { useRouter } from 'next/router'
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
+import { FaEllipsisV, FaCheck } from 'react-icons/fa'
+import { TbGuitarPick, TbGuitarPickFilled } from 'react-icons/tb'
 
 // Helper function to parse YouTube duration format (PT1M30S) to seconds
 const parseDuration = (duration) => {
