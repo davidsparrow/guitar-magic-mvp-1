@@ -72,22 +72,29 @@ export default function Search() {
     if (isAuthenticated && pendingVideo && !loading) {
       // User just logged in and has a pending video
       const video = pendingVideo
-      const videoId = video.id.videoId
+      const videoId = video.id?.videoId || video.video_id
+      const title = video.snippet?.title || video.video_title
+      const channelTitle = video.snippet?.channelTitle || video.video_channel
+      const description = video.snippet?.description || ''
+      const thumbnails = video.snippet?.thumbnails || {}
+      const publishedAt = video.snippet?.publishedAt || new Date().toISOString()
+      const statistics = video.statistics || {}
+      const contentDetails = video.contentDetails || {}
       
       // Store video info for the player page
       localStorage.setItem('currentVideo', JSON.stringify({
         id: videoId,
-        title: video.snippet.title,
-        channelTitle: video.snippet.channelTitle,
-        description: video.snippet.description,
-        thumbnails: video.snippet.thumbnails,
-        publishedAt: video.snippet.publishedAt,
-        statistics: video.statistics,
-        contentDetails: video.contentDetails
+        title: title,
+        channelTitle: channelTitle,
+        description: description,
+        thumbnails: thumbnails,
+        publishedAt: publishedAt,
+        statistics: statistics,
+        contentDetails: contentDetails
       }))
       
       // Navigate to video player
-      router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
+      router.push(`/watch?v=${videoId}&title=${encodeURIComponent(title)}&channel=${encodeURIComponent(channelTitle)}`)
       
       // Clear pending video
       setPendingVideo(null)
@@ -280,22 +287,30 @@ export default function Search() {
       return
     }
 
-    const videoId = video.id.videoId
+    // Handle both search results and favorites data structures
+    const videoId = video.id?.videoId || video.video_id
+    const title = video.snippet?.title || video.video_title
+    const channelTitle = video.snippet?.channelTitle || video.video_channel
+    const description = video.snippet?.description || ''
+    const thumbnails = video.snippet?.thumbnails || {}
+    const publishedAt = video.snippet?.publishedAt || new Date().toISOString()
+    const statistics = video.statistics || {}
+    const contentDetails = video.contentDetails || {}
     
     // Store video info for the player page
     localStorage.setItem('currentVideo', JSON.stringify({
       id: videoId,
-      title: video.snippet.title,
-      channelTitle: video.snippet.channelTitle,
-      description: video.snippet.description,
-      thumbnails: video.snippet.thumbnails,
-      publishedAt: video.snippet.publishedAt,
-      statistics: video.statistics,
-      contentDetails: video.contentDetails
+      title: title,
+      channelTitle: channelTitle,
+      description: description,
+      thumbnails: thumbnails,
+      publishedAt: publishedAt,
+      statistics: statistics,
+      contentDetails: contentDetails
     }))
     
     // Navigate to video player
-    router.push(`/watch?v=${videoId}&title=${encodeURIComponent(video.snippet.title)}&channel=${encodeURIComponent(video.snippet.channelTitle)}`)
+    router.push(`/watch?v=${videoId}&title=${encodeURIComponent(title)}&channel=${encodeURIComponent(channelTitle)}`)
   }
 
   // Handle sort order change
