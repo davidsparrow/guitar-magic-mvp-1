@@ -321,24 +321,19 @@ export default function Search() {
 
   // Handle favorites toggle
   const handleFavoritesToggle = () => {
-    console.log('🚨🚨🚨 FAVORITES TOGGLE FUNCTION CALLED! 🚨🚨🚨')
-    console.log('🔍 Favorites toggle clicked!')
-    console.log('🔍 Current state - showFavoritesOnly:', showFavoritesOnly)
-    console.log('🔍 Current state - hasSearched:', hasSearched)
-    console.log('🔍 Current state - userFavorites count:', userFavorites.length)
-    
     // Only allow toggle if user is authenticated and has favorites
     if (!isAuthenticated) {
-      console.log('❌ User not authenticated, cannot toggle favorites')
       showCustomAlertModal('Please log in to view your saved favorites.', [
-        { text: 'Log In', action: () => setShowAuthModal(true) },
+        { text: 'Log In', action: () => {
+          closeCustomAlertModal() // Close alert first
+          setShowAuthModal(true)  // Then open auth modal
+        }},
         { text: 'Cancel', action: closeCustomAlertModal }
       ])
       return
     }
     
     if (userFavorites.length === 0) {
-      console.log('❌ User has no favorites, cannot toggle favorites mode')
       showCustomAlertModal('No Saved Faves found.', [
         { text: 'OK', action: closeCustomAlertModal }
       ])
@@ -347,9 +342,7 @@ export default function Search() {
     
     // User is authenticated and has favorites - allow toggle
     const newState = !showFavoritesOnly
-    console.log('🎯 Setting showFavoritesOnly to:', newState)
     setShowFavoritesOnly(newState)
-    console.log('🎯 Favorites filter toggled:', newState ? 'ON' : 'OFF')
   }
 
   // Handle video favorite toggle
