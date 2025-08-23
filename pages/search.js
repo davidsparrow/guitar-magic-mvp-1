@@ -61,11 +61,13 @@ export default function Search() {
       const { q } = router.query
       if (q && typeof q === 'string') {
         setSearchQuery(q)
-        // Perform search directly with the URL query
-        performSearchWithQuery(q)
+        // Only perform search if user has plan access
+        if (isAuthenticated) {
+          performSearchWithQuery(q)
+        }
       }
     }
-  }, [mounted, router.isReady, router.query])
+  }, [mounted, router.isReady, router.query, isAuthenticated])
 
   // Handle post-login navigation to pending video
   useEffect(() => {
@@ -112,10 +114,13 @@ export default function Search() {
       
       // Load user favorites from database
       loadUserFavorites()
+      // Check plan access
+      // checkPlanAccess() // This function is now handled by AuthContext
     } else {
       // Clear saved session and favorites when user logs out
       setSavedSession(null)
       setUserFavorites([])
+      // setIsCheckingPlan(true) // Reset checking state // This state is now managed by AuthContext
     }
   }, [isAuthenticated, user?.id, loading])
 
@@ -137,6 +142,15 @@ export default function Search() {
   // Handle search
   const handleSearch = async (pageToken = null) => {
     if (!searchQuery.trim()) return
+
+    // Check if user has plan access using centralized AuthContext
+    if (!isAuthenticated || !profile?.plan_type || profile?.plan_status !== 'active') {
+      showCustomAlertModal('Please select a Plan to plug-in. Get started without a credit card.', [
+        { text: 'SELECT PLAN', action: () => router.push('/pricing') },
+        { text: 'CANCEL', action: closeCustomAlertModal }
+      ])
+      return
+    }
 
     if (pageToken) {
       setIsLoadingMore(true)
@@ -175,6 +189,15 @@ export default function Search() {
   // Perform search with direct query string (for auto-search from URL)
   const performSearchWithQuery = async (query) => {
     if (!query.trim()) return
+
+    // Check if user has plan access using centralized AuthContext
+    if (!isAuthenticated || !profile?.plan_type || profile?.plan_status !== 'active') {
+      showCustomAlertModal('Please select a Plan to plug-in. Get started without a credit card.', [
+        { text: 'SELECT PLAN', action: () => router.push('/pricing') },
+        { text: 'CANCEL', action: closeCustomAlertModal }
+      ])
+      return
+    }
 
     setIsSearching(true)
     setSearchError('')
@@ -504,188 +527,210 @@ export default function Search() {
           backgroundColor: 'transparent'
         }}
       >
-        {/* Search Error */}
-        {searchError && (
-          <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-center">
-            {searchError}
-          </div>
-        )}
-
-        {/* Video Grid */}
-        {(hasSearched || showFavoritesOnly) && (
-          <div>
-            {console.log('🚨🚨🚨 SIMPLE VIDEO GRID RENDERING! 🚨🚨🚨')}
-            {console.log('hasSearched:', hasSearched)}
-            {console.log('showFavoritesOnly:', showFavoritesOnly)}
-            
-            {(() => {
-              // Define displayResults based on toggle state
-              const displayResults = showFavoritesOnly 
-                ? userFavorites  // Show favorites from database
-                : searchResults  // Show search results from YouTube API
-              
-              console.log('displayResults count:', displayResults.length)
-              console.log('displayResults type:', showFavoritesOnly ? 'FAVORITES' : 'SEARCH_RESULTS')
-              
-              return (
-                <div className="mt-6">
-                  {/* Results Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white">
-                      {showFavoritesOnly ? 'Favorites' : 'Search Results'}
-                      {displayResults.length > 0 && (
-                        <span className="text-lg font-normal text-white/60 ml-2">
-                          ({displayResults.length} videos)
-                        </span>
-                      )}
-                    </h2>
-                  </div>
-
-                  {/* Video Cards Grid */}
-                  {displayResults.length === 0 && !isSearching ? (
-                    // Show different messages based on whether we're in favorites mode or regular search
-                    showFavoritesOnly ? (
-                      <div className="text-center py-12">
-                        <div className="text-6xl mb-4">🎸</div>
-                        <h4 className="text-lg font-medium text-white mb-2">No need to panic. yet..</h4>
-                        <p className="text-white/60">No Saved Faves found.</p>
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <div className="text-6xl mb-4">🔍</div>
-                        <h4 className="text-lg font-medium text-white mb-2">No videos found</h4>
-                        <p className="text-white/60">Try different keywords or check your search terms.</p>
-                      </div>
-                    )
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {displayResults.map((video, index) => (
-                          <div
-                            key={`${video.id?.videoId || video.video_id}-${index}`}
-                            className="group cursor-pointer bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:bg-white/10 hover:border-yellow-400/30 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-400/20 relative"
-                          >
-                            {/* Thumbnail */}
-                            <div 
-                              className="relative aspect-video bg-gray-800 cursor-pointer"
-                              onClick={() => handleVideoClick(video)}
-                            >
-                              <img
-                                src={video.snippet?.thumbnails 
-                                  ? getBestThumbnail(video.snippet.thumbnails) 
-                                  : `https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`
-                                }
-                                alt={video.snippet?.title || video.video_title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  // Fallback to a different thumbnail size if the first one fails
-                                  if (e.target.src.includes('hqdefault.jpg')) {
-                                    e.target.src = `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`
-                                  } else if (e.target.src.includes('mqdefault.jpg')) {
-                                    e.target.src = `https://img.youtube.com/vi/${video.video_id}/default.jpg`
-                                  }
-                                }}
-                              />
-                              
-                              {/* Duration overlay */}
-                              {video.contentDetails?.duration && (
-                                <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                                  {formatDuration(video.contentDetails.duration)}
-                                </div>
-                              )}
-                              
-                              {/* Play button overlay */}
-                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="bg-yellow-400 text-black rounded-full p-3">
-                                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z"/>
-                                  </svg>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Video Info */}
-                            <div className="p-4">
-                              {/* Channel Avatar and Title Row */}
-                              <div className="flex items-start space-x-3 mb-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex-shrink-0 flex items-center justify-center">
-                                  <span className="text-white text-sm font-bold">
-                                    {(video.snippet?.channelTitle || video.video_channel).charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  <h4 
-                                    className="font-medium text-white line-clamp-2 group-hover:text-yellow-400 transition-colors cursor-pointer"
-                                    onClick={() => handleVideoClick(video)}
-                                  >
-                                    {video.snippet?.title || video.video_title}
-                                  </h4>
-                                </div>
-                                
-                                {/* More options icon */}
-                                <button className="text-white/60 hover:text-white transition-colors p-1">
-                                  <FaEllipsisV className="w-4 h-4" />
-                                </button>
-                              </div>
-                              
-                              {/* Channel Name */}
-                              <div className="flex items-center space-x-2 mb-2">
-                                <p className="text-sm text-white/80">
-                                  {video.snippet?.channelTitle || video.video_channel}
-                                </p>
-                                <FaCheck className="w-3 h-3 text-blue-400" />
-                              </div>
-                              
-                              {/* Views and Date - Left Side */}
-                              <div className="flex items-center text-xs text-white/60 mb-3">
-                                <span>
-                                  {video.statistics?.viewCount && formatViewCount(video.statistics.viewCount)}
-                                </span>
-                                <span className="mx-2">•</span>
-                                <span>
-                                  {formatPublishDate(video.snippet?.publishedAt || new Date().toISOString())}
-                                </span>
-                              </div>
-                              
-                              {/* Guitar Pick Icon - Bottom Right */}
-                              <div className="absolute bottom-2 right-2">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleVideoFavoriteToggle(video, isVideoFavorited(video))
-                                  }}
-                                  className="p-1 hover:scale-110 transition-transform"
-                                >
-                                  {isVideoFavorited(video) ? (
-                                    <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
-                                  ) : (
-                                    <TbGuitarPick className="w-8 h-8 text-[#8dc641]" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )
-            })()}
-          </div>
-        )}
-
-        {/* Initial State - Before Search */}
-        {!hasSearched && !showFavoritesOnly && (
+        {/* Plan Access Required Message */}
+        {!isAuthenticated || !profile?.plan_type || profile?.plan_status !== 'active' ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-white">
             <div className="text-6xl mb-6">🎸</div>
-            <h1 className="text-4xl font-bold mb-4">Search for Videos</h1>
-            <p className="text-xl text-white/60 mb-8">Find the perfect content to learn from</p>
-            <div className="text-lg text-white/40">
-              Type your search above and press Enter or click the search button
+            <h1 className="text-4xl font-bold mb-4">Plan Required to Plug In</h1>
+            <p className="text-xl text-white/60 mb-8">Select a plan to start searching and watching videos</p>
+            <div className="space-x-4">
+              <button
+                onClick={() => router.push('/pricing')}
+                className="bg-yellow-400 text-black px-8 py-3 rounded-lg font-bold hover:bg-yellow-300 transition-colors"
+              >
+                SELECT PLAN
+              </button>
+            </div>
+            <div className="mt-8 text-lg text-white/40">
+              Get started without a credit card
             </div>
           </div>
+        ) : (
+          <>
+            {/* Search Error */}
+            {searchError && (
+              <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-center">
+                {searchError}
+              </div>
+            )}
+
+            {/* Video Grid - Only show if user has plan access */}
+            {isAuthenticated && profile?.plan_type && profile?.plan_status === 'active' && (hasSearched || showFavoritesOnly) && (
+              <div>
+                {console.log('🚨🚨🚨 SIMPLE VIDEO GRID RENDERING! 🚨🚨🚨')}
+                {console.log('hasSearched:', hasSearched)}
+                {console.log('showFavoritesOnly:', showFavoritesOnly)}
+                
+                {(() => {
+                  // Define displayResults based on toggle state
+                  const displayResults = showFavoritesOnly 
+                    ? userFavorites  // Show favorites from database
+                    : searchResults  // Show search results from YouTube API
+                  
+                  console.log('displayResults count:', displayResults.length)
+                  console.log('displayResults type:', showFavoritesOnly ? 'FAVORITES' : 'SEARCH_RESULTS')
+                  
+                  return (
+                    <div className="mt-6">
+                      {/* Results Header */}
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-white">
+                          {showFavoritesOnly ? 'Favorites' : 'Search Results'}
+                          {displayResults.length > 0 && (
+                            <span className="text-lg font-normal text-white/60 ml-2">
+                              ({displayResults.length} videos)
+                            </span>
+                          )}
+                        </h2>
+                      </div>
+
+                      {/* Video Cards Grid */}
+                      {displayResults.length === 0 && !isSearching ? (
+                        // Show different messages based on whether we're in favorites mode or regular search
+                        showFavoritesOnly ? (
+                          <div className="text-center py-12">
+                            <div className="text-6xl mb-4">🎸</div>
+                            <h4 className="text-lg font-medium text-white mb-2">No need to panic. yet..</h4>
+                            <p className="text-white/60">No Saved Faves found.</p>
+                          </div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <div className="text-6xl mb-4">🔍</div>
+                            <h4 className="text-lg font-medium text-white mb-2">No videos found</h4>
+                            <p className="text-white/60">Try different keywords or check your search terms.</p>
+                          </div>
+                        )
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {displayResults.map((video, index) => (
+                              <div
+                                key={`${video.id?.videoId || video.video_id}-${index}`}
+                                className="group cursor-pointer bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:bg-white/10 hover:border-yellow-400/30 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-400/20 relative"
+                              >
+                                {/* Thumbnail */}
+                                <div 
+                                  className="relative aspect-video bg-gray-800 cursor-pointer"
+                                  onClick={() => handleVideoClick(video)}
+                                >
+                                  <img
+                                    src={video.snippet?.thumbnails 
+                                      ? getBestThumbnail(video.snippet.thumbnails) 
+                                      : `https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`
+                                    }
+                                    alt={video.snippet?.title || video.video_title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    onError={(e) => {
+                                      // Fallback to a different thumbnail size if the first one fails
+                                      if (e.target.src.includes('hqdefault.jpg')) {
+                                        e.target.src = `https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`
+                                      } else if (e.target.src.includes('mqdefault.jpg')) {
+                                        e.target.src = `https://img.youtube.com/vi/${video.video_id}/default.jpg`
+                                      }
+                                    }}
+                                  />
+                                  
+                                  {/* Duration overlay */}
+                                  {video.contentDetails?.duration && (
+                                    <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                                      {formatDuration(video.contentDetails.duration)}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Play button overlay */}
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <div className="bg-yellow-400 text-black rounded-full p-3">
+                                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Video Info */}
+                                <div className="p-4">
+                                  {/* Channel Avatar and Title Row */}
+                                  <div className="flex items-start space-x-3 mb-3">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex-shrink-0 flex items-center justify-center">
+                                      <span className="text-white text-sm font-bold">
+                                        {(video.snippet?.channelTitle || video.video_channel).charAt(0).toUpperCase()}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                      <h4 
+                                        className="font-medium text-white line-clamp-2 group-hover:text-yellow-400 transition-colors cursor-pointer"
+                                        onClick={() => handleVideoClick(video)}
+                                      >
+                                        {video.snippet?.title || video.video_title}
+                                      </h4>
+                                    </div>
+                                    
+                                    {/* More options icon */}
+                                    <button className="text-white/60 hover:text-white transition-colors p-1">
+                                      <FaEllipsisV className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  
+                                  {/* Channel Name */}
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <p className="text-sm text-white/80">
+                                      {video.snippet?.channelTitle || video.video_channel}
+                                    </p>
+                                    <FaCheck className="w-3 h-3 text-blue-400" />
+                                  </div>
+                                  
+                                  {/* Views and Date - Left Side */}
+                                  <div className="flex items-center text-xs text-white/60 mb-3">
+                                    <span>
+                                      {video.statistics?.viewCount && formatViewCount(video.statistics.viewCount)}
+                                    </span>
+                                    <span className="mx-2">•</span>
+                                    <span>
+                                      {formatPublishDate(video.snippet?.publishedAt || new Date().toISOString())}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Guitar Pick Icon - Bottom Right */}
+                                  <div className="absolute bottom-2 right-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleVideoFavoriteToggle(video, isVideoFavorited(video))
+                                      }}
+                                      className="p-1 hover:scale-110 transition-transform"
+                                    >
+                                      {isVideoFavorited(video) ? (
+                                        <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
+                                      ) : (
+                                        <TbGuitarPick className="w-8 h-8 text-[#8dc641]" />
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+
+            {/* Initial State - Before Search */}
+            {isAuthenticated && profile?.plan_type && profile?.plan_status === 'active' && !hasSearched && !showFavoritesOnly && (
+              <div className="flex flex-col items-center justify-center h-full text-center text-white">
+                <div className="text-6xl mb-6">🎸</div>
+                <h1 className="text-4xl font-bold mb-4">Search for Videos</h1>
+                <p className="text-xl text-white/60 mb-8">Find the perfect content to learn from</p>
+                <div className="text-lg text-white/40">
+                  Type your search above and press Enter or click the search button
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

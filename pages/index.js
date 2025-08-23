@@ -18,8 +18,17 @@ export default function Home() {
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
   const searchInputRef = useRef(null)
-  const footerRef = useRef()
   const router = useRouter()
+  
+  // Standard Alert System State
+  const [showCustomAlert, setShowCustomAlert] = useState(false)
+  const [customAlertMessage, setCustomAlertMessage] = useState('')
+  const [customAlertButtons, setCustomAlertButtons] = useState([])
+  
+  // Stripe initialization
+  const [stripe, setStripe] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const footerRef = useRef()
   
 
   // Prevent hydration issues
@@ -66,13 +75,47 @@ export default function Home() {
   // Handle search
   const handleSearch = () => {
     if (!searchQuery.trim()) return
+    
+    // Check if user has plan access before allowing search
+    if (!isAuthenticated || !profile?.plan_type || profile?.plan_status !== 'active') {
+      // Show plan selection alert using standard format
+      showCustomAlertModal('Please select a Plan to plug-in. Get started without a credit card.', [
+        { text: 'SELECT PLAN', action: () => router.push('/pricing') },
+        { text: 'CANCEL', action: closeCustomAlertModal }
+      ])
+      return
+    }
+    
     // Navigate to search page with query
     router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
   }
 
   // Handle search button click
   const handleSearchClick = () => {
+    // Check if user has plan access before allowing search
+    if (!isAuthenticated || !profile?.plan_type || profile?.plan_status !== 'active') {
+      // Show plan selection alert using standard format
+      showCustomAlertModal('Please select a Plan to plug-in. Get started without a credit card.', [
+        { text: 'SELECT PLAN', action: () => router.push('/pricing') },
+        { text: 'CANCEL', action: closeCustomAlertModal }
+      ])
+      return
+    }
+    
     handleSearch()
+  }
+
+  // Standard Alert System Helper Functions
+  const showCustomAlertModal = (message, buttons = []) => {
+    setCustomAlertMessage(message)
+    setCustomAlertButtons(buttons)
+    setShowCustomAlert(true)
+  }
+
+  const closeCustomAlertModal = () => {
+    setShowCustomAlert(false)
+    setCustomAlertMessage('')
+    setCustomAlertButtons([])
   }
 
   // Handle enter key press
@@ -221,6 +264,44 @@ export default function Home() {
         onClose={() => setShowMenuModal(false)}
         onSupportClick={() => footerRef.current?.openSupportModal()}
       />
+
+      {/* Standard Alert Modal */}
+      {showCustomAlert && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full border border-gray-600">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-600">
+              <h3 className="text-lg font-semibold text-white">
+                Alert, no need to panic. Yet.
+              </h3>
+            </div>
+            
+            {/* Message */}
+            <div className="px-6 py-4">
+              <p className="text-white text-base">{customAlertMessage}</p>
+            </div>
+            
+            {/* Action Buttons */}
+            {customAlertButtons.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-600 flex space-x-3 justify-end">
+                {customAlertButtons.map((button, index) => (
+                  <button
+                    key={index}
+                    onClick={button.action}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      index === 0 
+                        ? 'bg-pink-500 hover:bg-pink-600 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                  >
+                    {button.text}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
 
       
