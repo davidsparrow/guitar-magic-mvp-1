@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
 import { FaEllipsisV, FaCheck } from 'react-icons/fa'
 import { TbGuitarPick, TbGuitarPickFilled } from 'react-icons/tb'
+import PlanSelectionAlert from '../components/PlanSelectionAlert'
 
 // Helper function to parse YouTube duration format (PT1M30S) to seconds
 const parseDuration = (duration) => {
@@ -24,7 +25,7 @@ import TopBanner from '../components/TopBanner'
 import { supabase } from '../lib/supabase'
 
 export default function Search() {
-  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
+  const { isAuthenticated, user, profile, loading, signOut, canSearch } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -49,6 +50,9 @@ export default function Search() {
   const [showCustomAlert, setShowCustomAlert] = useState(false)
   const [customAlertMessage, setCustomAlertMessage] = useState('')
   const [customAlertButtons, setCustomAlertButtons] = useState([])
+  
+  // Plan Selection Alert State
+  const [showPlanSelectionAlert, setShowPlanSelectionAlert] = useState(false)
 
   // Prevent hydration issues
   useEffect(() => {
@@ -137,6 +141,12 @@ export default function Search() {
   // Handle search
   const handleSearch = async (pageToken = null) => {
     if (!searchQuery.trim()) return
+    
+    // Check if user can search - NEW GATING LOGIC
+    if (!pageToken && !canSearch) {
+      setShowPlanSelectionAlert(true)
+      return
+    }
 
     if (pageToken) {
       setIsLoadingMore(true)
@@ -175,6 +185,12 @@ export default function Search() {
   // Perform search with direct query string (for auto-search from URL)
   const performSearchWithQuery = async (query) => {
     if (!query.trim()) return
+    
+    // Check if user can search - NEW GATING LOGIC
+    if (!canSearch) {
+      setShowPlanSelectionAlert(true)
+      return
+    }
 
     setIsSearching(true)
     setSearchError('')
@@ -745,6 +761,12 @@ export default function Search() {
           </div>
         </div>
       )}
+      
+      {/* Plan Selection Alert */}
+      <PlanSelectionAlert
+        isOpen={showPlanSelectionAlert}
+        onClose={() => setShowPlanSelectionAlert(false)}
+      />
     </div>
   )
 }
