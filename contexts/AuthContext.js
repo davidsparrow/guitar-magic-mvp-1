@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select('*, subscription_tier, subscription_status')
         .eq('id', userId)
         .single()
 
@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
 
       if (data) {
         setProfile(data)
-        console.log('Profile loaded:', data.email, data.subscription_tier)
+        console.log('Profile loaded:', data.email, data.subscription_tier, 'Plan:', data.subscription_tier, 'Status:', data.subscription_status)
       }
     } catch (error) {
       console.error('Failed to fetch profile:', error)
@@ -201,6 +201,34 @@ const signOut = async () => {
     isAuthenticated: !!user,
     isPremium: profile?.subscription_tier === 'premium',
     isEmailConfirmed: user?.email_confirmed_at != null,
+    
+    // Plan access computed values
+    hasPlanAccess: !!(profile?.subscription_tier && profile?.subscription_status === 'active'),
+    planType: profile?.subscription_tier || null,
+    planStatus: profile?.subscription_status || null,
+    
+    // Search gating logic - NEW!
+    canSearch: !!(user && profile?.subscription_tier && profile?.subscription_status === 'active'),
+    
+    // TEMPORARY DEBUG LOGS - REMOVE AFTER TESTING
+    debug: {
+      user: !!user,
+      planType: profile?.subscription_tier,
+      planStatus: profile?.subscription_status,
+      canSearch: !!(user && profile?.subscription_tier && profile?.subscription_status === 'active')
+    },
+    
+    // TEMPORARY CONSOLE LOG FOR TESTING - REMOVE AFTER TESTING
+    _testCanSearch: (() => {
+      const canSearchValue = !!(user && profile?.subscription_tier && profile?.subscription_status === 'active')
+      console.log('🔍 AUTH CONTEXT TEST:', {
+        user: !!user,
+        planType: profile?.subscription_tier,
+        planStatus: profile?.subscription_status,
+        canSearch: canSearchValue
+      })
+      return canSearchValue
+    })(),
     
     // Actions
     signUp,
