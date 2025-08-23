@@ -1,9 +1,9 @@
 // pages/how-to-faqs.js - How-To & FAQs Page
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import MenuModal from '../components/MenuModal'
-import SupportModal from '../components/SupportModal'
+import Footer from '../components/Footer'
 import { useRouter } from 'next/router'
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
@@ -13,8 +13,8 @@ export default function HowToFaqs() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
-  const [showSupportModal, setShowSupportModal] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const footerRef = useRef()
   const router = useRouter()
 
   // Prevent hydration issues
@@ -396,32 +396,8 @@ export default function HowToFaqs() {
         </div>
       </div>
 
-      {/* Redesigned Footer - Sticky to Bottom with Padding */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-black/55 backdrop-blur-sm z-20">
-        {/* Escher Geometric Pattern Background - Much Dimmer */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
-          style={{
-            backgroundImage: `url('/images/escher_geometric_pattern_GRN.png')`,
-            width: '100%',
-            height: '100%'
-          }}
-        />
-        <div className="px-6 py-8 relative z-10">
-          <div className="flex flex-col items-center space-y-4" style={{ fontFamily: 'Futura, sans-serif' }}>
-            <div className="flex justify-center items-center space-x-4 text-white/60 text-xs">
-              <span>© 2025 GuitarTube</span>
-              <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
-              <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
-              <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
-              <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
-            </div>
-            <div className="text-white text-xs">
-              Made with 🎸 in Millhatten, CA
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Footer Component */}
+      <Footer ref={footerRef} />
 
       {/* Auth Modal */}
       <AuthModal
@@ -433,15 +409,10 @@ export default function HowToFaqs() {
       <MenuModal
         isOpen={showMenuModal}
         onClose={() => setShowMenuModal(false)}
-        showSupportModal={showSupportModal}
-        setShowSupportModal={setShowSupportModal}
+        onSupportClick={() => footerRef.current?.openSupportModal()}
       />
 
-      {/* Support Modal */}
-      <SupportModal
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-      />
+
     </div>
   )
 }

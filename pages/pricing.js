@@ -2,13 +2,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
-import SupportModal from '../components/SupportModal'
 import MenuModal from '../components/MenuModal'
 import Header from '../components/Header'
+import Footer from '../components/Footer'
 import { useRouter } from 'next/router'
 import { FaRegCreditCard } from "react-icons/fa"
 import { GiChickenOven, GiGuitar } from "react-icons/gi"
-import { BsFillSpeakerFill } from "react-icons/bs"
 import { loadStripe } from '@stripe/stripe-js'
 export default function Home() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
@@ -17,13 +16,13 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [mounted, setMounted] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
-  const [showSupportModal, setShowSupportModal] = useState(false)
   const searchInputRef = useRef(null)
   const router = useRouter()
   
   // Stripe initialization
   const [stripe, setStripe] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  const footerRef = useRef()
   
   // Prevent hydration issues
   useEffect(() => {
@@ -171,24 +170,24 @@ export default function Home() {
       />
       {/* Header Component */}
       <Header 
-        showBrainIcon={false}
+        showBrainIcon={true}
         showSearchIcon={false}
         onAuthClick={handleAuthClick}
         onMenuClick={() => setShowMenuModal(true)}
         isAuthenticated={isAuthenticated}
       />
       {/* Main Content - Pricing */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
-        height: 'calc(100vh - 100px)',
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 mt-16 md:mt-20" style={{ 
+        height: 'calc(100vh - 120px)',
         backgroundColor: 'transparent'
       }}>
-        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full" style={{ 
+        <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full pb-24" style={{ 
           fontFamily: 'Poppins, sans-serif',
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
         }}>
           <h1 className="text-2xl md:text-4xl font-bold text-center mb-2 text-yellow-400">Choose Your Plan</h1>
-          <p className="text-gray-400 text-base md:text-lg text-center mb-11">Subscriptions are like Guitars. New ones all the time.</p>
+          <p className="text-center text-white font-bold text-l mb-11" style={{ fontFamily: 'Futura, sans-serif' }}>Subscriptions are like Guitars. New ones all the time.</p>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center mb-8 space-x-4">
@@ -277,7 +276,7 @@ export default function Home() {
             </div>
 
             {/* Roadie */}
-            <div className="border border-yellow-500 rounded-xl p-6 relative bg-black">
+            <div className="border border-yellow-500 rounded-xl p-6 relative bg-black/75">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full text-sm font-bold">
                 POPULAR
               </div>
@@ -419,33 +418,20 @@ export default function Home() {
           </div>
         </div>
       </div>
-      {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:-mt-5" style={{ fontFamily: 'Futura, sans-serif' }}>
-          <span>© 2025 GuitarTube</span>
-          <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
-          <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
-          <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
-          <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
-        </div>
-      </footer>
+      {/* Footer Component */}
+      <Footer ref={footerRef} />
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
       
-      {/* Support Modal */}
-      <SupportModal 
-        isOpen={showSupportModal} 
-        onClose={() => setShowSupportModal(false)} 
-      />
+
       {/* Menu Modal */}
       <MenuModal
         isOpen={showMenuModal}
         onClose={() => setShowMenuModal(false)}
-        showSupportModal={showSupportModal}
-        setShowSupportModal={setShowSupportModal}
+        onSupportClick={() => footerRef.current?.openSupportModal()}
       />
       
 

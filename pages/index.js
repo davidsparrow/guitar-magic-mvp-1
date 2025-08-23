@@ -4,12 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import SupportModal from '../components/SupportModal'
 import MenuModal from '../components/MenuModal'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
 import { useRouter } from 'next/router'
-import { LuBrain } from "react-icons/lu"
-import { FaHamburger } from "react-icons/fa"
-import { FaRegCreditCard } from "react-icons/fa"
-import { IoMdPower } from "react-icons/io"
-import { RiLogoutCircleRLine } from "react-icons/ri"
 import { FaTimes, FaSearch } from "react-icons/fa"
 import TopBanner from '../components/TopBanner'
 export default function Home() {
@@ -21,6 +18,7 @@ export default function Home() {
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
   const searchInputRef = useRef(null)
+  const footerRef = useRef()
   const router = useRouter()
   
 
@@ -116,54 +114,15 @@ export default function Home() {
       {/* Top Banner - Admin controlled */}
       <TopBanner />
       
-      {/* Desktop Header */}
-      <header className="relative z-10 px-6 py-3 md:py-4" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-between items-center -mt-1">
-          {/* Logo - Upper Left - NEW WIDE LOGO */}
-          <a 
-            href="/?home=true" 
-            className="hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src="/images/gt_logoM_PlayButton.png" 
-              alt="VideoFlip Logo" 
-              className="h-12 w-auto"
-            />
-          </a>
-          {/* Right side buttons */}
-          <div className="flex items-center space-x-2">
-            {/* Brain Icon Button - Now in right flex container */}
-            <button
-              onClick={() => router.push('/features')}
-              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
-              title="GuitarTube Features"
-            >
-              <LuBrain className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-            </button>
-            
-            {/* Login/Logout Icon */}
-            <button 
-              onClick={handleAuthClick}
-              className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
-              title={isAuthenticated ? "End of the Party" : "Start Me Up"}
-            >
-              {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
-              ) : (
-                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
-              )}
-            </button>
-            {/* Menu Icon */}
-            <button 
-              onClick={() => setShowMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
-              title="Yummy"
-            >
-              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Header Component */}
+      <Header 
+        showBrainIcon={true}
+        showSearchIcon={false}
+        logoImage="/images/gt_logoM_PlayButton.png"
+        onAuthClick={handleAuthClick}
+        onMenuClick={() => setShowMenuModal(true)}
+        isAuthenticated={isAuthenticated}
+      />
       {/* Main Content - Desktop Optimized */}
       <div className="relative z-10 flex flex-col items-center px-6" style={{ 
         height: 'calc(100vh - 140px)',
@@ -243,16 +202,8 @@ export default function Home() {
         </div>
 
       </div>
-      {/* Footer - Desktop Optimized */}
-      <footer className="relative z-10 px-6 py-6" style={{ backgroundColor: 'transparent' }}>
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs" style={{ fontFamily: 'Futura, sans-serif' }}>
-          <span>© 2025 GuitarTube</span>
-          <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
-          <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
-          <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
-          <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
-        </div>
-      </footer>
+      {/* Footer Component */}
+      <Footer ref={footerRef} />
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
@@ -268,8 +219,7 @@ export default function Home() {
       <MenuModal
         isOpen={showMenuModal}
         onClose={() => setShowMenuModal(false)}
-        showSupportModal={showSupportModal}
-        setShowSupportModal={setShowSupportModal}
+        onSupportClick={() => footerRef.current?.openSupportModal()}
       />
       
 

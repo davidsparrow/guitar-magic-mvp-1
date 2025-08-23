@@ -3,14 +3,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import MenuModal from '../components/MenuModal'
-import SupportModal from '../components/SupportModal'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
 import { useRouter } from 'next/router'
-import { LuBrain } from "react-icons/lu"
-import { FaHamburger } from "react-icons/fa"
-import { FaRegCreditCard } from "react-icons/fa"
-import { IoMdPower } from "react-icons/io"
-import { RiLogoutCircleRLine } from "react-icons/ri"
-import { FaTimes, FaSearch } from "react-icons/fa"
 
 export default function TermsOfUse() {
   const { isAuthenticated, user, profile, loading, signOut } = useAuth()
@@ -18,8 +13,7 @@ export default function TermsOfUse() {
   const [searchQuery, setSearchQuery] = useState('')
   const [mounted, setMounted] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
-  const [showSupportModal, setShowSupportModal] = useState(false)
-  const searchInputRef = useRef(null)
+  const footerRef = useRef()
   const router = useRouter()
 
   // Prevent hydration issues
@@ -57,61 +51,28 @@ export default function TermsOfUse() {
       width: '100vw',
       overflow: 'hidden'
     }}>
-      {/* Full-Screen Background - NEW DARK IMAGE */}
+      {/* Full-Screen Background */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat hidden md:block"
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/gt_splashBG_dark.png')`,
-          width: '100%',
-          height: '100%',
-          minWidth: '100vw',
-          minHeight: '100vh',
+          backgroundImage: `url('/images/dark_guitarPink.png')`,
+          width: '100vw',
+          height: '100vh'
         }}
       />
       
-      {/* Responsive Header - Mobile optimized, transparent on desktop */}
-      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
-        <div className="flex justify-between items-center">
-          {/* Logo - Upper Left - NEW WIDE LOGO */}
-          <a 
-            href="/?home=true" 
-            className="hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src="/images/gt_logo_wide_on_black_450x90.png" 
-              alt="GuitarTube Logo" 
-              className="h-8 md:h-10 w-auto" // Mobile: h-8, Desktop: h-10
-            />
-          </a>
-          {/* Right side buttons */}
-          <div className="flex items-center space-x-1 md:space-x-2"> {/* Mobile: space-x-1, Desktop: space-x-2 */}
-            {/* Login/Logout Icon */}
-            <button 
-              onClick={handleAuthClick}
-              className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10"
-              title={isAuthenticated ? "End of the Party" : "Start Me Up"}
-            >
-              {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-              ) : (
-                <IoMdPower className="w-5 h-5 group-hover:text-green-400 transition-colors" />
-              )}
-            </button>
-            {/* Menu Icon */}
-            <button 
-              onClick={() => setShowMenuModal(true)}
-              className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
-              title="Yummy!"
-            >
-              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Header Component */}
+      <Header 
+        showBrainIcon={false}
+        showSearchIcon={false}
+        onAuthClick={handleAuthClick}
+        onMenuClick={() => setShowMenuModal(true)}
+        isAuthenticated={isAuthenticated}
+      />
 
       {/* Main Content - Terms of Use */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-6" style={{ 
-        height: 'calc(100vh - 100px)',
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 mt-16 md:mt-20" style={{ 
+        height: 'calc(100vh - 120px)',
         backgroundColor: 'transparent'
       }}>
         <div className="max-w-4xl w-full rounded-2xl p-8 text-white overflow-y-auto max-h-full" style={{ 
@@ -303,14 +264,8 @@ export default function TermsOfUse() {
         </div>
       </div>
 
-      {/* Footer - Fixed at Bottom */}
-      <footer className="relative z-6 px-3 py-3 bg-black/70 md:bg-transparent">
-        <div className="flex justify-center items-center space-x-4 text-white/60 text-xs md:-mt-5" style={{ fontFamily: 'Futura, sans-serif' }}>
-          <span>© 2025 GuitarTube</span>
-          <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
-          <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>
-        </div>
-      </footer>
+      {/* Footer Component */}
+      <Footer ref={footerRef} />
 
       {/* Auth Modal */}
       <AuthModal
@@ -322,14 +277,7 @@ export default function TermsOfUse() {
       <MenuModal
         isOpen={showMenuModal}
         onClose={() => setShowMenuModal(false)}
-        showSupportModal={showSupportModal}
-        setShowSupportModal={setShowSupportModal}
-      />
-
-      {/* Support Modal */}
-      <SupportModal
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
+        onSupportClick={() => footerRef.current?.openSupportModal()}
       />
     </div>
   )

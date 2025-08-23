@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function MenuModal({ isOpen, onClose, onSupportClick, showSupportModal, setShowSupportModal }) {
+export default function MenuModal({ isOpen, onClose, onSupportClick }) {
   const { user, profile } = useAuth()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
@@ -67,12 +67,7 @@ export default function MenuModal({ isOpen, onClose, onSupportClick, showSupport
                 <button
                   onClick={() => {
                     onClose() // Close menu modal first
-                    // Handle both new and old support modal approaches
-                    if (onSupportClick) {
-                      onSupportClick() // New approach
-                    } else if (setShowSupportModal) {
-                      setShowSupportModal(true) // Old approach for backward compatibility
-                    }
+                    if (onSupportClick) onSupportClick() // Then open support modal
                   }}
                   className="block w-full text-white hover:text-yellow-400 transition-colors text-lg font-semibold bg-transparent border-none cursor-pointer"
                 >

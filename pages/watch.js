@@ -19,6 +19,7 @@ import { ImLoop } from "react-icons/im"
 import { BsReverseLayoutSidebarInsetReverse, BsArrowsFullscreen } from "react-icons/bs"
 import { IoGameControllerOutline } from "react-icons/io5"
 import TopBanner from '../components/TopBanner'
+import Header from '../components/Header'
 
 export default function Watch() {
   // Helper functions for time conversion
@@ -103,6 +104,9 @@ export default function Watch() {
   const [originalCaptionState, setOriginalCaptionState] = useState(null) // Track original caption before editing
   const [originalCaptionsSnapshot, setOriginalCaptionsSnapshot] = useState(null) // Store original state when modal opens
   const [userDefaultCaptionDuration, setUserDefaultCaptionDuration] = useState(10) // User's preferred caption duration in seconds
+  
+  // Search functionality states
+  const [searchQuery, setSearchQuery] = useState('')
   
   // Load user's default caption duration from database
   const loadUserDefaultCaptionDuration = async () => {
@@ -1266,6 +1270,13 @@ export default function Watch() {
       }
     } else {
       setShowAuthModal(true)
+    }
+  }
+
+  // Handle search submission - navigate to search page with query
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
 
@@ -2810,100 +2821,36 @@ export default function Watch() {
       {/* Top Banner - Admin controlled */}
       <TopBanner />
       
-      {/* Responsive Header - 3 rows on mobile, 1 row on desktop */}
-      <header className="relative z-10 px-4 md:px-6 py-3 md:py-4 bg-black/80 md:bg-transparent">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0">
-          {/* Row 1: Logo + Favorites (Left) + Auth Buttons (Right) - Mobile Only */}
-          <div className="flex md:hidden justify-between items-center w-full">
-            {/* Left side: Logo + Favorites */}
-            <div className="flex items-center space-x-2">
-              <a href="/?home=true" className="hover:opacity-80 transition-opacity">
-                <img src="/images/gt_logoM_PlayButton.png" alt="VideoFlip Logo" className="h-8 w-auto" />
-              </a>
-              <button className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10" title="Show Favorites Only">
-                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
-              </button>
-            </div>
-            {/* Right side: Auth buttons + Search icon */}
-            <div className="flex items-center space-x-2">
-              <button onClick={handleAuthClick} className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
-                {isAuthenticated ? (
-                  <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
-                ) : (
-                  <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
-                )}
-              </button>
-              <button onClick={() => setShowMobileSearch(!showMobileSearch)} className="p-2 rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title="Search for videos">
-                <FaSearch className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-              </button>
-              <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative" title="Yummy">
-                <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Row 2: Search Bar - Mobile Only (Hidden by default) */}
-          <div className={`flex md:hidden w-full transition-all duration-300 ease-in-out ${showMobileSearch ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-            <div className="relative w-full">
-              <input 
-                type="text" 
-                placeholder="how to play guitar" 
-                className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all" 
-                style={{ borderRadius: '77px' }}
-              />
-              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105">
-                <FaSearch className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Desktop Layout - Hidden on Mobile */}
-          <div className="hidden md:flex items-center space-x-4">
-            {/* Logo and Favorites Icon */}
-            <div className="flex items-center space-x-4">
-              <a href="/?home=true" className="hover:opacity-80 transition-opacity">
-                <img src="/images/gt_logoM_PlayButton.png" alt="VideoFlip Logo" className="h-10 w-auto" />
-              </a>
-              <button className="p-2 rounded-lg transition-colors duration-300 hover:bg-white/10" title="Show Favorites Only">
-                <TbGuitarPickFilled className="w-8 h-8 text-[#8dc641]" />
-              </button>
-            </div>
-            
-            {/* Search Bar */}
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="how to play guitar" 
-                className="w-96 px-4 py-2 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 border border-white/20 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition-all" 
-                style={{ borderRadius: '77px' }}
-              />
-              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white/10 rounded-lg transition-all duration-200 hover:scale-105">
-                <FaSearch className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Desktop Right side buttons */}
-          <div className="hidden md:flex items-center space-x-2 relative" style={{ top: '-4px' }}>
-            <button onClick={handleAuthClick} className="p-[7px] rounded-lg transition-colors duration-300 relative group text-white hover:bg-white/10" title={isAuthenticated ? "End of the Party" : "Start Me Up"}>
-              {isAuthenticated ? (
-                <RiLogoutCircleRLine className="w-[21.5px] h-[21.5px] group-hover:text-yellow-400 transition-colors" />
-              ) : (
-                <IoMdPower className="w-[21.5px] h-[21.5px] group-hover:text-green-400 transition-colors" />
-              )}
-            </button>
-            <button onClick={() => setShowRightMenuModal(true)} className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative" title="Yummy">
-              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-
+      {/* Header Component with Search Functionality */}
+      <Header 
+        showBrainIcon={false}
+        showSearchIcon={false}
+        logoImage="/images/gt_logo_wide_on_black_450x90.png"
+        // Search functionality
+        showSearchBar={true}
+        showFavoritesToggle={true}
+        showResumeButton={true}
+        showSortDropdown={false}
+        // Search state
+        searchQuery={searchQuery}
+        sortOrder="relevance"
+        showFavoritesOnly={false}
+        savedSession={null}
+        // Event handlers
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={handleSearchSubmit}
+        onFavoritesToggle={() => {}}
+        onResumeClick={() => {}}
+        onSortChange={() => {}}
+        // Standard props
+        onAuthClick={handleAuthClick}
+        onMenuClick={() => setShowRightMenuModal(true)}
+        isAuthenticated={isAuthenticated}
+      />
 
       {/* Main Content Area - Theatre Mode Layout with Dynamic Height */}
-      <div className="relative z-10 overflow-hidden px-6" style={{ 
-        height: showControlStrips ? `calc(100vh - ${140 + (showRow1 ? 51.2 : 0) + (showRow2 ? 102.4 : 0) + (showRow3 ? 102.4 : 0)}px)` : 'calc(100vh - 135px)',
+      <div className="relative z-10 overflow-hidden px-6 mt-20" style={{ 
+        height: showControlStrips ? `calc(100vh - ${160 + (showRow1 ? 51.2 : 0) + (showRow2 ? 102.4 : 0) + (showRow3 ? 102.4 : 0)}px)` : 'calc(100vh - 155px)',
         transition: 'height 0.3s ease-in-out'
       }}>
         {/* Video Player Container - Edge-to-Edge Width with Dynamic Height */}
