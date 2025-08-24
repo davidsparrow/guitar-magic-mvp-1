@@ -349,8 +349,17 @@ export default function Search() {
   const handleSearch = async (pageToken = null) => {
     if (!searchQuery.trim()) return
     
+    // DEBUG: Log the search gating logic
+    console.log('🔍 Search gating debug:', {
+      pageToken,
+      canSearch,
+      profile: profile ? { tier: profile.subscription_tier, status: profile.subscription_status } : null,
+      shouldShowAlert: !pageToken && !canSearch
+    })
+    
     // Check if user can search - NEW GATING LOGIC
     if (!pageToken && !canSearch) {
+      console.log('🚨 User cannot search - showing PlanSelectionAlert')
       setShowPlanSelectionAlert(true)
       return
     }
@@ -408,8 +417,17 @@ export default function Search() {
   const performSearchWithQuery = async (query) => {
     if (!query.trim()) return
     
+    // DEBUG: Log the direct search gating logic
+    console.log('🔍 Direct search gating debug:', {
+      query,
+      canSearch,
+      profile: profile ? { tier: profile.subscription_tier, status: profile.subscription_status } : null,
+      shouldShowAlert: !canSearch
+    })
+    
     // Check if user can search - NEW GATING LOGIC
     if (!canSearch) {
+      console.log('🚨 User cannot search - showing PlanSelectionAlert for direct search')
       setShowPlanSelectionAlert(true)
       return
     }
