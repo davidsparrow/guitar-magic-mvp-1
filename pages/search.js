@@ -82,16 +82,43 @@ export default function Search() {
   }
 
   const getSearchFromCache = (query) => {
-    if (!user?.id) return null
+    console.log('🔍 GET SEARCH FROM CACHE CALLED:', {
+      query,
+      userId: user?.id,
+      hasUser: !!user?.id
+    })
+    
+    if (!user?.id) {
+      console.log('❌ No user ID, cannot get cache')
+      return null
+    }
     
     const cacheKey = getSearchCacheKey(query)
-    if (!cacheKey) return null
+    console.log('🔑 Cache key generated:', cacheKey)
+    
+    if (!cacheKey) {
+      console.log('❌ No cache key generated')
+      return null
+    }
     
     try {
       const cached = localStorage.getItem(cacheKey)
-      if (!cached) return null
+      console.log('📦 Raw cached data from localStorage:', cached ? 'EXISTS' : 'NOT FOUND')
+      
+      if (!cached) {
+        console.log('❌ No cached data found')
+        return null
+      }
       
       const cacheData = JSON.parse(cached)
+      console.log('📋 Parsed cache data:', {
+        query: cacheData.query,
+        resultsCount: cacheData.results?.length || 0,
+        hasNextPageToken: !!cacheData.nextPageToken,
+        timestamp: new Date(cacheData.timestamp).toISOString(),
+        expiresAt: new Date(cacheData.expiresAt).toISOString(),
+        isExpired: Date.now() > cacheData.expiresAt
+      })
       
       // Check if cache is expired
       if (Date.now() > cacheData.expiresAt) {
@@ -149,6 +176,15 @@ export default function Search() {
   // Handle page visibility changes (browser back button, tab switching, etc.)
   useEffect(() => {
     const handleVisibilityChange = () => {
+      console.log('👁️ VISIBILITY CHANGE EVENT FIRED:', {
+        visibilityState: document.visibilityState,
+        mounted,
+        userId: user?.id,
+        searchQuery,
+        hasSearched,
+        searchResultsLength: searchResults.length
+      })
+      
       if (document.visibilityState === 'visible' && mounted && user?.id) {
         console.log('👁️ Page became visible - checking for cached search results...')
         
@@ -164,6 +200,12 @@ export default function Search() {
           } else {
             console.log('❌ No cached results found for:', searchQuery)
           }
+        } else {
+          console.log('⚠️ Cache restoration conditions not met:', {
+            hasSearchQuery: !!searchQuery,
+            hasSearched,
+            searchResultsLength: searchResults.length
+          })
         }
       }
     }
@@ -173,6 +215,15 @@ export default function Search() {
     
     // Also check when the page becomes visible (browser back button)
     const handlePageShow = () => {
+      console.log('📱 PAGESHOW EVENT FIRED:', {
+        mounted,
+        userId: user?.id,
+        searchQuery,
+        hasSearched,
+        searchResultsLength: searchResults.length,
+        currentTime: new Date().toISOString()
+      })
+      
       if (mounted && user?.id) {
         console.log('📱 Page show event - checking for cached search results...')
         
@@ -188,16 +239,40 @@ export default function Search() {
           } else {
             console.log('❌ No cached results found for:', searchQuery)
           }
+        } else {
+          console.log('⚠️ Cache restoration conditions not met:', {
+            hasSearchQuery: !!searchQuery,
+            hasSearched,
+            searchResultsLength: searchResults.length
+          })
         }
+      } else {
+        console.log('⚠️ Page show event conditions not met:', {
+          mounted,
+          hasUser: !!user?.id
+        })
       }
     }
 
     // Listen for page show events (browser back button)
     window.addEventListener('pageshow', handlePageShow)
 
+    // Add focus event listener as backup
+    const handleFocus = () => {
+      console.log('🎯 WINDOW FOCUS EVENT FIRED:', {
+        mounted,
+        userId: user?.id,
+        searchQuery,
+        hasSearched,
+        searchResultsLength: searchResults.length
+      })
+    }
+    window.addEventListener('focus', handleFocus)
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('focus', handleFocus)
     }
   }, [mounted, user?.id, searchQuery, hasSearched, searchResults.length])
 
