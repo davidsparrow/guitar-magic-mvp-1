@@ -1,6 +1,6 @@
 // contexts/AuthContext.js - Full Authentication System
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase/client'
 
 const AuthContext = createContext({})
 

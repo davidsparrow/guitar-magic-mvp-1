@@ -1,6 +1,7 @@
 // components/AuthModal.js - Complete Authentication Modal
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase/client'
 
 const AuthModal = ({ isOpen, onClose, initialTab = 'signin' }) => {
   const { signIn, signUp, resetPassword } = useAuth()
