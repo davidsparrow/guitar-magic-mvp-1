@@ -376,16 +376,18 @@ export default function Search() {
       return
     }
 
+    const videoId = video.id?.videoId || video.video_id
+
     try {
       if (isFavorited) {
         // Remove from favorites
-        console.log('🗑️ Removing from favorites:', video.snippet.title)
+        console.log('🗑️ Removing from favorites:', video.snippet?.title || video.video_title)
         
         const { error } = await supabase
           .from('favorites')
           .delete()
           .eq('user_id', user.id)
-          .eq('video_id', video.id.videoId)
+          .eq('video_id', videoId)
         
         if (error) {
           console.error('❌ Error removing favorite:', error)
@@ -393,20 +395,20 @@ export default function Search() {
         }
         
         // Update local state
-        setUserFavorites(prev => prev.filter(fav => fav.video_id !== video.id.videoId))
+        setUserFavorites(prev => prev.filter(fav => fav.video_id !== videoId))
         console.log('✅ Removed from favorites')
         
       } else {
         // Add to favorites
-        console.log('💝 Adding to favorites:', video.snippet.title)
+        console.log('💝 Adding to favorites:', video.snippet?.title || video.video_title)
         
         const favoriteData = {
           user_id: user.id,
-          video_id: video.id.videoId,
-          video_title: video.snippet.title,
-          video_channel: video.snippet.channelTitle,
+          video_id: videoId,
+          video_title: video.snippet?.title || video.video_title,
+          video_channel: video.snippet?.channelTitle || video.video_channel,
           video_duration_seconds: video.contentDetails?.duration ? parseDuration(video.contentDetails.duration) : null,
-          video_channel_id: video.snippet.channelId,
+          video_channel_id: video.snippet?.channelId || video.video_channel_id,
           is_public: false
         }
         
@@ -431,7 +433,8 @@ export default function Search() {
 
   // Check if video is favorited
   const isVideoFavorited = (video) => {
-    return userFavorites.some(fav => fav.video_id === video.id.videoId)
+    const videoId = video.id?.videoId || video.video_id
+    return userFavorites.some(fav => fav.video_id === videoId)
   }
 
   // Standard Alert System Helper Function
@@ -445,6 +448,43 @@ export default function Search() {
     setShowCustomAlert(false)
     setCustomAlertMessage('')
     setCustomAlertButtons([])
+  }
+
+  // Favorites Confirmation Alert Helper Function
+  const showFavoritesConfirmationAlert = (video, isFavorited) => {
+    // Get plan info
+    const planType = profile?.subscription_tier || 'free'
+    const currentCount = userFavorites.length
+    
+    // Map plan types to display names and limits
+    const planInfo = {
+      'free': { name: 'Freebird', max: 0 },
+      'roadie': { name: 'Roadie', max: 12 },
+      'hero': { name: 'Hero', max: 'UNLIMITED' }
+    }
+    
+    const plan = planInfo[planType] || planInfo['free']
+    const maxDisplay = plan.max === 'UNLIMITED' ? 'UNLIMITED' : plan.max
+    
+    // Create message
+    const message = `You have ${currentCount} of ${maxDisplay} max faves in ${plan.name} Plan.`
+    
+    // Create buttons
+    const buttons = [
+      {
+        text: isFavorited ? 'REMOVE' : 'ADD',
+        action: () => {
+          closeCustomAlertModal()
+          handleVideoFavoriteToggle(video, isFavorited)
+        }
+      },
+      {
+        text: 'CANCEL',
+        action: closeCustomAlertModal
+      }
+    ]
+    
+    showCustomAlertModal(message, buttons)
   }
 
   if (!mounted || (loading && !router.isReady)) {
@@ -676,7 +716,17 @@ export default function Search() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    handleVideoFavoriteToggle(video, isVideoFavorited(video))
+                                    
+                                    // Check if user can manage favorites (same logic as search gating)
+                                    if (!canSearch) {
+                                      // Show plan selection alert for unauthenticated or no-plan users
+                                      setShowPlanSelectionAlert(true)
+                                      return
+                                    }
+                                    
+                                    // User has plan access - show favorites confirmation
+                                    const isFavorited = isVideoFavorited(video)
+                                    showFavoritesConfirmationAlert(video, isFavorited)
                                   }}
                                   className="p-1 hover:scale-110 transition-transform"
                                 >
