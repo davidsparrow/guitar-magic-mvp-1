@@ -1,9 +1,9 @@
 // components/MenuModal.js - Standalone Menu Modal Component
 import { useState } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useUser } from '../contexts/UserContext'
 
 export default function MenuModal({ isOpen, onClose, onSupportClick }) {
-  const { user, profile } = useAuth()
+  const { user, profile } = useUser()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
 
@@ -183,6 +183,33 @@ export default function MenuModal({ isOpen, onClose, onSupportClick }) {
               <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Current Plan</p>
                 <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Freebird'}</p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Daily Watch Limit</p>
+                <p className="font-medium text-xl">
+                  {profile?.subscription_tier === 'hero' ? '480 minutes (8 hours)' : 
+                   profile?.subscription_tier === 'roadie' ? '180 minutes (3 hours)' : 
+                   '60 minutes (1 hour)'}
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Daily Search Limit</p>
+                <p className="font-medium text-xl">
+                  {profile?.subscription_tier === 'hero' ? 'Unlimited' : 
+                   profile?.subscription_tier === 'roadie' ? '20 searches' : 
+                   '0 searches (blocked)'}
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Saved Faves Limit</p>
+                <p className="font-medium text-xl">
+                  {profile?.subscription_tier === 'hero' ? 'Unlimited' : 
+                   profile?.subscription_tier === 'roadie' ? '12 faves' : 
+                   '0 faves (blocked)'}
+                </p>
               </div>
               
               <div className="bg-gray-800/50 p-4 rounded-lg">

@@ -62,6 +62,18 @@ export const UserProvider = ({ children }) => {
     }
   }
 
+  // Debug logging for profile state
+  console.log('🔍 UserContext Debug:', {
+    userId: user?.id,
+    profile: profile,
+    subscription_tier: profile?.subscription_tier,
+    subscription_status: profile?.subscription_status,
+    isPremium: profile?.subscription_tier === 'premium',
+    hasPlanAccess: !!(profile?.subscription_tier && profile?.subscription_status === 'active'),
+    planType: profile?.subscription_tier || 'freebird',
+    planStatus: profile?.subscription_status || null
+  })
+
   const value = {
     // State
     profile,

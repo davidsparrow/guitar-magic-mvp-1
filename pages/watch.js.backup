@@ -1,7 +1,6 @@
 // pages/watch.js - Watch Page with YouTube Video Player
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useUser } from '../contexts/UserContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
@@ -23,22 +22,38 @@ import TopBanner from '../components/TopBanner'
 import Header from '../components/Header'
 import MenuModal from '../components/MenuModal'
 import SupportModal from '../components/SupportModal'
-import { 
-  parseTimeToSeconds, 
-  formatSecondsToTime, 
-  timeToSeconds, 
-  assignSerialNumbersToCaptions, 
-  autoResolveCaptionConflicts 
-} from '../utils/captionUtils'
 
 export default function Watch() {
+  // Helper functions for time conversion
+  const parseTimeToSeconds = (timeString) => {
+    if (!timeString) return 0
+    const parts = timeString.split(':')
+    if (parts.length === 2) {
+      return parseInt(parts[0]) * 60 + parseInt(parts[1])
+    } else if (parts.length === 3) {
+      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2])
+    }
+    return 0
+  }
+
+  const formatSecondsToTime = (seconds) => {
+    if (seconds < 0) seconds = 0
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = Math.floor(seconds % 60)
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    } else {
+      return `${minutes}:${secs.toString().padStart(2, '0')}`
+    }
+  }
 
 
 
 
 
-  const { isAuthenticated, user, loading, signOut } = useAuth()
-  const { profile, planType, hasPlanAccess, canSearch } = useUser()
+  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -76,6 +91,7 @@ export default function Watch() {
   
   // User access control states
   const [isVideoFavorited, setIsVideoFavorited] = useState(false)
+  const [userPlan, setUserPlan] = useState('freebird') // 'freebird', 'roadie', 'hero'
   const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
   
   // Caption management states
@@ -141,9 +157,68 @@ export default function Watch() {
     }
   }
 
-
+  // Auto-resolve caption conflicts by adjusting start/stop times
+  const autoResolveCaptionConflicts = (captionsArray) => {
+    if (!captionsArray || captionsArray.length < 2) return captionsArray
     
-
+    const sortedCaptions = [...captionsArray].sort((a, b) => {
+      const timeA = timeToSeconds(a.startTime)
+      const timeB = timeToSeconds(b.startTime)
+      return timeA - timeB
+    })
+    
+    let conflictsResolved = []
+    let hasChanges = false
+    
+    for (let i = 0; i < sortedCaptions.length - 1; i++) {
+      const currentCaption = sortedCaptions[i]
+      const nextCaption = sortedCaptions[i + 1]
+      
+      const currentEndTime = timeToSeconds(currentCaption.endTime)
+      const nextStartTime = timeToSeconds(nextCaption.startTime)
+      
+      // Check if there's an overlap or gap
+      if (nextStartTime < currentEndTime) {
+        // Conflict detected - adjust next caption's start time
+        const oldStartTime = nextCaption.startTime
+        const newStartTime = formatSecondsToTime(currentEndTime)
+        
+        // Update the next caption
+        const updatedNextCaption = {
+          ...nextCaption,
+          startTime: newStartTime
+        }
+        
+        // Replace in the array
+        sortedCaptions[i + 1] = updatedNextCaption
+        
+        // Track the conflict resolution
+        conflictsResolved.push({
+          serialNumber: nextCaption.serial_number || i + 2,
+          oldStartTime: oldStartTime,
+          newStartTime: newStartTime,
+          conflictingCaption: currentCaption.serial_number || i + 1
+        })
+        
+        hasChanges = true
+        
+        // Auto-resolved conflict
+      }
+    }
+    
+    // Show user message if conflicts were resolved
+    if (hasChanges && conflictsResolved.length > 0) {
+      const message = conflictsResolved.map(conflict => 
+        `Caption #${conflict.serialNumber}: Start time adjusted from ${conflict.oldStartTime} to ${conflict.newStartTime}`
+      ).join('\n')
+      
+      showCustomAlertModal(`Auto-resolved ${conflictsResolved.length} caption conflict(s):\n\n${message}`, [
+        { text: 'OK', action: hideCustomAlertModal }
+      ])
+    }
+    
+    return hasChanges ? sortedCaptions : captionsArray
+  }
 
   // New Caption Placement Dialog states
   const [showAddCaptionDialog, setShowAddCaptionDialog] = useState(false)
@@ -653,27 +728,29 @@ export default function Watch() {
     }
   }
 
-  // Check daily watch time limits - consolidated function
-  const checkDailyWatchTimeLimits = (dailyMinutes, options = {}) => {
-    if (!user?.id || !planType) return options.returnBoolean ? false : null
+  // Check if user has exceeded their daily watch time limits
+  const checkDailyWatchTimeLimits = (dailyMinutes) => {
+    if (!user?.id || !userPlan) return
     
-    // Define daily limits for each plan (TODO: Move to Supabase, not hard-coded)
+    // Update current daily total state for feature access checks
+    setCurrentDailyTotal(parseFloat(dailyMinutes))
+    
+    // Define daily limits for each plan
     const dailyLimits = {
       'freebird': 60,      // 60 minutes per day (1 hour)
       'roadie': 180,   // 180 minutes per day (3 hours)
       'hero': 480      // 480 minutes per day (8 hours)
     }
     
-    const userLimit = dailyLimits[planType] || dailyLimits.freebird
+    const userLimit = dailyLimits[userPlan] || dailyLimits.freebird
     const hasExceeded = dailyMinutes >= userLimit
     
-    // Update state if requested (for limit checking)
-    if (options.updateState) {
-      setCurrentDailyTotal(parseFloat(dailyMinutes))
-    }
+    // Daily limit check
     
-    // Show toast if exceeded
     if (hasExceeded) {
+      
+      
+      // Show toast with upgrade option
       const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
       showToast(message, 'warning', [
         { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
@@ -681,12 +758,39 @@ export default function Watch() {
       ])
     }
     
-    // Return boolean for feature access checks, or object for limit checking
-    if (options.returnBoolean) {
-      return !hasExceeded  // true if NOT exceeded (can access feature)
+    return { hasExceeded, userPlan, dailyMinutes, userLimit }
+  }
+
+  // Check if user can access features based on daily watch time limits
+  const checkDailyLimitForFeature = () => {
+    if (!user?.id || !userPlan) return false
+    
+    // Get current daily total from state
+    const dailyMinutes = currentDailyTotal
+    
+    // Define daily limits for each plan
+    const dailyLimits = {
+      'freebird': 60,      // 60 minutes per day (1 hour)
+      'roadie': 180,   // 180 minutes per day (3 hours)
+      'hero': 480      // 480 minutes per day (8 hours)
     }
     
-    return { hasExceeded, planType, dailyMinutes, userLimit }
+    const userLimit = dailyLimits[userPlan] || dailyLimits.freebird
+    const hasExceeded = dailyMinutes >= userLimit
+    
+    if (hasExceeded) {
+      // Feature access blocked - daily limit exceeded
+      
+      // Show toast with upgrade option
+      const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
+      showToast(message, 'warning', [
+        { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+        { text: 'OK', action: () => dismissAllToasts() }
+      ])
+      return false
+    }
+    
+    return true
   }
 
   // Feature Gates Helper Functions
@@ -738,7 +842,7 @@ export default function Watch() {
 
     // Check tier requirement
     const tierOrder = { 'freebird': 0, 'roadie': 1, 'hero': 2 }
-    const userTier = planType || 'freebird'
+    const userTier = userPlan || 'freebird'
     const requiredTier = feature.min_tier || 'freebird'
     
     if (tierOrder[userTier] < tierOrder[requiredTier]) {
@@ -790,15 +894,21 @@ export default function Watch() {
     setMounted(true)
   }, [])
 
-  // Check daily watch time limits when profile loads
+  // Update user plan when profile loads
   useEffect(() => {
-    if (profile && profile.subscription_tier && user?.id) {
-      // User plan confirmed - checking daily watch time limits
-      getDailyWatchTimeTotal().then(dailyMinutes => {
-        if (dailyMinutes) {
-          checkDailyWatchTimeLimits(parseFloat(dailyMinutes), { updateState: true })
-        }
-      })
+    if (profile && profile.subscription_tier) {
+      setUserPlan(profile.subscription_tier)
+      // User plan updated
+      
+      // Check daily watch time limits after user plan is confirmed
+      if (user?.id) {
+        // User plan confirmed - checking daily watch time limits
+        getDailyWatchTimeTotal().then(dailyMinutes => {
+          if (dailyMinutes) {
+            checkDailyWatchTimeLimits(parseFloat(dailyMinutes))
+          }
+        })
+      }
     }
   }, [profile, user?.id])
 
@@ -814,7 +924,7 @@ export default function Watch() {
     if (featureGates) {
       // Feature gates state updated
     }
-  }, [featureGates, planType])
+  }, [featureGates, userPlan])
 
   // Track when user data becomes available
   useEffect(() => {
@@ -1328,7 +1438,7 @@ export default function Watch() {
 
   // Check if user can access loop functionality
   const canAccessLoops = () => {
-    const hasAccess = planType !== 'freebird' && isVideoFavorited
+    const hasAccess = userPlan !== 'freebird' && isVideoFavorited
             // Access check
     return hasAccess
   }
@@ -1336,7 +1446,7 @@ export default function Watch() {
   // Handle control strips toggle - SIMPLIFIED
   const handleControlStripsToggle = () => {
     // Check daily watch time limits before allowing control strips feature
-    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
+    if (!checkDailyLimitForFeature()) {
               // Control Strips access blocked - daily limit exceeded
       return
     }
@@ -1463,7 +1573,7 @@ export default function Watch() {
     
     // Check if user can access captions (same as loops)
     if (!canAccessLoops()) {
-      if (planType === 'freebird') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1627,7 +1737,7 @@ export default function Watch() {
   // Handle adding new caption from timeline
   const handleAddCaptionFromTimeline = () => {
     if (!canAccessLoops()) {
-      if (planType === 'freebird') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1659,7 +1769,23 @@ export default function Watch() {
     setShowAddCaptionDialog(true)
   }
 
-
+  // Assign serial numbers to captions that don't have them
+  const assignSerialNumbersToCaptions = (captionsArray) => {
+    if (!captionsArray || captionsArray.length === 0) return captionsArray
+    
+    // Sort by start time first
+    const sortedCaptions = [...captionsArray].sort((a, b) => {
+      const timeA = parseTimeToSeconds(a.startTime)
+      const timeB = parseTimeToSeconds(b.startTime)
+      return timeA - timeB
+    })
+    
+    // Assign sequential serial numbers
+    return sortedCaptions.map((caption, index) => ({
+      ...caption,
+      serial_number: index + 1
+    }))
+  }
 
   // Handle adding new caption at specific position
   const handleAddCaptionAtPosition = async () => {
@@ -1756,7 +1882,7 @@ export default function Watch() {
   // Handle adding new caption from control strip
   const handleAddCaptionFromControlStrip = async (rowNumber) => {
     if (!canAccessLoops()) {
-      if (planType === 'freebird') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1865,7 +1991,7 @@ export default function Watch() {
   // Handle inline editing from control strip
   const handleInlineEditCaption = (rowNumber) => {
     if (!canAccessLoops()) {
-      if (planType === 'freebird') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -2293,7 +2419,7 @@ export default function Watch() {
   // Video flip handler - cycles through 3 states
   const handleFlipVideo = () => {
     // Check daily watch time limits before allowing flip feature
-    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
+    if (!checkDailyLimitForFeature()) {
               // Flip Video access blocked - daily limit exceeded
       return
     }
@@ -2316,14 +2442,14 @@ export default function Watch() {
   // Loop modal handlers
   const handleLoopClick = () => {
     // Check daily watch time limits before allowing loop feature
-    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
+    if (!checkDailyLimitForFeature()) {
       // Loop access blocked - daily limit exceeded
       return
     }
     
     // Check if user can access loops
     if (!canAccessLoops()) {
-      if (planType === 'freebird') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -2354,14 +2480,14 @@ export default function Watch() {
 
   const handleLoopTimesClick = () => {
     // Check daily watch time limits before allowing loop feature
-    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
+    if (!checkDailyLimitForFeature()) {
       // Loop access blocked - daily limit exceeded
       return
     }
     
     // Check if user can access loops
     if (!canAccessLoops()) {
-      if (planType === 'freebird') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -2419,7 +2545,21 @@ export default function Watch() {
             // Loop configuration cancelled
   }
 
-
+  // Convert time string (e.g., "1:23") to seconds
+  const timeToSeconds = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') {
+      console.warn('⚠️ timeToSeconds called with invalid value:', timeStr)
+      return 0
+    }
+    
+    const parts = timeStr.split(':').map(Number)
+    if (parts.length === 2) {
+      return parts[0] * 60 + parts[1]
+    } else if (parts.length === 3) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    }
+    return 0
+  }
 
   // Check if video should loop (runs every second when loop is active)
   useEffect(() => {
@@ -3133,7 +3273,7 @@ export default function Watch() {
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold mb-4 text-red-400">⏰ Daily Limit Exceeded</h2>
               <p className="text-gray-300 text-sm mb-4">
-                Sorry, you've exceeded your <span className="font-semibold text-blue-400">{dailyLimitInfo.planType.toUpperCase()}</span> plan daily watch limit.
+                Sorry, you've exceeded your <span className="font-semibold text-blue-400">{dailyLimitInfo.userPlan.toUpperCase()}</span> plan daily watch limit.
               </p>
               <div className="bg-gray-800 rounded-lg p-3 mb-4">
                 <p className="text-sm text-gray-300">
