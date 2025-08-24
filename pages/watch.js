@@ -653,14 +653,11 @@ export default function Watch() {
     }
   }
 
-  // Check if user has exceeded their daily watch time limits
-  const checkDailyWatchTimeLimits = (dailyMinutes) => {
-    if (!user?.id || !planType) return
+  // Check daily watch time limits - consolidated function
+  const checkDailyWatchTimeLimits = (dailyMinutes, options = {}) => {
+    if (!user?.id || !planType) return options.returnBoolean ? false : null
     
-    // Update current daily total state for feature access checks
-    setCurrentDailyTotal(parseFloat(dailyMinutes))
-    
-    // Define daily limits for each plan
+    // Define daily limits for each plan (TODO: Move to Supabase, not hard-coded)
     const dailyLimits = {
       'freebird': 60,      // 60 minutes per day (1 hour)
       'roadie': 180,   // 180 minutes per day (3 hours)
@@ -670,52 +667,26 @@ export default function Watch() {
     const userLimit = dailyLimits[planType] || dailyLimits.freebird
     const hasExceeded = dailyMinutes >= userLimit
     
-    // Daily limit check
+    // Update state if requested (for limit checking)
+    if (options.updateState) {
+      setCurrentDailyTotal(parseFloat(dailyMinutes))
+    }
     
+    // Show toast if exceeded
     if (hasExceeded) {
-      
-      
-      // Show toast with upgrade option
       const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
       showToast(message, 'warning', [
         { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
         { text: 'OK', action: () => dismissAllToasts() }
       ])
+    }
+    
+    // Return boolean for feature access checks, or object for limit checking
+    if (options.returnBoolean) {
+      return !hasExceeded  // true if NOT exceeded (can access feature)
     }
     
     return { hasExceeded, planType, dailyMinutes, userLimit }
-  }
-
-  // Check if user can access features based on daily watch time limits
-  const checkDailyLimitForFeature = () => {
-    if (!user?.id || !planType) return false
-    
-    // Get current daily total from state
-    const dailyMinutes = currentDailyTotal
-    
-    // Define daily limits for each plan
-    const dailyLimits = {
-      'freebird': 60,      // 60 minutes per day (1 hour)
-      'roadie': 180,   // 180 minutes per day (3 hours)
-      'hero': 480      // 480 minutes per day (8 hours)
-    }
-    
-    const userLimit = dailyLimits[planType] || dailyLimits.freebird
-    const hasExceeded = dailyMinutes >= userLimit
-    
-    if (hasExceeded) {
-      // Feature access blocked - daily limit exceeded
-      
-      // Show toast with upgrade option
-      const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
-      showToast(message, 'warning', [
-        { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
-        { text: 'OK', action: () => dismissAllToasts() }
-      ])
-      return false
-    }
-    
-    return true
   }
 
   // Feature Gates Helper Functions
@@ -825,7 +796,7 @@ export default function Watch() {
       // User plan confirmed - checking daily watch time limits
       getDailyWatchTimeTotal().then(dailyMinutes => {
         if (dailyMinutes) {
-          checkDailyWatchTimeLimits(parseFloat(dailyMinutes))
+          checkDailyWatchTimeLimits(parseFloat(dailyMinutes), { updateState: true })
         }
       })
     }
@@ -1365,7 +1336,7 @@ export default function Watch() {
   // Handle control strips toggle - SIMPLIFIED
   const handleControlStripsToggle = () => {
     // Check daily watch time limits before allowing control strips feature
-    if (!checkDailyLimitForFeature()) {
+    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
               // Control Strips access blocked - daily limit exceeded
       return
     }
@@ -2322,7 +2293,7 @@ export default function Watch() {
   // Video flip handler - cycles through 3 states
   const handleFlipVideo = () => {
     // Check daily watch time limits before allowing flip feature
-    if (!checkDailyLimitForFeature()) {
+    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
               // Flip Video access blocked - daily limit exceeded
       return
     }
@@ -2345,14 +2316,14 @@ export default function Watch() {
   // Loop modal handlers
   const handleLoopClick = () => {
     // Check daily watch time limits before allowing loop feature
-    if (!checkDailyLimitForFeature()) {
+    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
       // Loop access blocked - daily limit exceeded
       return
     }
     
     // Check if user can access loops
     if (!canAccessLoops()) {
-      if (userPlan === 'freebird') {
+      if (planType === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -2383,14 +2354,14 @@ export default function Watch() {
 
   const handleLoopTimesClick = () => {
     // Check daily watch time limits before allowing loop feature
-    if (!checkDailyLimitForFeature()) {
+    if (!checkDailyWatchTimeLimits(currentDailyTotal, { returnBoolean: true })) {
       // Loop access blocked - daily limit exceeded
       return
     }
     
     // Check if user can access loops
     if (!canAccessLoops()) {
-      if (userPlan === 'freebird') {
+      if (planType === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
