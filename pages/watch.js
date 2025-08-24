@@ -91,7 +91,7 @@ export default function Watch() {
   
   // User access control states
   const [isVideoFavorited, setIsVideoFavorited] = useState(false)
-  const [userPlan, setUserPlan] = useState('free') // 'free', 'basic', 'premium'
+  const [userPlan, setUserPlan] = useState('freebird') // 'freebird', 'roadie', 'hero'
   const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
   
   // Caption management states
@@ -737,12 +737,12 @@ export default function Watch() {
     
     // Define daily limits for each plan
     const dailyLimits = {
-      'free': 60,      // 60 minutes per day (1 hour)
+      'freebird': 60,      // 60 minutes per day (1 hour)
       'roadie': 180,   // 180 minutes per day (3 hours)
       'hero': 480      // 480 minutes per day (8 hours)
     }
     
-    const userLimit = dailyLimits[userPlan] || dailyLimits.free
+    const userLimit = dailyLimits[userPlan] || dailyLimits.freebird
     const hasExceeded = dailyMinutes >= userLimit
     
     // Daily limit check
@@ -770,12 +770,12 @@ export default function Watch() {
     
     // Define daily limits for each plan
     const dailyLimits = {
-      'free': 60,      // 60 minutes per day (1 hour)
+      'freebird': 60,      // 60 minutes per day (1 hour)
       'roadie': 180,   // 180 minutes per day (3 hours)
       'hero': 480      // 480 minutes per day (8 hours)
     }
     
-    const userLimit = dailyLimits[userPlan] || dailyLimits.free
+    const userLimit = dailyLimits[userPlan] || dailyLimits.freebird
     const hasExceeded = dailyMinutes >= userLimit
     
     if (hasExceeded) {
@@ -841,8 +841,8 @@ export default function Watch() {
     }
 
     // Check tier requirement
-    const tierOrder = { 'free': 0, 'roadie': 1, 'hero': 2 }
-    const userTier = userPlan || 'free'
+    const tierOrder = { 'freebird': 0, 'roadie': 1, 'hero': 2 }
+    const userTier = userPlan || 'freebird'
     const requiredTier = feature.min_tier || 'free'
     
     if (tierOrder[userTier] < tierOrder[requiredTier]) {
@@ -1438,7 +1438,7 @@ export default function Watch() {
 
   // Check if user can access loop functionality
   const canAccessLoops = () => {
-    const hasAccess = userPlan !== 'free' && isVideoFavorited
+    const hasAccess = userPlan !== 'freebird' && isVideoFavorited
             // Access check
     return hasAccess
   }
@@ -1573,7 +1573,7 @@ export default function Watch() {
     
     // Check if user can access captions (same as loops)
     if (!canAccessLoops()) {
-      if (userPlan === 'free') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1737,7 +1737,7 @@ export default function Watch() {
   // Handle adding new caption from timeline
   const handleAddCaptionFromTimeline = () => {
     if (!canAccessLoops()) {
-      if (userPlan === 'free') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1882,7 +1882,7 @@ export default function Watch() {
   // Handle adding new caption from control strip
   const handleAddCaptionFromControlStrip = async (rowNumber) => {
     if (!canAccessLoops()) {
-      if (userPlan === 'free') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1991,7 +1991,7 @@ export default function Watch() {
   // Handle inline editing from control strip
   const handleInlineEditCaption = (rowNumber) => {
     if (!canAccessLoops()) {
-      if (userPlan === 'free') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -2449,7 +2449,7 @@ export default function Watch() {
     
     // Check if user can access loops
     if (!canAccessLoops()) {
-      if (userPlan === 'free') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -2487,7 +2487,7 @@ export default function Watch() {
     
     // Check if user can access loops
     if (!canAccessLoops()) {
-      if (userPlan === 'free') {
+      if (userPlan === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Loops require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
