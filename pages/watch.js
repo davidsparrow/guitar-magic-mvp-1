@@ -129,7 +129,7 @@ export default function Watch() {
       
       if (data?.default_caption_duration_seconds) {
         setUserDefaultCaptionDuration(data.default_caption_duration_seconds)
-        console.log('📝 Loaded default caption duration from database:', data.default_caption_duration_seconds)
+
       }
     } catch (error) {
       console.error('Error loading default caption duration:', error)
@@ -151,7 +151,7 @@ export default function Watch() {
         return
       }
       
-      console.log('💾 Saved default caption duration to database:', duration)
+      
     } catch (error) {
       console.error('Error saving default caption duration:', error)
     }
@@ -250,26 +250,8 @@ export default function Watch() {
 
   // Save session data when user pauses video for Login-Resume functionality
   const saveSessionOnPause = async () => {
-    console.log('🔍 saveSessionOnPause function called - starting...')
-    console.log('🔍 Debug - State check:', {
-      hasUser: !!user?.id,
-      userId: user?.id,
-      hasPlayer: !!player,
-      hasPlayerRef: !!playerRef.current,
-      playerType: typeof player,
-      playerRefType: typeof playerRef.current,
-      playerMethods: player ? {
-        getCurrentTime: typeof player.getCurrentTime,
-        getVideoData: typeof player.getVideoData
-      } : 'No player',
-      playerRefMethods: playerRef.current ? {
-        getCurrentTime: typeof playerRef.current.getCurrentTime,
-        getVideoData: typeof playerRef.current.getVideoData
-      } : 'No player ref',
-      isVideoReady,
-      hasVideoId: !!videoId,
-      videoId
-    })
+
+
     
     if (!user?.id) {
       console.log('❌ Save blocked: No user ID')
@@ -288,10 +270,10 @@ export default function Watch() {
       return
     }
     
-    console.log('✅ All conditions met, proceeding with save...')
+
     
     try {
-      console.log('🔍 Getting player data...')
+
       const currentTime = playerRef.current.getCurrentTime()
       console.log('⏰ Current time:', currentTime)
       
@@ -301,12 +283,7 @@ export default function Watch() {
       const channelName = playerRef.current.getVideoData().author || videoChannel
       console.log('👤 Channel name:', channelName)
       
-      console.log('💾 Saving session data on pause:', {
-        videoId,
-        timestamp: currentTime,
-        title: videoTitle,
-        channel: channelName
-      })
+
       
       console.log('📡 Making API call to /api/user/update-session...')
       const response = await fetch('/api/user/update-session', {
@@ -327,7 +304,7 @@ export default function Watch() {
       console.log('📡 API response received:', response.status, response.statusText)
       
       if (response.ok) {
-        console.log('✅ Session data saved successfully on pause')
+
       } else {
         console.error('❌ Failed to save session data on pause:', response.status)
         const errorText = await response.text()
@@ -366,7 +343,7 @@ export default function Watch() {
       
       if (error) throw error
       
-      console.log('✅ Favorite saved to database:', data)
+      
       return data[0]
     } catch (error) {
       console.error('❌ Error saving favorite:', error)
@@ -426,7 +403,7 @@ export default function Watch() {
       // Ensure all captions have serial numbers
       const captionsWithSerialNumbers = assignSerialNumbersToCaptions(transformedCaptions)
       
-      console.log('✅ Captions loaded from database:', data)
+      
       console.log('🔄 Transformed captions for frontend:', transformedCaptions)
       console.log('🔢 Captions with serial numbers:', captionsWithSerialNumbers)
       return captionsWithSerialNumbers
@@ -474,7 +451,7 @@ export default function Watch() {
       
       if (error) throw error
       
-      console.log('🗑️ Favorite removed from database')
+      
       return true
     } catch (error) {
       console.error('❌ Error removing favorite:', error)
@@ -568,7 +545,7 @@ export default function Watch() {
         updated_at: savedCaption.updated_at
       }
       
-      console.log('✅ Caption saved to database:', savedCaption)
+      
       console.log('🔄 Transformed saved caption:', transformedCaption)
       return transformedCaption
     } catch (error) {
@@ -616,7 +593,7 @@ export default function Watch() {
         updated_at: updatedCaption.updated_at
       }
       
-      console.log('✅ Caption updated in database:', updatedCaption)
+      
       console.log('🔄 Transformed updated caption:', transformedCaption)
       return transformedCaption
     } catch (error) {
@@ -641,7 +618,7 @@ export default function Watch() {
       
       if (error) throw error
       
-      console.log('🗑️ Caption deleted from database:', captionId)
+      
       return true
     } catch (error) {
       console.error('❌ Error deleting caption:', error)
@@ -689,7 +666,7 @@ export default function Watch() {
         const sessionKey = `${videoId}-${Math.floor(startTimestamp / 1000)}` // Round to nearest second
         
         if (lastSavedSessionRef.current === sessionKey) {
-          console.log('⚠️ Duplicate session detected, skipping save:', sessionKey)
+  
           return
         }
 
@@ -713,7 +690,7 @@ export default function Watch() {
         // Mark this session as saved to prevent duplicates
         lastSavedSessionRef.current = sessionKey
         
-        console.log('✅ Watch time saved:', watchDurationSeconds, 'seconds', 'from', startTimestampISO, 'to', endTimestamp)
+
       }, 1000) // 1 second debounce
 
     } catch (error) {
@@ -777,7 +754,7 @@ export default function Watch() {
     })
     
     if (hasExceeded) {
-      console.log('⚠️ User has exceeded daily watch time limit!')
+      
       
       // Show toast with upgrade option
       const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
@@ -846,9 +823,9 @@ export default function Watch() {
 
       if (data && data.setting_value) {
         setFeatureGates(data.setting_value)
-        console.log('✅ Feature gates loaded:', data.setting_value)
+
       } else {
-        console.log('⚠️ No feature gates configuration found')
+        
       }
     } catch (error) {
       console.error('❌ Error in loadFeatureGates:', error)
@@ -859,13 +836,13 @@ export default function Watch() {
 
   const checkFeatureAccess = (featureKey, options = {}) => {
     if (!featureGates || !featureGates.feature_gates) {
-      console.log('⚠️ Feature gates not loaded, defaulting to restricted')
+      
       return { hasAccess: false, reason: 'feature_gates_not_loaded' }
     }
 
     const feature = featureGates.feature_gates[featureKey]
     if (!feature) {
-      console.log(`⚠️ Feature '${featureKey}' not found in configuration`)
+      
       return { hasAccess: false, reason: 'feature_not_configured' }
     }
 
@@ -999,7 +976,7 @@ export default function Watch() {
       }
       
       tag.onload = () => {
-        console.log('✅ YouTube iframe API script loaded')
+
         setYoutubeAPILoading(false)
       }
       
@@ -1020,7 +997,7 @@ export default function Watch() {
         clearTimeout(timeoutId)
       }
     } else if (mounted && window.YT) {
-      console.log('✅ YouTube API already loaded')
+      
     }
   }, [mounted])
 
@@ -1031,7 +1008,7 @@ export default function Watch() {
       
       const initPlayer = () => {
         if (window.YT && window.YT.Player) {
-          console.log('✅ YouTube API ready, creating player...')
+  
           const newPlayer = new window.YT.Player('youtube-player', {
             height: '100%',
             width: '100%',
@@ -1054,13 +1031,13 @@ export default function Watch() {
           // Store the player reference for later use
           console.log('⏳ Player created, waiting for onReady event...')
         } else {
-          console.log('⚠️ YouTube API not ready yet, waiting...')
+
         }
       }
 
       // Check if API is already loaded
       if (window.YT && window.YT.Player) {
-        console.log('🚀 YouTube API already loaded, initializing immediately')
+
         initPlayer()
       } else {
         // Wait for API to be ready
@@ -1075,29 +1052,18 @@ export default function Watch() {
 
   // Load video from URL parameters when page loads
   useEffect(() => {
-    console.log('🔍 Video loading useEffect triggered:', { 
-      mounted, 
-      routerIsReady: router.isReady, 
-      routerQuery: router.query,
-      hasVideoId: !!router.query?.v,
-      videoId: router.query?.v,
-      title: router.query?.title,
-      channel: router.query?.channel,
-      currentUrl: window.location.href,
-      pathname: router.pathname,
-      asPath: router.asPath
-    })
+
     
     // Try to get video data from URL if router isn't ready yet
     if (mounted && !router.isReady) {
-      console.log('🔍 Router not ready, trying to parse URL manually...')
+
       const urlParams = new URLSearchParams(window.location.search)
       const v = urlParams.get('v')
       const title = urlParams.get('title')
       const channel = urlParams.get('channel')
       
       if (v) {
-        console.log('✅ Got video data from URL manually:', { v, title, channel })
+        
         setVideoId(v)
         setVideoTitle(title ? decodeURIComponent(title) : '')
         setVideoChannel(channel ? decodeURIComponent(channel) : '')
@@ -1109,7 +1075,7 @@ export default function Watch() {
     } else if (mounted && router.isReady) {
       const { v, title, channel } = router.query
       if (v && typeof v === 'string') {
-        console.log('✅ Setting video data from router:', { v, title, channel })
+        
         setVideoId(v)
         setVideoTitle(title ? decodeURIComponent(title) : '')
         setVideoChannel(channel ? decodeURIComponent(channel) : '')
@@ -1138,14 +1104,14 @@ export default function Watch() {
   // Fallback: Check URL immediately when component mounts
   useEffect(() => {
     if (mounted) {
-      console.log('🔍 Fallback: Checking URL immediately on mount...')
+
       const urlParams = new URLSearchParams(window.location.search)
       const v = urlParams.get('v')
       const title = urlParams.get('title')
       const channel = urlParams.get('channel')
       
       if (v && !videoId) {
-        console.log('✅ Fallback: Setting video data from URL:', { v, title, channel })
+        
         setVideoId(v)
         setVideoTitle(title ? decodeURIComponent(title) : '')
         setVideoChannel(channel ? decodeURIComponent(channel) : '')
@@ -1178,13 +1144,13 @@ export default function Watch() {
       console.log('🔄 Caption loading effect triggered:', { videoId, userId: user?.id, isVideoFavorited })
       
       if (videoId && user?.id && isVideoFavorited) {
-        console.log('📝 Loading captions for video:', videoId)
+  
         const videoCaptions = await loadCaptions(videoId)
-        console.log('📝 Captions loaded:', videoCaptions)
+        
         setCaptions(videoCaptions)
-        console.log('📝 Captions set in state:', videoCaptions.length)
+        
       } else {
-        console.log('📝 Clearing captions - conditions not met:', { videoId, userId: user?.id, isVideoFavorited })
+        
         setCaptions([])
       }
     }
@@ -1241,7 +1207,7 @@ export default function Watch() {
           setIsTrackingWatchTime(false)
         }
       } catch (error) {
-        console.log('⚠️ Error checking player state:', error)
+
       }
     }
 
@@ -1290,11 +1256,11 @@ export default function Watch() {
     
     // Set the fully ready player in both state and ref for immediate access
     if (playerInstance) {
-      console.log('✅ Setting fully ready player in state and ref...')
+      
       setPlayer(playerInstance)
       playerRef.current = playerInstance
     } else {
-      console.log('⚠️ No player instance provided to handleVideoReady')
+      
     }
   }
 
@@ -1308,7 +1274,7 @@ export default function Watch() {
     if (!user?.id || !currentVideoId) return
     
     try {
-      console.log('🔍 Checking for saved session data for video:', currentVideoId)
+
       
       // Get user profile to check for saved session
       const { data: profile, error } = await supabase
@@ -1318,23 +1284,17 @@ export default function Watch() {
         .single()
       
       if (error) {
-        console.log('⚠️ No saved session data found:', error.message)
+
         return
       }
       
       if (profile?.last_video_id === currentVideoId && profile?.last_video_timestamp) {
-        console.log('🎯 Found saved session data:', {
-          videoId: profile.last_video_id,
-          timestamp: profile.last_video_timestamp,
-          title: profile.last_video_title,
-          channel: profile.last_video_channel_name,
-          sessionDate: profile.last_session_date
-        })
+
         
         // Show resume prompt to user
         showResumePrompt(profile.last_video_timestamp, profile.last_video_title)
       } else {
-        console.log('📝 No saved session for this video or no timestamp')
+
       }
     } catch (error) {
       console.error('❌ Error checking saved session:', error)
@@ -1363,7 +1323,7 @@ export default function Watch() {
       playerRef.current.seekTo(timestamp, true)
       hideCustomAlertModal()
     } else {
-      console.log('⚠️ Player not ready for resume')
+      
     }
   }
 
@@ -1374,7 +1334,7 @@ export default function Watch() {
       playerRef.current.seekTo(0, true)
       hideCustomAlertModal()
     } else {
-      console.log('⚠️ Player not ready for start from beginning')
+      
     }
   }
 
@@ -1394,43 +1354,16 @@ export default function Watch() {
       console.log('⏸️ Video paused')
       
       // Save session data for Login-Resume functionality when user pauses
-      console.log('🔍 Pause detected - checking save conditions:', {
-        hasUser: !!user?.id,
-        userId: user?.id,
-        hasProfile: !!profile,
-        subscriptionTier: profile?.subscription_tier,
-        isNotFree: profile?.subscription_tier !== 'freebird'
-      })
       
       if (user?.id && profile?.subscription_tier !== 'freebird') {
-        // Debug: Log player state details to understand why isPlayerReady() is failing
-        console.log('🔍 Debug - Player state check:', {
-          hasPlayer: !!player,
-          hasPlayerRef: !!playerRef.current,
-          playerType: typeof player,
-          playerRefType: typeof playerRef.current,
-          playerMethods: player ? {
-            getPlayerState: typeof player.getPlayerState,
-            playVideo: typeof player.playVideo,
-            pauseVideo: typeof player.pauseVideo,
-            getCurrentTime: typeof player.getCurrentTime
-          } : 'No player',
-          playerRefMethods: playerRef.current ? {
-            getPlayerState: typeof playerRef.current.getPlayerState,
-            playVideo: typeof playerRef.current.playVideo,
-            pauseVideo: typeof playerRef.current.pauseVideo,
-            getCurrentTime: typeof playerRef.current.getCurrentTime
-          } : 'No player ref',
-          isPlayerReadyResult: isPlayerReady(),
-          playerState: player?.getPlayerState ? player.getPlayerState() : 'Method not available'
-        })
+
         
         // Use the ref for immediate access to the player instance
         if (playerRef.current && playerRef.current.getPlayerState && typeof playerRef.current.getPlayerState === 'function') {
-          console.log('✅ Save conditions met, calling saveSessionOnPause()')
+  
           saveSessionOnPause()
         } else {
-          console.log('⚠️ Player not fully ready yet, skipping session save')
+  
         }
       } else {
         console.log('❌ Save conditions NOT met - session save blocked')
@@ -1462,7 +1395,7 @@ export default function Watch() {
         }
         
         e.preventDefault()
-        console.log('🎯 Spacebar pressed, player state:', player)
+
         
         try {
           // Try to get player state first
@@ -1481,7 +1414,7 @@ export default function Watch() {
               if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
                 const currentTime = player.getCurrentTime()
                 if (currentTime <= 1) { // Within 1 second of start (0:00)
-                  console.log('🎯 Video starting from beginning (0:00) - querying daily watch time total')
+          
                   getDailyWatchTimeTotal()
                 } else {
                   console.log('⏭️ Video resuming from position:', currentTime, '- skipping daily total query')
@@ -1490,7 +1423,7 @@ export default function Watch() {
             }
           } else {
             // Fallback: try to pause if we can't determine state
-            console.log('⚠️ getPlayerState not available, trying fallback')
+    
             if (player.pauseVideo && typeof player.pauseVideo === 'function') {
               player.pauseVideo()
               console.log('⏸️ Video paused (fallback)')
@@ -1624,7 +1557,7 @@ export default function Watch() {
         const savedFavorite = await saveFavorite(videoData)
         if (savedFavorite) {
           setIsVideoFavorited(true)
-          console.log('✅ Video saved to favorites in database')
+  
         } else {
           console.error('❌ Failed to save favorite to database')
         }
@@ -1644,7 +1577,7 @@ export default function Watch() {
         setShowUnfavoriteWarning(false)
         
         // Wipe loop data from Supabase
-        console.log('🗑️ Wiping loop data for unfavorited video')
+
         // TODO: Delete loop records from Supabase
         
         // Reset loop state
@@ -1652,7 +1585,7 @@ export default function Watch() {
         setLoopStartTime('0:00')
         setLoopEndTime('0:00')
         
-        console.log('✅ Favorite removed from database')
+
       } else {
         console.error('❌ Failed to remove favorite from database')
         setDbError('Failed to remove favorite')
@@ -1700,7 +1633,7 @@ export default function Watch() {
     console.log('📸 Captured captions snapshot for revert functionality:', captions)
 
     // Open caption edit modal for the specific row
-    console.log(`📝 Opening caption editor for row ${rowNumber}`)
+    
     setShowCaptionModal(true)
     setEditingCaption({ rowType: rowNumber, rowName: rowNumber === 1 ? 'Text Captions' : rowNumber === 2 ? 'Chords Captions' : 'Auto-Gen' })
   }
@@ -1720,14 +1653,14 @@ export default function Watch() {
       const existingCaption = captions.find(c => c.id === captionId)
       if (existingCaption) {
         setOriginalCaptionState({ ...existingCaption })
-        console.log('💾 Original caption state stored:', existingCaption)
+
       }
     }
     
     // Enter caption mode
     setIsInCaptionMode(true)
     setEditingCaptionId(captionId)
-    console.log('📝 Entering caption mode:', { mode, captionId })
+    
   }
 
   // Handle saving caption changes and exiting edit mode
@@ -1751,7 +1684,7 @@ export default function Watch() {
                 ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
                 : caption
             ))
-            console.log('💾 Caption changes saved to database and exiting edit mode:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
+    
           } else {
             console.error('❌ Failed to save caption changes to database')
             return // Don't exit edit mode if save failed
@@ -1766,7 +1699,7 @@ export default function Watch() {
     // Exit caption mode WITHOUT restoring loop state
     setIsInCaptionMode(false)
     setEditingCaptionId(null)
-    console.log('📝 Exiting caption mode via SAVE button - loop remains inactive')
+    
   }
 
   // Handle canceling caption changes and reverting to original state
@@ -1776,7 +1709,7 @@ export default function Watch() {
     if (editingCaptionId) {
       // Find the current caption
       const currentCaption = captions.find(c => c.id === editingCaptionId)
-      console.log('🔍 Current caption found:', currentCaption)
+      
       
       if (currentCaption) {
         // Check if this was a newly added caption by checking if we have original state
@@ -1784,16 +1717,12 @@ export default function Watch() {
         // If we don't have originalCaptionState, it means this was a newly added caption
         const isNewCaption = !originalCaptionState
         
-        console.log('🔍 Caption type check:', { 
-          isNewCaption, 
-          hasOriginalState: !!originalCaptionState,
-          captionId: currentCaption.id 
-        })
+
         
         if (isNewCaption) {
           // Remove the newly added caption completely
           setCaptions(prev => prev.filter(caption => caption.id !== editingCaptionId))
-          console.log('🗑️ Newly added caption removed:', editingCaptionId)
+  
         } else {
           // Restore existing caption to original state
           setCaptions(prev => prev.map(caption => 
@@ -1810,7 +1739,7 @@ export default function Watch() {
     setOriginalCaptionState(null)
     setIsInCaptionMode(false)
     setEditingCaptionId(null)
-    console.log('📝 Exiting caption mode via CANCEL button - all changes reverted')
+
   }
 
   // Handle exiting caption editing mode
@@ -1825,7 +1754,7 @@ export default function Watch() {
             ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
             : caption
         ))
-        console.log('💾 Caption changes saved:', { id: editingCaptionId, start: tempLoopStart, end: tempLoopEnd })
+
       }
     }
     
@@ -1840,7 +1769,7 @@ export default function Watch() {
     // Exit caption mode
     setIsInCaptionMode(false)
     setEditingCaptionId(null)
-    console.log('📝 Exiting caption mode')
+
   }
 
   // Handle adding new caption from timeline
@@ -1866,7 +1795,7 @@ export default function Watch() {
     // Capture snapshot of current captions state before opening modal
     if (!originalCaptionsSnapshot) {
       setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(captions)))
-      console.log('📸 Captured captions snapshot for timeline add:', captions)
+
     }
 
     // Open the caption placement dialog instead of directly adding
@@ -1899,7 +1828,7 @@ export default function Watch() {
   // Handle adding new caption at specific position
   const handleAddCaptionAtPosition = async () => {
     if (!selectedSerialNumber) {
-      console.log('⚠️ No serial number selected')
+
       return
     }
 
@@ -1922,7 +1851,7 @@ export default function Watch() {
         newCaptionStartTime = targetCaption.endTime
         newCaptionEndTime = formatSecondsToTime(parseTimeToSeconds(targetCaption.endTime) + (userDefaultCaptionDuration || 10))
         
-        console.log(`📝 Adding after last caption with ${userDefaultCaptionDuration || 10} seconds:`, { start: newCaptionStartTime, end: newCaptionEndTime })
+
       } else {
         // Option B: Between existing captions - use duplicate logic
         const startTime = parseTimeToSeconds(targetCaption.startTime)
@@ -1944,7 +1873,7 @@ export default function Watch() {
         newCaptionStartTime = newOriginalEndTimeFormatted
         newCaptionEndTime = targetCaption.endTime
         
-        console.log('📝 Adding between captions:', { start: newCaptionStartTime, end: newCaptionEndTime })
+
       }
 
       // Create new caption
@@ -1978,7 +1907,7 @@ export default function Watch() {
       setShowAddCaptionDialog(false)
       setSelectedSerialNumber(null)
       
-      console.log('✅ New caption added at position:', selectedSerialNumber)
+      
       
     } catch (error) {
       console.error('❌ Error adding caption at position:', error)
@@ -2033,7 +1962,7 @@ export default function Watch() {
 
     if (currentCaption) {
       // RULE: If caption exists at current time, DO NOTHING
-      console.log('📝 Caption already exists at this time, doing nothing')
+      
       showCustomAlertModal('Caption already exists at this time', [
         { text: 'OK', action: hideCustomAlertModal }
       ])
@@ -2044,16 +1973,10 @@ export default function Watch() {
     const newCaptionStartTime = currentTime
     const newCaptionEndTime = currentTime + (userDefaultCaptionDuration || 10)
     
-    console.log(`📝 Simple Rule 4a: No caption exists, adding new caption with ${userDefaultCaptionDuration || 10} second duration`)
-    console.log(`🔍 Time calculation: ${currentTime}s to ${newCaptionEndTime}s`)
+    
+    
 
-    // DEBUG: Log the final calculated times before formatting
-    console.log('🔍 DEBUG Final calculated times:', {
-      newCaptionStartTime,
-      newCaptionEndTime,
-      startTimeString: formatSecondsToTime(newCaptionStartTime),
-      endTimeString: formatSecondsToTime(newCaptionEndTime)
-    })
+
 
     // Convert to MM:SS format using the existing formatSecondsToTime function
     const startTimeString = formatSecondsToTime(newCaptionStartTime)
@@ -2096,7 +2019,7 @@ export default function Watch() {
       // NOW enter caption mode with the new caption ID
       handleEnterCaptionMode('add', savedCaption.id)
       
-      console.log('📝 New caption saved to database:', savedCaption)
+
     } else {
       console.error('❌ Failed to save new caption to database')
       setDbError('Failed to save new caption')
@@ -2131,7 +2054,7 @@ export default function Watch() {
 
     // Check if there are captions to edit
     if (captions.length === 0) {
-      console.log('📝 No captions available to edit')
+
       return
     }
 
@@ -2152,7 +2075,7 @@ export default function Watch() {
     })
 
     if (!currentCaption) {
-      console.log('📝 No caption currently displayed at this time')
+      
       return
     }
 
@@ -2249,7 +2172,7 @@ export default function Watch() {
                 
                 // Wait for all database operations to complete
                 const savedResults = await Promise.all(savePromises)
-                console.log('💾 All captions saved to database:', savedResults)
+        
                 
                 // Clear conflict highlighting
                 setConflictRowIndex(-1)
@@ -2259,7 +2182,7 @@ export default function Watch() {
                 
                 // Update the snapshot to reflect the new "saved" state
                 setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(resolvedCaptions)))
-                console.log('💾 Saved captions with auto-resolved conflicts:', resolvedCaptions)
+        
                 
                 // Close modal
                 setShowCaptionModal(false)
@@ -2288,7 +2211,7 @@ export default function Watch() {
     setConflictRowIndex(-1)
 
     // TODO: Save to Supabase
-    console.log('💾 Saving captions:', sortedCaptions)
+    
     
     // Update local state with sorted captions
     setCaptions(sortedCaptions)
@@ -2382,7 +2305,7 @@ export default function Watch() {
           const availableSpace = nextCaptionStartTime - currentCaptionEndTime
           const requiredSpace = userDefaultCaptionDuration || 10
           
-          console.log(`🔍 Space check: Available ${availableSpace}s, Required ${requiredSpace}s`)
+  
           
           if (availableSpace < requiredSpace) {
             // NOT ENOUGH SPACE - Show alert and don't duplicate
@@ -2479,7 +2402,7 @@ export default function Watch() {
               setCaptions([])
               hideCustomAlertModal()
               
-              console.log('🗑️ All captions deleted successfully')
+      
             } catch (error) {
               console.error('❌ Error deleting all captions:', error)
               setDbError('Failed to delete all captions')
@@ -2506,7 +2429,7 @@ export default function Watch() {
             setCaptions(newCaptions)
             setCaptionToDelete(null)
             setShowDeleteConfirm(false)
-            console.log('🗑️ Caption deleted from database')
+    
           } else {
             console.error('❌ Failed to delete caption from database')
             setDbError('Failed to delete caption')
@@ -2647,7 +2570,7 @@ export default function Watch() {
     if (player && player.seekTo && typeof player.seekTo === 'function') {
       try {
         player.seekTo(startSeconds, true)
-        console.log('🚀 Initial jump to start time:', startSeconds)
+
       } catch (error) {
         console.error('Initial seek error:', error)
       }

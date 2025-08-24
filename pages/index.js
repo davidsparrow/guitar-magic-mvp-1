@@ -30,17 +30,14 @@ export default function Home() {
   useEffect(() => {
     setMounted(true)
   }, [])
-  // Smart redirect logic for authenticated users - only redirect direct navigation, not from other pages
+  // Smart redirect logic for authenticated users
   useEffect(() => {
     if (mounted && isAuthenticated && !loading && router.isReady) {
       const urlParams = new URLSearchParams(window.location.search)
       const isIntentionalHomeVisit = urlParams.get('home') === 'true'
       const referrer = document.referrer
       const isDirectNavigation = !referrer || !referrer.includes(window.location.origin)
-      
-      // Only redirect if it's a direct navigation AND not an intentional home visit
-      // AND ensure we're not interfering with navigation from other pages
-      if (isDirectNavigation && !isIntentionalHomeVisit && router.pathname === '/') {
+      if (isDirectNavigation && !isIntentionalHomeVisit) {
         router.replace('/search')
       }
     }
