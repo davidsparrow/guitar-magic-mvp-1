@@ -1,6 +1,7 @@
 // pages/watch.js - Watch Page with YouTube Video Player
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useUser } from '../contexts/UserContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
@@ -36,7 +37,8 @@ export default function Watch() {
 
 
 
-  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
+  const { isAuthenticated, user, loading, signOut } = useAuth()
+  const { profile, planType, hasPlanAccess, canSearch } = useUser()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -74,7 +76,6 @@ export default function Watch() {
   
   // User access control states
   const [isVideoFavorited, setIsVideoFavorited] = useState(false)
-  const [userPlan, setUserPlan] = useState('freebird') // 'freebird', 'roadie', 'hero'
   const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
   
   // Caption management states
@@ -654,7 +655,7 @@ export default function Watch() {
 
   // Check if user has exceeded their daily watch time limits
   const checkDailyWatchTimeLimits = (dailyMinutes) => {
-    if (!user?.id || !userPlan) return
+    if (!user?.id || !planType) return
     
     // Update current daily total state for feature access checks
     setCurrentDailyTotal(parseFloat(dailyMinutes))
@@ -666,7 +667,7 @@ export default function Watch() {
       'hero': 480      // 480 minutes per day (8 hours)
     }
     
-    const userLimit = dailyLimits[userPlan] || dailyLimits.freebird
+    const userLimit = dailyLimits[planType] || dailyLimits.freebird
     const hasExceeded = dailyMinutes >= userLimit
     
     // Daily limit check
@@ -682,12 +683,12 @@ export default function Watch() {
       ])
     }
     
-    return { hasExceeded, userPlan, dailyMinutes, userLimit }
+    return { hasExceeded, planType, dailyMinutes, userLimit }
   }
 
   // Check if user can access features based on daily watch time limits
   const checkDailyLimitForFeature = () => {
-    if (!user?.id || !userPlan) return false
+    if (!user?.id || !planType) return false
     
     // Get current daily total from state
     const dailyMinutes = currentDailyTotal
@@ -699,7 +700,7 @@ export default function Watch() {
       'hero': 480      // 480 minutes per day (8 hours)
     }
     
-    const userLimit = dailyLimits[userPlan] || dailyLimits.freebird
+    const userLimit = dailyLimits[planType] || dailyLimits.freebird
     const hasExceeded = dailyMinutes >= userLimit
     
     if (hasExceeded) {
@@ -766,7 +767,7 @@ export default function Watch() {
 
     // Check tier requirement
     const tierOrder = { 'freebird': 0, 'roadie': 1, 'hero': 2 }
-    const userTier = userPlan || 'freebird'
+    const userTier = planType || 'freebird'
     const requiredTier = feature.min_tier || 'freebird'
     
     if (tierOrder[userTier] < tierOrder[requiredTier]) {
@@ -818,21 +819,15 @@ export default function Watch() {
     setMounted(true)
   }, [])
 
-  // Update user plan when profile loads
+  // Check daily watch time limits when profile loads
   useEffect(() => {
-    if (profile && profile.subscription_tier) {
-      setUserPlan(profile.subscription_tier)
-      // User plan updated
-      
-      // Check daily watch time limits after user plan is confirmed
-      if (user?.id) {
-        // User plan confirmed - checking daily watch time limits
-        getDailyWatchTimeTotal().then(dailyMinutes => {
-          if (dailyMinutes) {
-            checkDailyWatchTimeLimits(parseFloat(dailyMinutes))
-          }
-        })
-      }
+    if (profile && profile.subscription_tier && user?.id) {
+      // User plan confirmed - checking daily watch time limits
+      getDailyWatchTimeTotal().then(dailyMinutes => {
+        if (dailyMinutes) {
+          checkDailyWatchTimeLimits(parseFloat(dailyMinutes))
+        }
+      })
     }
   }, [profile, user?.id])
 
@@ -848,7 +843,7 @@ export default function Watch() {
     if (featureGates) {
       // Feature gates state updated
     }
-  }, [featureGates, userPlan])
+  }, [featureGates, planType])
 
   // Track when user data becomes available
   useEffect(() => {
@@ -1362,7 +1357,7 @@ export default function Watch() {
 
   // Check if user can access loop functionality
   const canAccessLoops = () => {
-    const hasAccess = userPlan !== 'freebird' && isVideoFavorited
+    const hasAccess = planType !== 'freebird' && isVideoFavorited
             // Access check
     return hasAccess
   }
@@ -1497,7 +1492,7 @@ export default function Watch() {
     
     // Check if user can access captions (same as loops)
     if (!canAccessLoops()) {
-      if (userPlan === 'freebird') {
+      if (planType === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1661,7 +1656,7 @@ export default function Watch() {
   // Handle adding new caption from timeline
   const handleAddCaptionFromTimeline = () => {
     if (!canAccessLoops()) {
-      if (userPlan === 'freebird') {
+      if (planType === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1790,7 +1785,7 @@ export default function Watch() {
   // Handle adding new caption from control strip
   const handleAddCaptionFromControlStrip = async (rowNumber) => {
     if (!canAccessLoops()) {
-      if (userPlan === 'freebird') {
+      if (planType === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -1899,7 +1894,7 @@ export default function Watch() {
   // Handle inline editing from control strip
   const handleInlineEditCaption = (rowNumber) => {
     if (!canAccessLoops()) {
-      if (userPlan === 'freebird') {
+      if (planType === 'freebird') {
         showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Captions require a paid plan. Please upgrade to access this feature.'), [
           { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
           { text: 'OK', action: hideCustomAlertModal }
@@ -3167,7 +3162,7 @@ export default function Watch() {
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold mb-4 text-red-400">⏰ Daily Limit Exceeded</h2>
               <p className="text-gray-300 text-sm mb-4">
-                Sorry, you've exceeded your <span className="font-semibold text-blue-400">{dailyLimitInfo.userPlan.toUpperCase()}</span> plan daily watch limit.
+                Sorry, you've exceeded your <span className="font-semibold text-blue-400">{dailyLimitInfo.planType.toUpperCase()}</span> plan daily watch limit.
               </p>
               <div className="bg-gray-800 rounded-lg p-3 mb-4">
                 <p className="text-sm text-gray-300">

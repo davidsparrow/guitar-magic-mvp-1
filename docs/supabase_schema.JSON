@@ -998,14 +998,14 @@
     "column_name": "subscription_tier",
     "data_type": "text",
     "is_nullable": "YES",
-    "column_default": "'free'::text"
+    "column_default": null
   },
   {
     "table_name": "user_profiles",
     "column_name": "subscription_status",
     "data_type": "text",
     "is_nullable": "YES",
-    "column_default": "'active'::text"
+    "column_default": null
   },
   {
     "table_name": "user_profiles",
