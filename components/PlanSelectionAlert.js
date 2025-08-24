@@ -27,7 +27,7 @@ export default function PlanSelectionAlert({ isOpen, onClose, onNavigateAway }) 
 
   const handleCancel = () => {
     onClose()
-    router.push('/')
+    window.location.href = '/'
   }
 
   return (
