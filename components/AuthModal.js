@@ -364,6 +364,31 @@ const AuthModal = ({ isOpen, onClose, initialTab = 'signin' }) => {
                   </>
                 )}
               </div>
+
+              {/* Terms and Privacy Policy */}
+              <div className="mt-6 text-center">
+                <p className="text-gray-400 text-[10px] leading-tight">
+                  By continuing, you agree to GuitarTube's{' '}
+                  <a 
+                    href="/terms" 
+                    className="text-blue-400 underline hover:text-blue-300 transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Terms
+                  </a>{' '}
+                  of Service and{' '}
+                  <a 
+                    href="/privacy" 
+                    className="text-blue-400 underline hover:text-blue-300 transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Privacy Policy
+                  </a>
+                  , and to receive periodic emails with updates.
+                </p>
+              </div>
             </>
           )}
         </div>

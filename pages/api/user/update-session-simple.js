@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     console.log('✅ Basic user profile found:', { subscriptionTier: basicProfile.subscription_tier });
 
     // Check if user has access to resume feature (Roadie+ only)
-    if (basicProfile.subscription_tier === 'free') {
+    if (basicProfile.subscription_tier === 'freebird') {
       return res.status(403).json({ 
         message: 'Resume feature requires Roadie or Hero plan',
         currentPlan: basicProfile.subscription_tier,

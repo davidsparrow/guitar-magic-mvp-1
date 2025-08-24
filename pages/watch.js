@@ -1399,10 +1399,10 @@ export default function Watch() {
         userId: user?.id,
         hasProfile: !!profile,
         subscriptionTier: profile?.subscription_tier,
-        isNotFree: profile?.subscription_tier !== 'free'
+        isNotFree: profile?.subscription_tier !== 'freebird'
       })
       
-      if (user?.id && profile?.subscription_tier !== 'free') {
+      if (user?.id && profile?.subscription_tier !== 'freebird') {
         // Debug: Log player state details to understand why isPlayerReady() is failing
         console.log('🔍 Debug - Player state check:', {
           hasPlayer: !!player,

@@ -9,7 +9,6 @@ import { useRouter } from 'next/router'
 import { searchVideos, formatDuration, formatViewCount, formatPublishDate, getBestThumbnail } from '../lib/youtube'
 import { FaEllipsisV, FaCheck } from 'react-icons/fa'
 import { TbGuitarPick, TbGuitarPickFilled } from 'react-icons/tb'
-import PlanSelectionAlert from '../components/PlanSelectionAlert'
 
 // Helper function to parse YouTube duration format (PT1M30S) to seconds
 const parseDuration = (duration) => {
@@ -25,7 +24,7 @@ import TopBanner from '../components/TopBanner'
 import { supabase } from '../lib/supabase'
 
 export default function Search() {
-  const { isAuthenticated, user, profile, loading, signOut, canSearch } = useAuth()
+  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -50,209 +49,16 @@ export default function Search() {
   const [showCustomAlert, setShowCustomAlert] = useState(false)
   const [customAlertMessage, setCustomAlertMessage] = useState('')
   const [customAlertButtons, setCustomAlertButtons] = useState([])
-  
-  // Plan Selection Alert State
-  const [showPlanSelectionAlert, setShowPlanSelectionAlert] = useState(false)
-
-  // Search Cache Management Functions
-  const getSearchCacheKey = (query) => {
-    return user?.id ? `search_cache_${user.id}_${encodeURIComponent(query)}` : null
-  }
-
-  const saveSearchToCache = (query, results, nextPageToken) => {
-    if (!user?.id) return
-    
-    const cacheKey = getSearchCacheKey(query)
-    if (!cacheKey) return
-    
-    const cacheData = {
-      query,
-      results,
-      nextPageToken,
-      timestamp: Date.now(),
-      expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours TTL
-    }
-    
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify(cacheData))
-    } catch (error) {
-      console.error('❌ Failed to cache search results:', error)
-    }
-  }
-
-  const getSearchFromCache = (query) => {
-    if (!user?.id) return null
-    
-    const cacheKey = getSearchCacheKey(query)
-    if (!cacheKey) return null
-    
-    try {
-      const cached = localStorage.getItem(cacheKey)
-      if (!cached) return null
-      
-      const cacheData = JSON.parse(cached)
-      
-      // Check if cache is expired
-      if (Date.now() > cacheData.expiresAt) {
-        localStorage.removeItem(cacheKey)
-        return null
-      }
-      
-      return cacheData
-    } catch (error) {
-      console.error('❌ Failed to read cache:', error)
-      return null
-    }
-  }
-
-  const clearExpiredCache = () => {
-    if (!user?.id) return
-    
-    try {
-      const keys = Object.keys(localStorage)
-      const now = Date.now()
-      
-      keys.forEach(key => {
-        if (key.startsWith(`search_cache_${user.id}_`)) {
-          try {
-            const cached = JSON.parse(localStorage.getItem(key))
-            if (cached && now > cached.expiresAt) {
-              localStorage.removeItem(key)
-            }
-          } catch (e) {
-            // Remove corrupted cache entries
-            localStorage.removeItem(key)
-          }
-        }
-      })
-    } catch (error) {
-      console.error('❌ Failed to clean cache:', error)
-    }
-  }
-
-  // Find and restore the most recent cached search
-  const restoreMostRecentCachedSearch = () => {
-    if (!user?.id) return null
-    
-    try {
-      const keys = Object.keys(localStorage)
-      let mostRecentCache = null
-      let mostRecentTime = 0
-      
-      keys.forEach(key => {
-        if (key.startsWith(`search_cache_${user.id}_`)) {
-          try {
-            const cached = JSON.parse(localStorage.getItem(key))
-            if (cached && Date.now() <= cached.expiresAt && cached.timestamp > mostRecentTime) {
-              mostRecentCache = cached
-              mostRecentTime = cached.timestamp
-            }
-          } catch (e) {
-            // Skip corrupted cache entries
-          }
-        }
-      })
-      
-      return mostRecentCache
-    } catch (error) {
-      console.error('❌ Failed to find recent cache:', error)
-      return null
-    }
-  }
 
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Clean up expired cache on mount
-  useEffect(() => {
-    if (mounted && user?.id) {
-      clearExpiredCache()
-    }
-  }, [mounted, user?.id])
-
-  // Restore cached search results after user authentication is complete
-  useEffect(() => {
-    if (mounted && user?.id && !loading && !hasSearched && searchResults.length === 0) {
-      // Try to restore most recent cached search
-      const mostRecentCache = restoreMostRecentCachedSearch()
-      if (mostRecentCache) {
-        setSearchResults(mostRecentCache.results)
-        setHasSearched(true)
-        setNextPageToken(mostRecentCache.nextPageToken)
-        setSearchQuery(mostRecentCache.query)
-      }
-    }
-  }, [mounted, user?.id, loading, hasSearched, searchResults.length])
-
-  // Handle page visibility changes (browser back button, tab switching, etc.)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && mounted && user?.id) {
-        // If we have a search query but no results, try to restore from cache
-        if (searchQuery && !hasSearched && searchResults.length === 0) {
-          const cachedResults = getSearchFromCache(searchQuery)
-          if (cachedResults) {
-            setSearchResults(cachedResults.results)
-            setHasSearched(true)
-            setNextPageToken(cachedResults.nextPageToken)
-          }
-        }
-      }
-    }
-
-    // Listen for visibility changes
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    
-    // Also check when the page becomes visible (browser back button)
-    const handlePageShow = () => {
-      if (mounted && user?.id) {
-        // First try to restore from current search query if it exists
-        if (searchQuery && !hasSearched && searchResults.length === 0) {
-          const cachedResults = getSearchFromCache(searchQuery)
-          if (cachedResults) {
-            setSearchResults(cachedResults.results)
-            setHasSearched(true)
-            setNextPageToken(cachedResults.nextPageToken)
-            return
-          }
-        }
-        
-        // If no current query or no results, try to restore most recent cached search
-        if (!hasSearched && searchResults.length === 0) {
-          const mostRecentCache = restoreMostRecentCachedSearch()
-          if (mostRecentCache) {
-            setSearchResults(mostRecentCache.results)
-            setHasSearched(true)
-            setNextPageToken(mostRecentCache.nextPageToken)
-            setSearchQuery(mostRecentCache.query)
-          }
-        }
-      }
-    }
-
-    // Listen for page show events (browser back button)
-    window.addEventListener('pageshow', handlePageShow)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('pageshow', handlePageShow)
-    }
-  }, [mounted, user?.id, searchQuery, hasSearched, searchResults.length])
-
   // Auto-search when page loads with query parameter
   useEffect(() => {
     if (mounted && router.isReady) {
-      const { q, view } = router.query
-      
-      // Check for favorites view parameter
-      if (view === 'favorites') {
-        setShowFavoritesOnly(true)
-        return
-      }
-      
-      // Perform search if query parameter exists
+      const { q } = router.query
       if (q && typeof q === 'string') {
         setSearchQuery(q)
         // Perform search directly with the URL query
@@ -310,21 +116,6 @@ export default function Search() {
       // Clear saved session and favorites when user logs out
       setSavedSession(null)
       setUserFavorites([])
-      
-      // Clear user's search cache when they log out
-      if (user?.id) {
-        try {
-          const keys = Object.keys(localStorage)
-          keys.forEach(key => {
-            if (key.startsWith(`search_cache_${user.id}_`)) {
-              localStorage.removeItem(key)
-              console.log('🗑️ Cleared search cache for logged out user')
-            }
-          })
-        } catch (error) {
-          console.error('❌ Failed to clear search cache:', error)
-        }
-      }
     }
   }, [isAuthenticated, user?.id, loading])
 
@@ -346,24 +137,6 @@ export default function Search() {
   // Handle search
   const handleSearch = async (pageToken = null) => {
     if (!searchQuery.trim()) return
-    
-    // Check if user can search - NEW GATING LOGIC
-    if (!pageToken && !canSearch) {
-      setShowPlanSelectionAlert(true)
-      return
-    }
-
-    // For new searches (not load more), check cache first
-    if (!pageToken) {
-      const cachedResults = getSearchFromCache(searchQuery.trim())
-      if (cachedResults) {
-        setSearchResults(cachedResults.results)
-        setHasSearched(true)
-        setNextPageToken(cachedResults.nextPageToken)
-        console.log('🚀 Search results restored from cache - no API call needed!')
-        return
-      }
-    }
 
     if (pageToken) {
       setIsLoadingMore(true)
@@ -386,9 +159,6 @@ export default function Search() {
         // Replace results for new search
         setSearchResults(results.videos)
         setHasSearched(true)
-        
-        // Save to cache for future use
-        saveSearchToCache(searchQuery.trim(), results.videos, results.nextPageToken)
       }
 
       setNextPageToken(results.nextPageToken)
@@ -405,23 +175,6 @@ export default function Search() {
   // Perform search with direct query string (for auto-search from URL)
   const performSearchWithQuery = async (query) => {
     if (!query.trim()) return
-    
-    // Check if user can search - NEW GATING LOGIC
-    if (!canSearch) {
-      setShowPlanSelectionAlert(true)
-      return
-    }
-
-    // Check cache first
-    const cachedResults = getSearchFromCache(query)
-    if (cachedResults) {
-      setSearchResults(cachedResults.results)
-      setHasSearched(true)
-      setNextPageToken(cachedResults.nextPageToken)
-      setSearchQuery(query)
-      console.log('🚀 Search results restored from cache - no API call needed!')
-      return
-    }
 
     setIsSearching(true)
     setSearchError('')
@@ -436,10 +189,6 @@ export default function Search() {
       setSearchResults(results.videos)
       setHasSearched(true)
       setNextPageToken(results.nextPageToken)
-      setSearchQuery(query)
-
-      // Save to cache for future use
-      saveSearchToCache(query, results.videos, results.nextPageToken)
 
     } catch (error) {
       console.error('Search error:', error)
@@ -603,18 +352,16 @@ export default function Search() {
       return
     }
 
-    const videoId = video.id?.videoId || video.video_id
-
     try {
       if (isFavorited) {
         // Remove from favorites
-        console.log('🗑️ Removing from favorites:', video.snippet?.title || video.video_title)
+        console.log('🗑️ Removing from favorites:', video.snippet.title)
         
         const { error } = await supabase
           .from('favorites')
           .delete()
           .eq('user_id', user.id)
-          .eq('video_id', videoId)
+          .eq('video_id', video.id.videoId)
         
         if (error) {
           console.error('❌ Error removing favorite:', error)
@@ -622,20 +369,20 @@ export default function Search() {
         }
         
         // Update local state
-        setUserFavorites(prev => prev.filter(fav => fav.video_id !== videoId))
+        setUserFavorites(prev => prev.filter(fav => fav.video_id !== video.id.videoId))
         console.log('✅ Removed from favorites')
         
       } else {
         // Add to favorites
-        console.log('💝 Adding to favorites:', video.snippet?.title || video.video_title)
+        console.log('💝 Adding to favorites:', video.snippet.title)
         
         const favoriteData = {
           user_id: user.id,
-          video_id: videoId,
-          video_title: video.snippet?.title || video.video_title,
-          video_channel: video.snippet?.channelTitle || video.video_channel,
+          video_id: video.id.videoId,
+          video_title: video.snippet.title,
+          video_channel: video.snippet.channelTitle,
           video_duration_seconds: video.contentDetails?.duration ? parseDuration(video.contentDetails.duration) : null,
-          video_channel_id: video.snippet?.channelId || video.video_channel_id,
+          video_channel_id: video.snippet.channelId,
           is_public: false
         }
         
@@ -660,8 +407,7 @@ export default function Search() {
 
   // Check if video is favorited
   const isVideoFavorited = (video) => {
-    const videoId = video.id?.videoId || video.video_id
-    return userFavorites.some(fav => fav.video_id === videoId)
+    return userFavorites.some(fav => fav.video_id === video.id.videoId)
   }
 
   // Standard Alert System Helper Function
@@ -675,43 +421,6 @@ export default function Search() {
     setShowCustomAlert(false)
     setCustomAlertMessage('')
     setCustomAlertButtons([])
-  }
-
-  // Favorites Confirmation Alert Helper Function
-  const showFavoritesConfirmationAlert = (video, isFavorited) => {
-    // Get plan info
-    const planType = profile?.subscription_tier || 'freebird'
-    const currentCount = userFavorites.length
-    
-    // Map plan types to display names and limits
-    const planInfo = {
-      'free': { name: 'Freebird', max: 0 },
-      'roadie': { name: 'Roadie', max: 12 },
-      'hero': { name: 'Hero', max: 'UNLIMITED' }
-    }
-    
-    const plan = planInfo[planType] || planInfo['free']
-    const maxDisplay = plan.max === 'UNLIMITED' ? 'UNLIMITED' : plan.max
-    
-    // Create message
-    const message = `You have ${currentCount} of ${maxDisplay} max faves in ${plan.name} Plan.`
-    
-    // Create buttons
-    const buttons = [
-      {
-        text: isFavorited ? 'REMOVE' : 'ADD',
-        action: () => {
-          closeCustomAlertModal()
-          handleVideoFavoriteToggle(video, isFavorited)
-        }
-      },
-      {
-        text: 'CANCEL',
-        action: closeCustomAlertModal
-      }
-    ]
-    
-    showCustomAlertModal(message, buttons)
   }
 
   if (!mounted || (loading && !router.isReady)) {
@@ -789,9 +498,10 @@ export default function Search() {
       
       {/* Main Content Area - Video Grid */}
       <div 
-        className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar mt-16 md:mt-20 bg-black/75" 
+        className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" 
         style={{ 
-          height: 'calc(100vh - 140px)'
+          height: 'calc(100vh - 140px)',
+          backgroundColor: 'transparent'
         }}
       >
         {/* Search Error */}
@@ -943,17 +653,7 @@ export default function Search() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    
-                                    // Check if user can manage favorites (same logic as search gating)
-                                    if (!canSearch) {
-                                      // Show plan selection alert for unauthenticated or no-plan users
-                                      setShowPlanSelectionAlert(true)
-                                      return
-                                    }
-                                    
-                                    // User has plan access - show favorites confirmation
-                                    const isFavorited = isVideoFavorited(video)
-                                    showFavoritesConfirmationAlert(video, isFavorited)
+                                    handleVideoFavoriteToggle(video, isVideoFavorited(video))
                                   }}
                                   className="p-1 hover:scale-110 transition-transform"
                                 >
@@ -1045,12 +745,6 @@ export default function Search() {
           </div>
         </div>
       )}
-      
-      {/* Plan Selection Alert */}
-      <PlanSelectionAlert
-        isOpen={showPlanSelectionAlert}
-        onClose={() => setShowPlanSelectionAlert(false)}
-      />
     </div>
   )
 }

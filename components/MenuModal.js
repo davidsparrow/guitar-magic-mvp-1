@@ -142,7 +142,7 @@ export default function MenuModal({ isOpen, onClose, onSupportClick }) {
               
               <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Subscription</p>
-                <p className="font-medium capitalize">{profile?.subscription_tier || 'Free'}</p>
+                <p className="font-medium capitalize">{profile?.subscription_tier || 'Freebird'}</p>
               </div>
               
               <div className="pt-4">
@@ -182,7 +182,7 @@ export default function MenuModal({ isOpen, onClose, onSupportClick }) {
             <div className="space-y-4 text-gray-300">
               <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Current Plan</p>
-                <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Free'}</p>
+                <p className="font-medium capitalize text-xl">{profile?.subscription_tier || 'Freebird'}</p>
               </div>
               
               <div className="bg-gray-800/50 p-4 rounded-lg">

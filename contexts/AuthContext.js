@@ -240,7 +240,7 @@ const signOut = async () => {
     // User data helpers
     userName: profile?.full_name || user?.email?.split('@')[0] || 'User',
     userEmail: user?.email,
-    subscriptionTier: profile?.subscription_tier || 'free',
+    subscriptionTier: profile?.subscription_tier || 'freebird',
     dailySearchesUsed: profile?.daily_searches_used || 0,
     searchLimit: profile?.subscription_tier === 'premium' ? 999999 : 20,
   }

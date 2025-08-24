@@ -28,18 +28,47 @@ export default async function handler(req, res) {
     const { plan, billingCycle, userEmail, userId } = req.body;
 
     // Validate required fields
-    if (!plan || !billingCycle || !userEmail) {
+    if (!plan || !userEmail) {
       return res.status(400).json({ 
-        message: 'Missing required fields: plan, billingCycle, userEmail' 
+        message: 'Missing required fields: plan, userEmail' 
       });
     }
 
-    // Validate plan and billing cycle
-    if (!['roadie', 'hero'].includes(plan)) {
+    // Validate plan
+    if (!['freebird', 'roadie', 'hero'].includes(plan)) {
       return res.status(400).json({ message: 'Invalid plan selected' });
     }
 
-    if (!['monthly', 'annual'].includes(billingCycle)) {
+    // Handle freebird plan (no Stripe needed)
+    if (plan === 'freebird') {
+      // Update user profile to freebird plan
+      if (userId) {
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({ 
+            subscription_tier: 'freebird',
+            subscription_status: 'active',
+            plan_selected_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+
+        if (error) {
+          console.error('Error updating user profile for free plan:', error);
+          return res.status(500).json({ 
+            message: 'Failed to update user profile',
+            error: error.message 
+          });
+        }
+      }
+
+      return res.status(200).json({ 
+        message: 'Successfully updated to freebird plan',
+        plan: 'freebird'
+      });
+    }
+
+    // For paid plans, validate billing cycle
+    if (!billingCycle || !['monthly', 'annual'].includes(billingCycle)) {
       return res.status(400).json({ message: 'Invalid billing cycle' });
     }
 
@@ -52,7 +81,7 @@ export default async function handler(req, res) {
 
     if (existingProfile) {
       // If user already has a paid plan, prevent duplicate signup
-      if (existingProfile.subscription_tier !== 'free' && 
+      if (existingProfile.subscription_tier !== 'freebird' && 
           existingProfile.subscription_status === 'active') {
         return res.status(400).json({
           message: 'You already have an active subscription',

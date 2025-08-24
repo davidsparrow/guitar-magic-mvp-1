@@ -365,7 +365,7 @@ export default function MobileHome() {
               
               <div className="bg-gray-800/50 p-3 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Subscription</p>
-                <p className="font-medium capitalize">{profile?.subscription_tier || 'Free'}</p>
+                <p className="font-medium capitalize">{profile?.subscription_tier || 'Freebird'}</p>
               </div>
               
               <div className="pt-3">
@@ -405,7 +405,7 @@ export default function MobileHome() {
             <div className="space-y-3 text-gray-300">
               <div className="bg-gray-800/50 p-3 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Current Plan</p>
-                <p className="font-medium capitalize text-lg">{profile?.subscription_tier || 'Free'}</p>
+                <p className="font-medium capitalize text-lg">{profile?.subscription_tier || 'Freebird'}</p>
               </div>
               
               <div className="bg-gray-800/50 p-3 rounded-lg">

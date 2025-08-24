@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     }
 
     // Check if user has access to resume feature (Roadie+ only)
-    if (profile && profile.subscription_tier === 'free') {
+    if (profile && profile.subscription_tier === 'freebird') {
       return res.status(403).json({ 
         message: 'Resume feature requires Roadie or Hero plan',
         currentPlan: profile.subscription_tier,

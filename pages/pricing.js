@@ -143,6 +143,58 @@ export default function Home() {
     }
   }
 
+  // Handle free plan selection (no Stripe needed)
+  const handleFreePlanSelection = async () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
+
+    // ✅ Use AuthContext to check existing subscription (no API call needed)
+    if (profile?.subscription_tier && profile?.subscription_tier !== 'freebird') {
+      alert(`You already have a ${profile.subscription_tier} plan. Contact support to downgrade.`)
+      return
+    }
+    
+    if (profile?.subscription_tier === 'freebird') {
+      alert('You\'re already on the Freebird plan!')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan: 'freebird',
+          billingCycle: 'none', // Free plans don't have billing cycles
+          userEmail: user.email,
+          userId: user.id
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Successfully updated to free plan
+        alert('Welcome to the Freebird plan! You can now enjoy basic features.')
+        // Optionally redirect to search page or refresh the page
+        router.push('/search')
+      } else {
+        alert('Failed to update plan. Please try again.')
+      }
+    } catch (error) {
+      console.error('Free plan selection error:', error)
+      alert('An error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (!mounted || (loading && !router.isReady)) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
@@ -263,15 +315,25 @@ export default function Home() {
                 <div>max daily watch time: <span className="text-white">1 Hr.</span></div>
               </div>
               <button 
-                onClick={() => setShowAuthModal(true)}
+                onClick={handleFreePlanSelection}
+                disabled={isLoading}
                 className="w-full mt-6 bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2"
               >
-                <span>STAY FREE</span>
-                <img 
-                  src="/images/no_credit_card2.png" 
-                  alt="No Credit Card" 
-                  className="w-5 h-5"
-                />
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  <>
+                    <span>STAY FREE</span>
+                    <img 
+                      src="/images/no_credit_card2.png" 
+                      alt="No Credit Card" 
+                      className="w-5 h-5"
+                    />
+                  </>
+                )}
               </button>
             </div>
 
