@@ -62,7 +62,15 @@ export default function Search() {
   // Auto-search when page loads with query parameter
   useEffect(() => {
     if (mounted && router.isReady) {
-      const { q } = router.query
+      const { q, view } = router.query
+      
+      // Check for favorites view parameter
+      if (view === 'favorites') {
+        setShowFavoritesOnly(true)
+        return
+      }
+      
+      // Perform search if query parameter exists
       if (q && typeof q === 'string') {
         setSearchQuery(q)
         // Perform search directly with the URL query
@@ -514,10 +522,9 @@ export default function Search() {
       
       {/* Main Content Area - Video Grid */}
       <div 
-        className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar" 
+        className="relative z-10 flex-1 overflow-y-auto px-6 pb-6 hide-scrollbar mt-16 md:mt-20 bg-black/75" 
         style={{ 
-          height: 'calc(100vh - 140px)',
-          backgroundColor: 'transparent'
+          height: 'calc(100vh - 140px)'
         }}
       >
         {/* Search Error */}
