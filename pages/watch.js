@@ -1972,8 +1972,10 @@ export default function Watch() {
 
   // Handle delete caption confirmation
   const handleDeleteCaption = (captionIndex) => {
+    console.log('🔍 handleDeleteCaption called with index:', captionIndex)
     setCaptionToDelete(captionIndex)
     setShowDeleteConfirm(true)
+    console.log('🔍 Set captionToDelete to:', captionIndex, 'and showDeleteConfirm to true')
   }
 
   // Handle delete all captions
@@ -2016,16 +2018,21 @@ export default function Watch() {
 
   // Confirm caption deletion
   const handleConfirmDelete = async () => {
+    console.log('🔍 handleConfirmDelete called, captionToDelete:', captionToDelete)
     if (captionToDelete !== null) {
       try {
         const captionToDeleteObj = captions[captionToDelete]
+        console.log('🔍 captionToDeleteObj:', captionToDeleteObj)
         if (captionToDeleteObj?.id) {
+          console.log('🔍 Calling deleteCaption with ID:', captionToDeleteObj.id)
           const deleted = await deleteCaption(captionToDeleteObj.id, user?.id, setIsLoadingCaptions, setDbError)
+          console.log('🔍 deleteCaption result:', deleted)
           if (deleted) {
             const newCaptions = captions.filter((_, i) => i !== captionToDelete)
             setCaptions(newCaptions)
             setCaptionToDelete(null)
             setShowDeleteConfirm(false)
+            console.log('✅ Caption deleted successfully')
     
           } else {
             console.error('❌ Failed to delete caption from database')
@@ -2037,11 +2044,14 @@ export default function Watch() {
           setCaptions(newCaptions)
           setCaptionToDelete(null)
           setShowDeleteConfirm(false)
+          console.log('✅ Caption removed from local state (no DB ID)')
         }
       } catch (error) {
         console.error('❌ Error deleting caption:', error)
         setDbError('Failed to delete caption')
       }
+    } else {
+      console.log('❌ captionToDelete is null, nothing to delete')
     }
   }
 
