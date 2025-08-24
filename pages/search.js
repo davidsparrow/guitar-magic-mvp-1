@@ -254,9 +254,17 @@ export default function Search() {
         return
       }
       
-      // Perform search if query parameter exists
+      // Perform search if query parameter exists - BUT RESPECT SEARCH GATING!
       if (q && typeof q === 'string') {
         setSearchQuery(q)
+        
+        // Check if user can search before auto-searching
+        if (!canSearch) {
+          console.log('🚨 Auto-search blocked - user cannot search, showing PlanSelectionAlert')
+          setShowPlanSelectionAlert(true)
+          return
+        }
+        
         // Perform search directly with the URL query
         performSearchWithQuery(q)
       }
