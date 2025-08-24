@@ -104,19 +104,24 @@ const AuthModal = ({ isOpen, onClose, initialTab = 'signin' }) => {
     setError('')
     
     try {
-      // TODO: Implement Google OAuth with Supabase
-      // const { data, error } = await supabase.auth.signInWithOAuth({
-      //   provider: 'google',
-      //   options: {
-      //     redirectTo: `${window.location.origin}/auth/callback`
-      //   }
-      // })
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
       
-      // For now, just show a placeholder message
-      setError('Google OAuth not yet implemented')
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+      } else {
+        // OAuth redirect will happen automatically
+        // User will be redirected to Google, then back to /auth/callback
+        console.log('Google OAuth initiated successfully')
+      }
     } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
+      console.error('Google OAuth error:', err)
+      setError('Google OAuth failed. Please try again.')
       setLoading(false)
     }
   }
