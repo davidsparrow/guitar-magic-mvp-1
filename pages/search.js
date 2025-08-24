@@ -29,8 +29,7 @@ export default function Search() {
   const { isAuthenticated, user, loading, signOut } = useAuth()
   const { profile, canSearch } = useUser()
   
-  // SIMPLE DEBUG: Log canSearch value
-  console.log('🔍 Search component - canSearch:', canSearch, 'profile tier:', profile?.subscription_tier)
+
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -381,8 +380,7 @@ export default function Search() {
   const handleSearch = async (pageToken = null) => {
     if (!searchQuery.trim()) return
     
-    // SIMPLE DEBUG: Just log the key values
-    console.log('🔍 handleSearch called - canSearch:', canSearch, 'profile tier:', profile?.subscription_tier)
+
     
     // Check if user can search - NEW GATING LOGIC
     if (!pageToken && !canSearch) {
@@ -444,8 +442,7 @@ export default function Search() {
   const performSearchWithQuery = async (query) => {
     if (!query.trim()) return
     
-    // SIMPLE DEBUG: Just log the key values
-    console.log('🔍 performSearchWithQuery called - canSearch:', canSearch, 'profile tier:', profile?.subscription_tier)
+
     
     // Check if user can search - NEW GATING LOGIC
     if (!canSearch) {
