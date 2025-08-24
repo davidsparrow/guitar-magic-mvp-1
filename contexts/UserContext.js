@@ -73,8 +73,8 @@ export const UserProvider = ({ children }) => {
     planType: profile?.subscription_tier || 'freebird',
     planStatus: profile?.subscription_status || null,
     
-    // Feature access
-    canSearch: !!(profile?.subscription_tier && profile?.subscription_status === 'active'),
+    // Feature access - Free users cannot search, only paid users can
+    canSearch: profile?.subscription_tier !== 'freebird' && profile?.subscription_status === 'active',
     
     // User data helpers
     userName: profile?.full_name || profile?.email?.split('@')[0] || 'User',
