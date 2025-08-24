@@ -1,14 +1,28 @@
 // components/PlanSelectionAlert.js - Standardized Plan Selection Alert
 import { useRouter } from 'next/router'
 
-export default function PlanSelectionAlert({ isOpen, onClose }) {
+export default function PlanSelectionAlert({ isOpen, onClose, onNavigateAway }) {
   const router = useRouter()
+
+  console.log('🔍 PlanSelectionAlert: Component function called, isOpen:', isOpen)
 
   if (!isOpen) return null
 
+  console.log('🔍 PlanSelectionAlert: Component rendered, isOpen:', isOpen)
+
   const handleSelectPlan = () => {
+    console.log('🔍 PlanSelectionAlert: SELECT PLAN button clicked')
+    console.log('🔍 PlanSelectionAlert: router object:', router)
+    console.log('🔍 PlanSelectionAlert: Current URL:', window.location.href)
     onClose()
-    router.push('/pricing')
+    if (onNavigateAway) onNavigateAway()
+    console.log('🔍 PlanSelectionAlert: About to navigate to /pricing')
+    try {
+      router.push('/pricing')
+      console.log('🔍 PlanSelectionAlert: Navigation command sent successfully')
+    } catch (error) {
+      console.error('🔍 PlanSelectionAlert: Navigation error:', error)
+    }
   }
 
   const handleCancel = () => {
@@ -42,7 +56,10 @@ export default function PlanSelectionAlert({ isOpen, onClose }) {
             CANCEL
           </button>
           <button
-            onClick={handleSelectPlan}
+            onClick={() => {
+              console.log('🔍 PlanSelectionAlert: Button clicked - inline function')
+              handleSelectPlan()
+            }}
             className="px-4 py-2 rounded-lg font-medium transition-colors bg-pink-500 hover:bg-pink-600 text-white"
           >
             SELECT PLAN

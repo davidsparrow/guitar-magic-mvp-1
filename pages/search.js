@@ -1,6 +1,7 @@
 // pages/search.js - Search Page with YouTube API Integration
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useUser } from '../contexts/UserContext'
 import AuthModal from '../components/AuthModal'
 import SupportModal from '../components/SupportModal'
 import MenuModal from '../components/MenuModal'
@@ -25,7 +26,8 @@ import TopBanner from '../components/TopBanner'
 import { supabase } from '../lib/supabase'
 
 export default function Search() {
-  const { isAuthenticated, user, profile, loading, signOut, canSearch } = useAuth()
+  const { isAuthenticated, user, loading, signOut } = useAuth()
+  const { profile, canSearch } = useUser()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
   const [showSupportModal, setShowSupportModal] = useState(false)

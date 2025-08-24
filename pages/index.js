@@ -1,6 +1,7 @@
 // pages/index.js - Homepage Using Your Actual Images
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useUser } from '../contexts/UserContext'
 import AuthModal from '../components/AuthModal'
 import SupportModal from '../components/SupportModal'
 import MenuModal from '../components/MenuModal'
@@ -11,7 +12,8 @@ import { FaTimes, FaSearch } from "react-icons/fa"
 import TopBanner from '../components/TopBanner'
 import PlanSelectionAlert from '../components/PlanSelectionAlert'
 export default function Home() {
-  const { isAuthenticated, user, profile, loading, signOut, canSearch } = useAuth()
+  const { isAuthenticated, user, loading, signOut } = useAuth()
+  const { profile, canSearch } = useUser()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [isAnnualBilling, setIsAnnualBilling] = useState(true) // Default to annual billing
   const [searchQuery, setSearchQuery] = useState('')
@@ -28,14 +30,17 @@ export default function Home() {
   useEffect(() => {
     setMounted(true)
   }, [])
-  // Smart redirect logic for authenticated users
+  // Smart redirect logic for authenticated users - only redirect direct navigation, not from other pages
   useEffect(() => {
     if (mounted && isAuthenticated && !loading && router.isReady) {
       const urlParams = new URLSearchParams(window.location.search)
       const isIntentionalHomeVisit = urlParams.get('home') === 'true'
       const referrer = document.referrer
       const isDirectNavigation = !referrer || !referrer.includes(window.location.origin)
-      if (isDirectNavigation && !isIntentionalHomeVisit) {
+      
+      // Only redirect if it's a direct navigation AND not an intentional home visit
+      // AND ensure we're not interfering with navigation from other pages
+      if (isDirectNavigation && !isIntentionalHomeVisit && router.pathname === '/') {
         router.replace('/search')
       }
     }

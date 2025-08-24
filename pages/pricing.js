@@ -38,18 +38,8 @@ export default function Home() {
       initStripe()
     }
   }, [])
-  // Smart redirect logic for authenticated users
-  useEffect(() => {
-    if (mounted && isAuthenticated && !loading && router.isReady) {
-      const urlParams = new URLSearchParams(window.location.search)
-      const isIntentionalHomeVisit = urlParams.get('home') === 'true'
-      const referrer = document.referrer
-      const isDirectNavigation = !referrer || !referrer.includes(window.location.origin)
-      if (isDirectNavigation && !isIntentionalHomeVisit) {
-        router.replace('/search')
-      }
-    }
-  }, [mounted, isAuthenticated, loading, router])
+  // REMOVED: Smart redirect logic for authenticated users
+  // Users need to be able to access the pricing page to select plans!
 
   // Handle login/logout
   const handleAuthClick = async () => {
