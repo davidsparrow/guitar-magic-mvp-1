@@ -843,7 +843,7 @@ export default function Watch() {
     // Check tier requirement
     const tierOrder = { 'freebird': 0, 'roadie': 1, 'hero': 2 }
     const userTier = userPlan || 'freebird'
-    const requiredTier = feature.min_tier || 'free'
+    const requiredTier = feature.min_tier || 'freebird'
     
     if (tierOrder[userTier] < tierOrder[requiredTier]) {
       const message = feature.messages?.tier_restriction || 

@@ -686,12 +686,12 @@ export default function Search() {
     
     // Map plan types to display names and limits
     const planInfo = {
-      'free': { name: 'Freebird', max: 0 },
+      'freebird': { name: 'Freebird', max: 0 },
       'roadie': { name: 'Roadie', max: 12 },
       'hero': { name: 'Hero', max: 'UNLIMITED' }
     }
     
-    const plan = planInfo[planType] || planInfo['free']
+    const plan = planInfo[planType] || planInfo['freebird']
     const maxDisplay = plan.max === 'UNLIMITED' ? 'UNLIMITED' : plan.max
     
     // Create message
