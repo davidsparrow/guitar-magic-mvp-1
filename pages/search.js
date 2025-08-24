@@ -146,6 +146,61 @@ export default function Search() {
     }
   }, [mounted, user?.id])
 
+  // Handle page visibility changes (browser back button, tab switching, etc.)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && mounted && user?.id) {
+        console.log('👁️ Page became visible - checking for cached search results...')
+        
+        // If we have a search query but no results, try to restore from cache
+        if (searchQuery && !hasSearched && searchResults.length === 0) {
+          console.log('🔍 Attempting to restore cached results for:', searchQuery)
+          const cachedResults = getSearchFromCache(searchQuery)
+          if (cachedResults) {
+            setSearchResults(cachedResults.results)
+            setHasSearched(true)
+            setNextPageToken(cachedResults.nextPageToken)
+            console.log('✅ Cached results restored from page visibility change!')
+          } else {
+            console.log('❌ No cached results found for:', searchQuery)
+          }
+        }
+      }
+    }
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Also check when the page becomes visible (browser back button)
+    const handlePageShow = () => {
+      if (mounted && user?.id) {
+        console.log('📱 Page show event - checking for cached search results...')
+        
+        // If we have a search query but no results, try to restore from cache
+        if (searchQuery && !hasSearched && searchResults.length === 0) {
+          console.log('🔍 Attempting to restore cached results for:', searchQuery)
+          const cachedResults = getSearchFromCache(searchQuery)
+          if (cachedResults) {
+            setSearchResults(cachedResults.results)
+            setHasSearched(true)
+            setNextPageToken(cachedResults.nextPageToken)
+            console.log('✅ Cached results restored from page show event!')
+          } else {
+            console.log('❌ No cached results found for:', searchQuery)
+          }
+        }
+      }
+    }
+
+    // Listen for page show events (browser back button)
+    window.addEventListener('pageshow', handlePageShow)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pageshow', handlePageShow)
+    }
+  }, [mounted, user?.id, searchQuery, hasSearched, searchResults.length])
+
   // Auto-search when page loads with query parameter
   useEffect(() => {
     if (mounted && router.isReady) {
