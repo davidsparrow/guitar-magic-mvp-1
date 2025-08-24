@@ -186,6 +186,24 @@ export default function MenuModal({ isOpen, onClose, onSupportClick }) {
               </div>
               
               <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Daily Watch Limit</p>
+                <p className="font-medium text-xl">
+                  {profile?.subscription_tier === 'hero' ? '480 minutes (8 hours)' : 
+                   profile?.subscription_tier === 'roadie' ? '180 minutes (3 hours)' : 
+                   '60 minutes (1 hour)'}
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Daily Search Limit</p>
+                <p className="font-medium text-xl">
+                  {profile?.subscription_tier === 'hero' ? 'Unlimited' : 
+                   profile?.subscription_tier === 'roadie' ? '20 searches' : 
+                   '0 searches (blocked)'}
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
                 <p className="font-medium">Monthly</p>
               </div>
