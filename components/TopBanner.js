@@ -1,6 +1,6 @@
 // components/TopBanner.js - Top banner component for promotional messages
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase/client'
 
 const TopBanner = () => {
   const [bannerConfig, setBannerConfig] = useState(null)

@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 import BannerSettings from '../../components/admin/BannerSettings'
 import FeatureGates from '../../components/admin/FeatureGates'
-import { isUserAdmin } from '../../lib/adminSupabase'
+import { supabase } from '../../lib/supabase/client'
 
 export default function AdminSettings() {
   const { isAuthenticated, user, loading } = useAuth()
@@ -18,11 +18,30 @@ export default function AdminSettings() {
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!loading && isAuthenticated && user) {
-        const adminStatus = await isUserAdmin()
-        setIsAdmin(adminStatus)
-        
-        if (!adminStatus) {
-          router.push('/') // Redirect non-admin users
+        try {
+          console.log('🔍 Admin Check: User ID:', user.id)
+          console.log('🔍 Admin Check: User object:', user)
+          console.log('🔍 Admin Check: User app_metadata:', user.app_metadata)
+          console.log('🔍 Admin Check: User user_metadata:', user.user_metadata)
+          
+          // Check if user has admin role in their metadata (where you stored it)
+          const adminStatus = user?.app_metadata?.role === 'admin' || user?.user_metadata?.role === 'admin'
+          
+          console.log('🔍 Admin Check: Admin status:', adminStatus)
+          console.log('🔍 Admin Check: Role found:', user?.app_metadata?.role || user?.user_metadata?.role)
+          
+          setIsAdmin(adminStatus)
+          
+          if (!adminStatus) {
+            console.log('🔍 Admin Check: Redirecting non-admin user')
+            router.push('/') // Redirect non-admin users
+          } else {
+            console.log('🔍 Admin Check: User is admin, allowing access')
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error)
+          setIsAdmin(false)
+          router.push('/')
         }
       } else if (!loading && !isAuthenticated) {
         router.push('/') // Redirect non-authenticated users

@@ -1,6 +1,6 @@
 // components/admin/BannerSettings.js - Admin only interface for banner management
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase/client'
 
 const BannerSettings = () => {
   const [config, setConfig] = useState({
