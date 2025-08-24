@@ -349,13 +349,12 @@ export default function Search() {
   const handleSearch = async (pageToken = null) => {
     if (!searchQuery.trim()) return
     
-    // DEBUG: Log the search gating logic
-    console.log('🔍 Search gating debug:', {
-      pageToken,
-      canSearch,
-      profile: profile ? { tier: profile.subscription_tier, status: profile.subscription_status } : null,
-      shouldShowAlert: !pageToken && !canSearch
-    })
+    // DEBUG: Log the search gating logic - show values clearly
+    console.log('🔍 Search gating debug - pageToken:', pageToken)
+    console.log('🔍 Search gating debug - canSearch:', canSearch)
+    console.log('🔍 Search gating debug - profile tier:', profile?.subscription_tier)
+    console.log('🔍 Search gating debug - profile status:', profile?.subscription_status)
+    console.log('🔍 Search gating debug - shouldShowAlert:', !pageToken && !canSearch)
     
     // Check if user can search - NEW GATING LOGIC
     if (!pageToken && !canSearch) {
@@ -417,13 +416,12 @@ export default function Search() {
   const performSearchWithQuery = async (query) => {
     if (!query.trim()) return
     
-    // DEBUG: Log the direct search gating logic
-    console.log('🔍 Direct search gating debug:', {
-      query,
-      canSearch,
-      profile: profile ? { tier: profile.subscription_tier, status: profile.subscription_status } : null,
-      shouldShowAlert: !canSearch
-    })
+    // DEBUG: Log the direct search gating logic - show values clearly
+    console.log('🔍 Direct search gating debug - query:', query)
+    console.log('🔍 Direct search gating debug - canSearch:', canSearch)
+    console.log('🔍 Direct search gating debug - profile tier:', profile?.subscription_tier)
+    console.log('🔍 Direct search gating debug - profile status:', profile?.subscription_status)
+    console.log('🔍 Direct search gating debug - shouldShowAlert:', !canSearch)
     
     // Check if user can search - NEW GATING LOGIC
     if (!canSearch) {
