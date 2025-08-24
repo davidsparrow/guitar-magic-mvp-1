@@ -1475,7 +1475,7 @@ export default function Watch() {
 
       // Create new caption
       const newCaption = {
-        id: Date.now(),
+        id: null, // Will get proper database ID when saved
         startTime: newCaptionStartTime,
         endTime: newCaptionEndTime,
         line1: '',
@@ -1816,8 +1816,8 @@ export default function Watch() {
       const savePromises = []
       
       for (const caption of sortedCaptions) {
-        if (caption.id && caption.id !== Date.now()) {
-          // Existing caption - update if modified
+        if (caption.id && typeof caption.id === 'string' && caption.id.length > 20) {
+          // Existing caption with valid UUID - update if modified
           console.log('🔍 Updating existing caption:', caption.id)
           savePromises.push(updateCaption(caption.id, {
             startTime: caption.startTime,
@@ -1826,7 +1826,7 @@ export default function Watch() {
             line2: caption.line2
           }, user?.id, setIsLoadingCaptions, setDbError))
         } else {
-          // New caption - save it
+          // New caption (id is null, undefined, or invalid) - save it
           console.log('🔍 Saving new caption:', caption)
           savePromises.push(saveCaption({
             startTime: caption.startTime,
