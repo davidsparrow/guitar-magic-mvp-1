@@ -199,8 +199,15 @@ export default function Search() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && mounted && user?.id) {
-        // If we have a search query but no results, try to restore from cache
+        // If we have a search query but no results, try to restore from cache - BUT RESPECT SEARCH GATING!
         if (searchQuery && !hasSearched && searchResults.length === 0) {
+          // Check if user can search before restoring cached results
+          if (!canSearch) {
+            console.log('🚨 Visibility change cache restoration blocked - user cannot search, showing PlanSelectionAlert')
+            setShowPlanSelectionAlert(true)
+            return
+          }
+          
           const cachedResults = getSearchFromCache(searchQuery)
           if (cachedResults) {
             setSearchResults(cachedResults.results)
@@ -255,7 +262,7 @@ export default function Search() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pageshow', handlePageShow)
     }
-  }, [mounted, user?.id, searchQuery, hasSearched, searchResults.length])
+  }, [mounted, user?.id, searchQuery, hasSearched, searchResults.length, canSearch])
 
   // Auto-search when page loads with query parameter
   useEffect(() => {
