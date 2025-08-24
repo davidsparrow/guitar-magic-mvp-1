@@ -204,6 +204,15 @@ export default function MenuModal({ isOpen, onClose, onSupportClick }) {
               </div>
               
               <div className="bg-gray-800/50 p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Saved Faves Limit</p>
+                <p className="font-medium text-xl">
+                  {profile?.subscription_tier === 'hero' ? 'Unlimited' : 
+                   profile?.subscription_tier === 'roadie' ? '12 faves' : 
+                   '0 faves (blocked)'}
+                </p>
+              </div>
+              
+              <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Billing Cycle</p>
                 <p className="font-medium">Monthly</p>
               </div>
