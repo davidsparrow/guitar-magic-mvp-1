@@ -302,10 +302,10 @@ export default function Search() {
   // Check for saved session when user logs in
   useEffect(() => {
     if (isAuthenticated && user?.id && !loading) {
-      console.log('🔍 User authenticated, checking for saved session...')
+
       checkForSavedSession().then(sessionData => {
         setSavedSession(sessionData)
-        console.log('💾 Saved session state updated:', sessionData ? 'Found' : 'None')
+
       })
       
       // Load user favorites from database
@@ -322,7 +322,7 @@ export default function Search() {
           keys.forEach(key => {
             if (key.startsWith(`search_cache_${user.id}_`)) {
               localStorage.removeItem(key)
-              console.log('🗑️ Cleared search cache for logged out user')
+  
             }
           })
         } catch (error) {
@@ -353,9 +353,8 @@ export default function Search() {
     
 
     
-    // Check if user can search - NEW GATING LOGIC
+    // Check if user can search
     if (!pageToken && !canSearch) {
-      console.log('🚨 User cannot search - showing PlanSelectionAlert')
       setShowPlanSelectionAlert(true)
       return
     }
@@ -367,7 +366,7 @@ export default function Search() {
         setSearchResults(cachedResults.results)
         setHasSearched(true)
         setNextPageToken(cachedResults.nextPageToken)
-        console.log('🚀 Search results restored from cache - no API call needed!')
+
         return
       }
     }
@@ -415,9 +414,8 @@ export default function Search() {
     
 
     
-    // Check if user can search - NEW GATING LOGIC
+    // Check if user can search
     if (!canSearch) {
-      console.log('🚨 User cannot search - showing PlanSelectionAlert for direct search')
       setShowPlanSelectionAlert(true)
       return
     }
@@ -429,8 +427,7 @@ export default function Search() {
       setHasSearched(true)
       setNextPageToken(cachedResults.nextPageToken)
       setSearchQuery(query)
-      console.log('🚀 Search results restored from cache - no API call needed!')
-      return
+              return
     }
 
     setIsSearching(true)
@@ -464,12 +461,12 @@ export default function Search() {
   // Load user favorites from database
   const loadUserFavorites = async () => {
     if (!user?.id) {
-      console.log('❌ No user ID, cannot load favorites')
+
       return
     }
 
     try {
-      console.log('🎯 Loading user favorites for user:', user.id)
+
       
       const { data: favorites, error } = await supabase
         .from('favorites')
@@ -482,7 +479,7 @@ export default function Search() {
         return
       }
       
-      console.log('✅ Loaded favorites:', favorites?.length || 0, 'videos')
+      
       setUserFavorites(favorites || [])
       
     } catch (error) {
@@ -493,12 +490,12 @@ export default function Search() {
   // Check for saved video session data
   const checkForSavedSession = async () => {
     if (!user?.id) {
-      console.log('❌ No user ID, cannot check for saved session')
+
       return null
     }
 
     try {
-      console.log('🔍 Checking for saved session data for user:', user.id)
+
       
       // Query the database for saved session data
       const { data: profile, error } = await supabase
@@ -508,21 +505,15 @@ export default function Search() {
         .single()
       
       if (error) {
-        console.log('⚠️ No saved session data found:', error.message)
+
         return null
       }
       
       if (profile?.last_video_id && profile?.last_video_timestamp) {
-        console.log('🎯 Found saved session data:', {
-          videoId: profile.last_video_id,
-          timestamp: profile.last_video_timestamp,
-          title: profile.last_video_title,
-          channel: profile.last_video_channel_name,
-          sessionDate: profile.last_session_date
-        })
+
         return profile
       } else {
-        console.log('📝 No saved session data found')
+
         return null
       }
     } catch (error) {
@@ -609,7 +600,7 @@ export default function Search() {
   // Handle video favorite toggle
   const handleVideoFavoriteToggle = async (video, isFavorited) => {
     if (!isAuthenticated || !user?.id) {
-      console.log('❌ User not authenticated, cannot toggle favorite')
+      
       return
     }
 
@@ -618,7 +609,7 @@ export default function Search() {
     try {
       if (isFavorited) {
         // Remove from favorites
-        console.log('🗑️ Removing from favorites:', video.snippet?.title || video.video_title)
+
         
         const { error } = await supabase
           .from('favorites')
@@ -633,11 +624,11 @@ export default function Search() {
         
         // Update local state
         setUserFavorites(prev => prev.filter(fav => fav.video_id !== videoId))
-        console.log('✅ Removed from favorites')
+
         
       } else {
         // Add to favorites
-        console.log('💝 Adding to favorites:', video.snippet?.title || video.video_title)
+
         
         const favoriteData = {
           user_id: user.id,
@@ -661,7 +652,7 @@ export default function Search() {
         
         // Update local state
         setUserFavorites(prev => [...prev, data[0]])
-        console.log('✅ Added to favorites')
+
       }
     } catch (error) {
       console.error('❌ Error toggling favorite:', error)
@@ -779,13 +770,8 @@ export default function Search() {
         onSearchSubmit={handleSearch}
         onFavoritesToggle={handleFavoritesToggle}
         onResumeClick={() => {
-          console.log('🚀 Resume button clicked - navigating to saved video...')
-          console.log('📺 Video details:', {
-            id: savedSession.last_video_id,
-            title: savedSession.last_video_title,
-            channel: savedSession.last_video_channel_name,
-            timestamp: savedSession.last_video_timestamp
-          })
+  
+          
           
           // Navigate to video page with resume parameters
           router.push(`/watch?v=${savedSession.last_video_id}&title=${encodeURIComponent(savedSession.last_video_title || '')}&channel=${encodeURIComponent(savedSession.last_video_channel_name || '')}`)
@@ -814,9 +800,8 @@ export default function Search() {
         {/* Video Grid */}
         {(hasSearched || showFavoritesOnly) && (
           <div>
-            {console.log('🚨🚨🚨 SIMPLE VIDEO GRID RENDERING! 🚨🚨🚨')}
-            {console.log('hasSearched:', hasSearched)}
-            {console.log('showFavoritesOnly:', showFavoritesOnly)}
+    
+
             
             {(() => {
               // Define displayResults based on toggle state
@@ -824,8 +809,7 @@ export default function Search() {
                 ? userFavorites  // Show favorites from database
                 : searchResults  // Show search results from YouTube API
               
-              console.log('displayResults count:', displayResults.length)
-              console.log('displayResults type:', showFavoritesOnly ? 'FAVORITES' : 'SEARCH_RESULTS')
+
               
               return (
                 <div className="mt-6">
