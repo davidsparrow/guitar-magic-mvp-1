@@ -202,7 +202,7 @@ export default function Watch() {
         
         hasChanges = true
         
-        console.log(`🔧 Auto-resolved conflict: Caption #${nextCaption.serial_number || i + 2} start time changed from ${oldStartTime} to ${newStartTime}`)
+        // Auto-resolved conflict
       }
     }
     
@@ -254,19 +254,19 @@ export default function Watch() {
 
     
     if (!user?.id) {
-      console.log('❌ Save blocked: No user ID')
+              // Save blocked: No user ID
       return
     }
     if (!playerRef.current) {
-      console.log('❌ Save blocked: No player ref')
+              // Save blocked: No player ref
       return
     }
     if (!isVideoReady) {
-      console.log('❌ Save blocked: Video not ready')
+              // Save blocked: Video not ready
       return
     }
     if (!videoId) {
-      console.log('❌ Save blocked: No video ID')
+              // Save blocked: No video ID
       return
     }
     
@@ -275,17 +275,17 @@ export default function Watch() {
     try {
 
       const currentTime = playerRef.current.getCurrentTime()
-      console.log('⏰ Current time:', currentTime)
+              // Current time
       
       const videoTitle = playerRef.current.getVideoData().title || videoTitle
-      console.log('📺 Video title:', videoTitle)
+              // Video title
       
       const channelName = playerRef.current.getVideoData().author || videoChannel
-      console.log('👤 Channel name:', channelName)
+              // Channel name
       
 
       
-      console.log('📡 Making API call to /api/user/update-session...')
+              // Making API call to update session
       const response = await fetch('/api/user/update-session', {
         method: 'POST',
         headers: {
@@ -301,7 +301,7 @@ export default function Watch() {
         })
       })
       
-      console.log('📡 API response received:', response.status, response.statusText)
+              // API response received
       
       if (response.ok) {
 
@@ -370,7 +370,7 @@ export default function Watch() {
       if (favoriteError) {
         if (favoriteError.code === 'PGRST116') {
           // No favorite found, return empty array
-          console.log('ℹ️ No favorite found for video, no captions to load')
+          // No favorite found for video, no captions to load
           return []
         }
         throw favoriteError
@@ -404,8 +404,8 @@ export default function Watch() {
       const captionsWithSerialNumbers = assignSerialNumbersToCaptions(transformedCaptions)
       
       
-      console.log('🔄 Transformed captions for frontend:', transformedCaptions)
-      console.log('🔢 Captions with serial numbers:', captionsWithSerialNumbers)
+              // Transformed captions for frontend
+              // Captions with serial numbers
       return captionsWithSerialNumbers
     } catch (error) {
       console.error('❌ Error loading captions:', error)
@@ -546,7 +546,7 @@ export default function Watch() {
       }
       
       
-      console.log('🔄 Transformed saved caption:', transformedCaption)
+              // Transformed saved caption
       return transformedCaption
     } catch (error) {
       console.error('❌ Error saving caption:', error)
@@ -594,7 +594,7 @@ export default function Watch() {
       }
       
       
-      console.log('🔄 Transformed updated caption:', transformedCaption)
+              // Transformed updated caption
       return transformedCaption
     } catch (error) {
       console.error('❌ Error updating caption:', error)
@@ -654,7 +654,7 @@ export default function Watch() {
       // DEBOUNCING: Clear any existing timeout to prevent rapid successive calls
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
-        console.log('⏱️ Cleared previous save timeout')
+        // Cleared previous save timeout
       }
 
       // DEBOUNCING: Set new timeout for 1 second to prevent duplicates
@@ -716,7 +716,7 @@ export default function Watch() {
       const totalSeconds = data.reduce((sum, record) => sum + record.watch_time_seconds, 0)
       const totalMinutes = (totalSeconds / 60).toFixed(1)
       
-      console.log('📊 Daily watch time from Supabase:', totalMinutes, 'minutes')
+              // Daily watch time from Supabase
       
       // Update the current daily total state for feature access checks
       setCurrentDailyTotal(parseFloat(totalMinutes))
@@ -745,13 +745,7 @@ export default function Watch() {
     const userLimit = dailyLimits[userPlan] || dailyLimits.free
     const hasExceeded = dailyMinutes >= userLimit
     
-    console.log('🔐 Daily limit check:', {
-      userPlan,
-      dailyMinutes,
-      userLimit,
-      hasExceeded,
-      remainingMinutes: userLimit - dailyMinutes
-    })
+    // Daily limit check
     
     if (hasExceeded) {
       
@@ -785,12 +779,7 @@ export default function Watch() {
     const hasExceeded = dailyMinutes >= userLimit
     
     if (hasExceeded) {
-      console.log('🚫 Feature access blocked - daily limit exceeded:', {
-        userPlan,
-        dailyMinutes,
-        userLimit,
-        remainingMinutes: userLimit - dailyMinutes
-      })
+      // Feature access blocked - daily limit exceeded
       
       // Show toast with upgrade option
       const message = `Daily watch time limit exceeded! You've used ${dailyMinutes} minutes of your ${userLimit} minute limit.`
@@ -808,7 +797,7 @@ export default function Watch() {
   const loadFeatureGates = async () => {
     try {
       setFeatureGatesLoading(true)
-      console.log('🚪 Loading feature gates configuration...')
+      // Loading feature gates configuration
       
       const { data, error } = await supabase
         .from('admin_settings')
@@ -909,11 +898,11 @@ export default function Watch() {
   useEffect(() => {
     if (profile && profile.subscription_tier) {
       setUserPlan(profile.subscription_tier)
-      console.log('🔓 User plan updated:', profile.subscription_tier)
+      // User plan updated
       
       // Check daily watch time limits after user plan is confirmed
       if (user?.id) {
-        console.log('🔐 User plan confirmed - checking daily watch time limits')
+        // User plan confirmed - checking daily watch time limits
         getDailyWatchTimeTotal().then(dailyMinutes => {
           if (dailyMinutes) {
             checkDailyWatchTimeLimits(parseFloat(dailyMinutes))
@@ -930,32 +919,22 @@ export default function Watch() {
     }
   }, [mounted, isAuthenticated])
 
-  // Debug feature gates state
+  // Feature gates state tracking
   useEffect(() => {
     if (featureGates) {
-      console.log('🚪 Feature gates state updated:', {
-        features: Object.keys(featureGates.feature_gates || {}),
-        globalSettings: featureGates.global_settings,
-        userTier: userPlan
-      })
+      // Feature gates state updated
     }
   }, [featureGates, userPlan])
 
   // Track when user data becomes available
   useEffect(() => {
-    console.log('👤 User data useEffect triggered:', { 
-      hasUser: !!user, 
-      userId: user?.id, 
-      hasProfile: !!profile,
-      loading,
-      isAuthenticated
-    })
+    // User data useEffect triggered
   }, [user, profile, loading, isAuthenticated])
 
   // Load YouTube API script
   useEffect(() => {
     if (mounted && !window.YT) {
-      console.log('📡 Loading YouTube iframe API...')
+      // Loading YouTube iframe API
       setYoutubeAPILoading(true)
       setYoutubeAPIError(false)
       
@@ -1004,7 +983,7 @@ export default function Watch() {
   // Initialize YouTube player when API is ready
   useEffect(() => {
     if (mounted && videoId) {
-      console.log('🎬 Initializing YouTube player for video:', videoId)
+      // Initializing YouTube player for video
       
       const initPlayer = () => {
         if (window.YT && window.YT.Player) {
@@ -1029,7 +1008,7 @@ export default function Watch() {
           })
           
           // Store the player reference for later use
-          console.log('⏳ Player created, waiting for onReady event...')
+          // Player created, waiting for onReady event
         } else {
 
         }
@@ -1041,9 +1020,9 @@ export default function Watch() {
         initPlayer()
       } else {
         // Wait for API to be ready
-        console.log('⏳ Setting up YouTube API ready callback...')
+        // Setting up YouTube API ready callback
         window.onYouTubeIframeAPIReady = () => {
-          console.log('🎉 YouTube API ready callback triggered!')
+                      // YouTube API ready callback triggered
           initPlayer()
         }
       }
@@ -1069,7 +1048,7 @@ export default function Watch() {
         setVideoChannel(channel ? decodeURIComponent(channel) : '')
         setIsVideoReady(true)
       } else {
-        console.log('❌ No video ID in URL, redirecting to home')
+        // No video ID in URL, redirecting to home
         router.push('/')
       }
     } else if (mounted && router.isReady) {
@@ -1083,7 +1062,7 @@ export default function Watch() {
         
         // Query daily watch time total when video loads
         if (user?.id) {
-          console.log('📊 Video loaded - querying daily watch time total')
+          // Video loaded - querying daily watch time total
           getDailyWatchTimeTotal()
           
           // Check for saved session data to resume video
@@ -1092,12 +1071,12 @@ export default function Watch() {
         
 
       } else {
-        console.log('❌ No video ID provided, redirecting to home')
+        // No video ID provided, redirecting to home
         // No video ID provided, redirect to home
         router.push('/')
       }
     } else {
-      console.log('⏳ Video loading conditions not met:', { mounted, routerIsReady: router.isReady })
+      // Video loading conditions not met
     }
   }, [mounted, router.isReady, router.query])
 
@@ -1131,7 +1110,7 @@ export default function Watch() {
       if (videoId && user?.id) {
         const isFavorited = await checkIfVideoFavorited(videoId)
         setIsVideoFavorited(isFavorited)
-        console.log('⭐ Favorite status checked:', isFavorited)
+        // Favorite status checked
       }
     }
     
@@ -1141,7 +1120,7 @@ export default function Watch() {
   // Load captions when video loads or user changes
   useEffect(() => {
     const loadVideoCaptions = async () => {
-      console.log('🔄 Caption loading effect triggered:', { videoId, userId: user?.id, isVideoFavorited })
+      // Caption loading effect triggered
       
       if (videoId && user?.id && isVideoFavorited) {
   
@@ -1160,25 +1139,13 @@ export default function Watch() {
 
   // Automatic watch time tracking
   useEffect(() => {
-    console.log('🔄 Watch time tracking useEffect EXECUTED', {
-      timestamp: Date.now(),
-      playerReady: isPlayerReady(),
-      isTracking: isTrackingWatchTime,
-      hasWatchStartTime: !!watchStartTime,
-      executionCount: (useEffect.executionCount || 0) + 1
-    })
+    // Watch time tracking useEffect executed
     
     // Track execution count
     useEffect.executionCount = (useEffect.executionCount || 0) + 1
     
     if (!player || !isPlayerReady() || !user?.id || !videoId || !videoChannel) {
-      console.log('⏸️ Watch time tracking paused - conditions not met:', {
-        hasPlayer: !!player,
-        playerReady: isPlayerReady(),
-        hasUser: !!user?.id,
-        hasVideoId: !!videoId,
-        hasChannel: !!videoChannel
-      })
+      // Watch time tracking paused - conditions not met
       return
     }
 
@@ -1188,20 +1155,15 @@ export default function Watch() {
         if (!player || !isPlayerReady()) return
         
         const playerState = player.getPlayerState()
-        console.log('🎮 Player state check:', {
-          state: playerState,
-          isTracking: isTrackingWatchTime,
-          hasStartTime: !!watchStartTime,
-          timestamp: Date.now()
-        })
+        // Player state check
         
         if (playerState === 1 && !isTrackingWatchTime) { // Playing
-          console.log('▶️ Starting watch time tracking...')
+          // Starting watch time tracking
           const startTime = startWatchTimeTracking()
           setWatchStartTime(startTime)
           setIsTrackingWatchTime(true)
         } else if ((playerState === 2 || playerState === 0) && isTrackingWatchTime && watchStartTime) { // Paused or Ended
-          console.log('⏸️ Stopping watch time tracking...')
+          // Stopping watch time tracking
           stopWatchTimeTracking(watchStartTime)
           setWatchStartTime(null)
           setIsTrackingWatchTime(false)
@@ -1252,7 +1214,7 @@ export default function Watch() {
   // Video player functions
   const handleVideoReady = (event, playerInstance) => {
     setIsVideoReady(true)
-    console.log('🎥 YouTube player ready and methods available')
+    // YouTube player ready and methods available
     
     // Set the fully ready player in both state and ref for immediate access
     if (playerInstance) {
@@ -1319,7 +1281,7 @@ export default function Watch() {
   // Resume video at saved timestamp
   const resumeVideo = (timestamp) => {
     if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
-      console.log('⏩ Resuming video at timestamp:', timestamp)
+              // Resuming video at timestamp
       playerRef.current.seekTo(timestamp, true)
       hideCustomAlertModal()
     } else {
@@ -1330,7 +1292,7 @@ export default function Watch() {
   // Start video from beginning
   const startFromBeginning = () => {
     if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
-      console.log('⏪ Starting video from beginning')
+              // Starting video from beginning
       playerRef.current.seekTo(0, true)
       hideCustomAlertModal()
     } else {
@@ -1342,16 +1304,16 @@ export default function Watch() {
 
   // Handle YouTube player state changes - Global event handler for all play/pause actions
   const handlePlayerStateChange = (event) => {
-    console.log('🎮 YouTube player state changed:', event.data)
+            // YouTube player state changed
     
     // YouTube player states:
     // -1: UNSTARTED, 0: ENDED, 1: PLAYING, 2: PAUSED, 3: BUFFERING, 5: CUED
     
     // Log state changes for debugging (watch time tracking still works)
     if (event.data === 1) { // PLAYING
-      console.log('▶️ Video started playing')
+                // Video started playing
     } else if (event.data === 2) { // PAUSED
-      console.log('⏸️ Video paused')
+                // Video paused
       
       // Save session data for Login-Resume functionality when user pauses
       
@@ -1366,12 +1328,12 @@ export default function Watch() {
   
         }
       } else {
-        console.log('❌ Save conditions NOT met - session save blocked')
+        // Save conditions NOT met - session save blocked
       }
     } else if (event.data === 3) { // BUFFERING
-      console.log('🔄 Video buffering')
+              // Video buffering
     } else if (event.data === 5) { // CUED
-      console.log('📋 Video cued')
+              // Video cued
     }
   }
 
@@ -1390,7 +1352,7 @@ export default function Watch() {
         if (document.activeElement && 
             (document.activeElement.tagName === 'INPUT' || 
              document.activeElement.tagName === 'TEXTAREA')) {
-          console.log('🔤 Input field focused - spacebar video control disabled')
+          // Input field focused - spacebar video control disabled
           return // Exit early, don't handle video control
         }
         
@@ -1401,14 +1363,14 @@ export default function Watch() {
           // Try to get player state first
           if (player.getPlayerState && typeof player.getPlayerState === 'function') {
             const playerState = player.getPlayerState()
-            console.log('🎮 Player state:', playerState)
+            // Player state
             
             if (playerState === 1) { // Playing
               player.pauseVideo()
-              console.log('⏸️ Video paused')
+              // Video paused
             } else { // Paused or other states
               player.playVideo()
-              console.log('▶️ Video playing')
+              // Video playing
               
               // Query daily watch time total only when starting from beginning (0:00)
               if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
@@ -1417,7 +1379,7 @@ export default function Watch() {
           
                   getDailyWatchTimeTotal()
                 } else {
-                  console.log('⏭️ Video resuming from position:', currentTime, '- skipping daily total query')
+                  // Video resuming from position - skipping daily total query
                 }
               }
             }
@@ -1426,7 +1388,7 @@ export default function Watch() {
     
             if (player.pauseVideo && typeof player.pauseVideo === 'function') {
               player.pauseVideo()
-              console.log('⏸️ Video paused (fallback)')
+              // Video paused (fallback)
             }
           }
         } catch (error) {
@@ -1435,7 +1397,7 @@ export default function Watch() {
           try {
             if (player.pauseVideo && typeof player.pauseVideo === 'function') {
               player.pauseVideo()
-              console.log('⏸️ Video paused (final fallback)')
+              // Video paused (final fallback)
             }
           } catch (fallbackError) {
             console.error('💥 All fallbacks failed:', fallbackError)
@@ -1477,7 +1439,7 @@ export default function Watch() {
   // Check if user can access loop functionality
   const canAccessLoops = () => {
     const hasAccess = userPlan !== 'free' && isVideoFavorited
-    console.log('🔐 Access check:', { userPlan, isVideoFavorited, hasAccess })
+            // Access check
     return hasAccess
   }
 
@@ -1485,12 +1447,12 @@ export default function Watch() {
   const handleControlStripsToggle = () => {
     // Check daily watch time limits before allowing control strips feature
     if (!checkDailyLimitForFeature()) {
-      console.log('🚫 Control Strips access blocked - daily limit exceeded')
+              // Control Strips access blocked - daily limit exceeded
       return
     }
     
     const newState = !showControlStrips
-    console.log('🔘 Toggle clicked! Current state:', showControlStrips, 'New state:', newState)
+            // Toggle clicked
     
     if (newState) {
       // When showing control strips, ensure ALL rows are visible for smallest video size
@@ -1630,7 +1592,7 @@ export default function Watch() {
 
     // Capture snapshot of current captions state before opening modal
     setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(captions)))
-    console.log('📸 Captured captions snapshot for revert functionality:', captions)
+            // Captured captions snapshot for revert functionality
 
     // Open caption edit modal for the specific row
     
@@ -1645,7 +1607,7 @@ export default function Watch() {
       setTempLoopStart(loopStartTime)
       setTempLoopEnd(loopEndTime)
       setIsLoopActive(false)
-      console.log('🔄 Loop paused and stored:', { start: loopStartTime, end: loopEndTime })
+              // Loop paused and stored
     }
     
     // Store original caption state if editing existing caption
@@ -1704,7 +1666,7 @@ export default function Watch() {
 
   // Handle canceling caption changes and reverting to original state
   const handleCancelCaptionChanges = () => {
-    console.log('🚫 CANCEL button clicked! Starting cancel process...')
+            // CANCEL button clicked! Starting cancel process
     
     if (editingCaptionId) {
       // Find the current caption
@@ -1730,7 +1692,7 @@ export default function Watch() {
               ? { ...originalCaptionState }
               : caption
           ))
-          console.log('🔄 Existing caption restored to original state:', originalCaptionState)
+          // Existing caption restored to original state
         }
       }
     }
@@ -1763,7 +1725,7 @@ export default function Watch() {
       setLoopStartTime(tempLoopStart)
       setLoopEndTime(tempLoopEnd)
       setIsLoopActive(true)
-      console.log('🔄 Loop restored:', { start: tempLoopStart, end: tempLoopEnd })
+              // Loop restored
     }
     
     // Exit caption mode
@@ -2002,7 +1964,7 @@ export default function Watch() {
         
         // If conflicts were resolved, update the state with resolved captions
         if (resolvedCaptions !== newCaptions) {
-          console.log('🔧 Conflicts were auto-resolved, updating captions state')
+          // Conflicts were auto-resolved, updating captions state
           return resolvedCaptions
         }
         
@@ -2086,7 +2048,7 @@ export default function Watch() {
     setTempLoopStart(currentCaption.startTime)
     setTempLoopEnd(currentCaption.endTime)
     
-    console.log('✏️ Entering inline edit mode for caption:', currentCaption)
+            // Entering inline edit mode for caption
   }
 
   // Handle saving captions
@@ -2199,7 +2161,7 @@ export default function Watch() {
             text: 'NO - Fix Manually',
             action: () => {
               // Keep modal open, let user fix manually
-              console.log('❌ User chose to fix conflicts manually')
+              // User chose to fix conflicts manually
             }
           }
         ]
@@ -2218,7 +2180,7 @@ export default function Watch() {
     
     // Update the snapshot to reflect the new "saved" state
     setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(sortedCaptions)))
-    console.log('📸 Updated snapshot after saving:', sortedCaptions)
+            // Updated snapshot after saving
     
     // Close modal
     setShowCaptionModal(false)
@@ -2231,7 +2193,7 @@ export default function Watch() {
     // Revert all changes back to original state when modal was opened
     if (originalCaptionsSnapshot) {
       setCaptions(JSON.parse(JSON.stringify(originalCaptionsSnapshot)))
-      console.log('🔄 Reverted captions to original state:', originalCaptionsSnapshot)
+              // Reverted captions to original state
     }
     
     // Clear the snapshot
@@ -2242,7 +2204,7 @@ export default function Watch() {
     setIsAddingNewCaption(false)
     setEditingCaption(null)
     
-    console.log('❌ Caption editing cancelled - all changes reverted')
+            // Caption editing cancelled - all changes reverted
   }
 
   // Handle duplicate caption
@@ -2284,7 +2246,7 @@ export default function Watch() {
         // Update state with sorted captions and new serial numbers
         setCaptions(sortedCaptions)
         
-        console.log(`🔄 Last caption duplicated with ${userDefaultCaptionDuration || 10}-second extension:`, duplicateCaption)
+        // Last caption duplicated with extension
       } else {
         // NEW LOGIC: Check if there's enough space before duplicating middle captions
         
@@ -2315,7 +2277,7 @@ export default function Watch() {
                 { text: 'OK', action: hideCustomAlertModal }
               ]
             )
-            console.log(`❌ Not enough space to duplicate: ${availableSpace}s available, ${requiredSpace}s needed`)
+            // Not enough space to duplicate
             return // Exit function, don't duplicate
           }
         }
@@ -2362,7 +2324,7 @@ export default function Watch() {
         // Update state with sorted captions and new serial numbers
         setCaptions(sortedCaptions)
         
-        console.log('🔄 Caption duplicated successfully with refreshed serial numbers')
+        // Caption duplicated successfully with refreshed serial numbers
       }
       
       // TODO: Maintain user focus on duplicate record
@@ -2458,7 +2420,7 @@ export default function Watch() {
   const handleFlipVideo = () => {
     // Check daily watch time limits before allowing flip feature
     if (!checkDailyLimitForFeature()) {
-      console.log('🚫 Flip Video access blocked - daily limit exceeded')
+              // Flip Video access blocked - daily limit exceeded
       return
     }
     
@@ -2481,7 +2443,7 @@ export default function Watch() {
   const handleLoopClick = () => {
     // Check daily watch time limits before allowing loop feature
     if (!checkDailyLimitForFeature()) {
-      console.log('🚫 Loop access blocked - daily limit exceeded')
+      // Loop access blocked - daily limit exceeded
       return
     }
     
@@ -2507,7 +2469,7 @@ export default function Watch() {
     if (isLoopActive) {
       // Stop the loop
       setIsLoopActive(false)
-      console.log('🔄 Loop stopped')
+      // Loop stopped
     } else {
       // Open modal for configuration
       setTempLoopStart(loopStartTime)
@@ -2519,7 +2481,7 @@ export default function Watch() {
   const handleLoopTimesClick = () => {
     // Check daily watch time limits before allowing loop feature
     if (!checkDailyLimitForFeature()) {
-      console.log('🚫 Loop access blocked - daily limit exceeded')
+      // Loop access blocked - daily limit exceeded
       return
     }
     
@@ -2559,12 +2521,12 @@ export default function Watch() {
     // Close modal
     setShowLoopModal(false)
     
-    console.log('🔄 Loop started:', { start: tempLoopStart, end: tempLoopEnd })
+    // Loop started
     
     // Debug: Log the converted seconds
     const startSeconds = timeToSeconds(tempLoopStart)
     const endSeconds = timeToSeconds(tempLoopEnd)
-    console.log('🔄 Loop seconds:', { start: startSeconds, end: endSeconds })
+    // Loop seconds
     
     // CRITICAL: Jump to start time immediately when loop starts
     if (player && player.seekTo && typeof player.seekTo === 'function') {
@@ -2580,7 +2542,7 @@ export default function Watch() {
   const handleCancelLoop = () => {
     // Just close modal, don't start loop or update times
     setShowLoopModal(false)
-    console.log('❌ Loop configuration cancelled')
+            // Loop configuration cancelled
   }
 
   // Convert time string (e.g., "1:23") to seconds
@@ -2612,14 +2574,14 @@ export default function Watch() {
           
           // Debug: Log current loop status every 5 seconds
           if (Math.floor(currentTime) % 5 === 0) {
-            console.log('🔄 Loop check:', { current: Math.floor(currentTime), start: startSeconds, end: endSeconds })
+            // Loop check
           }
           
           // If we've reached or passed the end time, loop back to start
           if (currentTime >= endSeconds) {
             if (player.seekTo && typeof player.seekTo === 'function') {
               player.seekTo(startSeconds, true)
-              console.log('🔄 Looping back to:', startSeconds)
+              // Looping back to start
             }
           }
         }
@@ -2643,7 +2605,7 @@ export default function Watch() {
       // Only update if order actually changed
       const orderChanged = sortedCaptions.some((caption, index) => caption.id !== captions[index].id)
       if (orderChanged) {
-        console.log('🔄 Auto-sorting captions by start time')
+        // Auto-sorting captions by start time
         setCaptions(sortedCaptions)
       }
     }
@@ -2681,7 +2643,7 @@ export default function Watch() {
           ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
           : caption
       ))
-      console.log('⏰ Caption timing updated via footer:', { start: tempLoopStart, end: tempLoopEnd })
+              // Caption timing updated via footer
     }
   }, [tempLoopStart, tempLoopEnd, isInCaptionMode, editingCaptionId])
 
@@ -2694,14 +2656,14 @@ export default function Watch() {
         if (videoContainer) {
           await videoContainer.requestFullscreen()
           setIsFullscreen(true)
-          console.log('🎬 Entered fullscreen mode')
+          // Entered fullscreen mode
         }
       } else {
         // Exit fullscreen
         if (document.fullscreenElement) {
           await document.exitFullscreen()
           setIsFullscreen(false)
-          console.log('🎬 Exited fullscreen mode')
+          // Exited fullscreen mode
         }
       }
     } catch (error) {
@@ -3179,7 +3141,7 @@ export default function Watch() {
                   {/* CANCEL button for caption changes */}
                   <button
                     onClick={() => {
-                      console.log('🚫 CANCEL button clicked directly!')
+                      // CANCEL button clicked directly
                       handleCancelCaptionChanges()
                     }}
                     className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors ml-2 cursor-pointer z-10 relative border border-red-500"
