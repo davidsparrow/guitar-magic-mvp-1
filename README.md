@@ -1,7 +1,7 @@
 README
 
 
-# 🎬 GuitarMagic Fliipin Awesome!
+# 🎬 GuitarTube - the best guitar learning video platform in the galaxy, sorry Orion.
 
 Transform your YouTube experience with custom video controls, flipping, and looping features.
 
