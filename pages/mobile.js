@@ -1,6 +1,7 @@
 // pages/mobile.js - Mobile-Only Homepage
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useUser } from '../contexts/UserContext'
 import AuthModal from '../components/AuthModal'
 import { useRouter } from 'next/router'
 import { FaHamburger, FaTimes, FaSearch } from "react-icons/fa"
@@ -10,7 +11,8 @@ import { LuBrain } from "react-icons/lu"
 import TopBanner from '../components/TopBanner'
 
 export default function MobileHome() {
-  const { isAuthenticated, user, profile, loading, signOut } = useAuth()
+  const { isAuthenticated, user, loading, signOut } = useAuth()
+  const { profile } = useUser()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showRightMenuModal, setShowRightMenuModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -154,7 +156,7 @@ export default function MobileHome() {
         {/* Logo and Subtitle Section - Mobile Optimized */}
         <div className="text-center mb-8 mt-14"> {/* Reduced to 56px top margin for spacing from header */}
           <img 
-            src="/images/gt_logoM_wide_on_black.png" 
+            src="/images/gt_logo_wide_on_black_450x90.png" 
             alt="GuitarTube" 
             className="mx-auto mb-3" 
             style={{ 

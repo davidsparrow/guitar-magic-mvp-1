@@ -1,18 +1,22 @@
 // components/Layout.js - Enhanced Layout with Clickable Logo
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useUser } from '../contexts/UserContext'
 
 const Layout = ({ children }) => {
   const { 
     user, 
-    profile, 
     loading, 
     isAuthenticated, 
-    isPremium, 
-    signOut,
-    userName,
-    userEmail 
+    signOut
   } = useAuth()
+  
+  const {
+    profile,
+    isPremium,
+    userName,
+    userEmail
+  } = useUser()
   
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
@@ -108,7 +112,7 @@ const Layout = ({ children }) => {
                   </div>
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
-                      {userName.charAt(0).toUpperCase()}
+                      {userName ? userName.charAt(0).toUpperCase() : 'U'}
                     </span>
                   </div>
                 </div>
@@ -137,7 +141,7 @@ const Layout = ({ children }) => {
                       <div className="px-4 py-3 border-b border-gray-100">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{userName}</p>
+                            <p className="text-sm font-medium text-gray-900">{userName || 'User'}</p>
                             <p className="text-xs text-gray-500">{userEmail}</p>
                           </div>
                           <button 

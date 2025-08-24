@@ -1,4 +1,4 @@
-// contexts/AuthContext.js - Full Authentication System
+// contexts/AuthContext.js - Authentication Only (Profile moved to UserContext)
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase/client'
 
@@ -14,7 +14,6 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
   // SEPARATE useEffect for timeout (not nested!)
@@ -30,7 +29,7 @@ export const AuthProvider = ({ children }) => {
     return () => clearTimeout(timeout)
   }, [loading])
 
-  // SEPARATE useEffect for auth management
+  // Auth state management
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
@@ -41,10 +40,6 @@ export const AuthProvider = ({ children }) => {
           console.error('Auth session error:', error)
         } else if (session?.user) {
           setUser(session.user)
-          // Don't await - fetch profile in background
-          fetchUserProfile(session.user.id).catch(err => {
-            console.error('Profile fetch failed:', err)
-          })
         }
       } catch (error) {
         console.error('Failed to get session:', error)
@@ -62,16 +57,10 @@ export const AuthProvider = ({ children }) => {
         
         if (session?.user) {
           setUser(session.user)
-          // Don't await - fetch profile in background
-          fetchUserProfile(session.user.id).catch(err => {
-            console.error('Profile fetch failed:', err)
-          })
         } else {
           setUser(null)
-          setProfile(null)
         }
         
-        // ALWAYS set loading to false regardless of profile fetch
         setLoading(false)
       }
     )
@@ -80,29 +69,6 @@ export const AuthProvider = ({ children }) => {
       subscription.unsubscribe()
     }
   }, [])
-
-  const fetchUserProfile = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*, subscription_tier, subscription_status')
-        .eq('id', userId)
-        .single()
-
-      if (error) {
-        console.error('Profile fetch error:', error)
-        // If profile doesn't exist, it will be created by the database trigger
-        return
-      }
-
-      if (data) {
-        setProfile(data)
-        console.log('Profile loaded:', data.email, data.subscription_tier, 'Plan:', data.subscription_tier, 'Status:', data.subscription_status)
-      }
-    } catch (error) {
-      console.error('Failed to fetch profile:', error)
-    }
-  }
 
   // RESUME FUNCTIONALITY REMOVED - Was causing infinite loop bug
   // TODO: Re-implement login resume with proper state management
@@ -194,55 +160,20 @@ const signOut = async () => {
   const value = {
     // State
     user,
-    profile,
     loading,
     
     // Computed values
     isAuthenticated: !!user,
-    isPremium: profile?.subscription_tier === 'premium',
     isEmailConfirmed: user?.email_confirmed_at != null,
-    
-    // Plan access computed values
-    hasPlanAccess: !!(profile?.subscription_tier && profile?.subscription_status === 'active'),
-    planType: profile?.subscription_tier || null,
-    planStatus: profile?.subscription_status || null,
-    
-    // Search gating logic - NEW!
-    canSearch: !!(user && profile?.subscription_tier && profile?.subscription_status === 'active'),
-    
-    // TEMPORARY DEBUG LOGS - REMOVE AFTER TESTING
-    debug: {
-      user: !!user,
-      planType: profile?.subscription_tier,
-      planStatus: profile?.subscription_status,
-      canSearch: !!(user && profile?.subscription_tier && profile?.subscription_status === 'active')
-    },
-    
-    // TEMPORARY CONSOLE LOG FOR TESTING - REMOVE AFTER TESTING
-    _testCanSearch: (() => {
-      const canSearchValue = !!(user && profile?.subscription_tier && profile?.subscription_status === 'active')
-      console.log('🔍 AUTH CONTEXT TEST:', {
-        user: !!user,
-        planType: profile?.subscription_tier,
-        planStatus: profile?.subscription_status,
-        canSearch: canSearchValue
-      })
-      return canSearchValue
-    })(),
     
     // Actions
     signUp,
     signIn,
     signOut,
     resetPassword,
-    refreshProfile: () => fetchUserProfile(user?.id),
     
-    // User data helpers
-    userName: profile?.full_name || user?.email?.split('@')[0] || 'User',
+    // Basic user data (from auth, not profile)
     userEmail: user?.email,
-    subscriptionTier: profile?.subscription_tier || 'freebird',
-    dailySearchesUsed: profile?.daily_searches_used || 0,
-    searchLimit: profile?.subscription_tier === 'premium' ? 999999 : 20,
   }
 
   return (
