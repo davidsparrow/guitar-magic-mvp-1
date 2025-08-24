@@ -1687,7 +1687,7 @@ export default function Watch() {
   }
 
   // Handle saving captions
-  const handleSaveCaptions = () => {
+  const handleSaveCaptions = async () => {
     // Sort captions by start time
     const sortedCaptions = [...captions].sort((a, b) => {
       const aStart = timeToSeconds(a.startTime)
@@ -1808,14 +1808,53 @@ export default function Watch() {
     setConflictRowIndex(-1)
 
     // TODO: Save to Supabase
+    console.log('🔍 handleSaveCaptions: About to save captions to database')
+    console.log('🔍 Captions to save:', sortedCaptions)
     
-    
-    // Update local state with sorted captions
-    setCaptions(sortedCaptions)
-    
-    // Update the snapshot to reflect the new "saved" state
-    setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(sortedCaptions)))
-            // Updated snapshot after saving
+    try {
+      // Save all captions to database
+      const savePromises = []
+      
+      for (const caption of sortedCaptions) {
+        if (caption.id && caption.id !== Date.now()) {
+          // Existing caption - update if modified
+          console.log('🔍 Updating existing caption:', caption.id)
+          savePromises.push(updateCaption(caption.id, {
+            startTime: caption.startTime,
+            endTime: caption.endTime,
+            line1: caption.line1,
+            line2: caption.line2
+          }, user?.id, setIsLoadingCaptions, setDbError))
+        } else {
+          // New caption - save it
+          console.log('🔍 Saving new caption:', caption)
+          savePromises.push(saveCaption({
+            startTime: caption.startTime,
+            endTime: caption.endTime,
+            line1: caption.line1,
+            line2: caption.line2,
+            rowType: caption.rowType
+          }, videoId, user?.id, setIsLoadingCaptions, setDbError))
+        }
+      }
+      
+      // Wait for all database operations to complete
+      console.log('🔍 Waiting for', savePromises.length, 'database operations to complete')
+      const savedResults = await Promise.all(savePromises)
+      console.log('🔍 Database save results:', savedResults)
+      
+      // Update local state with saved captions (now with database IDs)
+      setCaptions(sortedCaptions)
+      
+      // Update the snapshot to reflect the new "saved" state
+      setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(sortedCaptions)))
+      console.log('✅ All captions saved to database successfully')
+      
+    } catch (error) {
+      console.error('❌ Error saving captions to database:', error)
+      setDbError('Failed to save captions to database')
+      return // Keep modal open if save fails
+    }
     
     // Close modal
     setShowCaptionModal(false)
