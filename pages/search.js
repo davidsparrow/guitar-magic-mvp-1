@@ -208,6 +208,25 @@ export default function Search() {
     }
   }, [mounted, user?.id])
 
+  // Restore cached search results after user authentication is complete
+  useEffect(() => {
+    if (mounted && user?.id && !loading && !hasSearched && searchResults.length === 0) {
+      console.log('🔐 User auth complete - checking for cached search results...')
+      
+      // Try to restore most recent cached search
+      const mostRecentCache = restoreMostRecentCachedSearch()
+      if (mostRecentCache) {
+        setSearchResults(mostRecentCache.results)
+        setHasSearched(true)
+        setNextPageToken(mostRecentCache.nextPageToken)
+        setSearchQuery(mostRecentCache.query)
+        console.log('✅ Cached search restored after auth completion:', mostRecentCache.query)
+      } else {
+        console.log('❌ No cached searches found after auth completion')
+      }
+    }
+  }, [mounted, user?.id, loading, hasSearched, searchResults.length])
+
   // Handle page visibility changes (browser back button, tab switching, etc.)
   useEffect(() => {
     const handleVisibilityChange = () => {
