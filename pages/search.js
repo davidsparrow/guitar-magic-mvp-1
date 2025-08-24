@@ -75,59 +75,29 @@ export default function Search() {
     
     try {
       localStorage.setItem(cacheKey, JSON.stringify(cacheData))
-      console.log('💾 Search results cached for:', query)
     } catch (error) {
       console.error('❌ Failed to cache search results:', error)
     }
   }
 
   const getSearchFromCache = (query) => {
-    console.log('🔍 GET SEARCH FROM CACHE CALLED:', {
-      query,
-      userId: user?.id,
-      hasUser: !!user?.id
-    })
-    
-    if (!user?.id) {
-      console.log('❌ No user ID, cannot get cache')
-      return null
-    }
+    if (!user?.id) return null
     
     const cacheKey = getSearchCacheKey(query)
-    console.log('🔑 Cache key generated:', cacheKey)
-    
-    if (!cacheKey) {
-      console.log('❌ No cache key generated')
-      return null
-    }
+    if (!cacheKey) return null
     
     try {
       const cached = localStorage.getItem(cacheKey)
-      console.log('📦 Raw cached data from localStorage:', cached ? 'EXISTS' : 'NOT FOUND')
-      
-      if (!cached) {
-        console.log('❌ No cached data found')
-        return null
-      }
+      if (!cached) return null
       
       const cacheData = JSON.parse(cached)
-      console.log('📋 Parsed cache data:', {
-        query: cacheData.query,
-        resultsCount: cacheData.results?.length || 0,
-        hasNextPageToken: !!cacheData.nextPageToken,
-        timestamp: new Date(cacheData.timestamp).toISOString(),
-        expiresAt: new Date(cacheData.expiresAt).toISOString(),
-        isExpired: Date.now() > cacheData.expiresAt
-      })
       
       // Check if cache is expired
       if (Date.now() > cacheData.expiresAt) {
         localStorage.removeItem(cacheKey)
-        console.log('🗑️ Expired cache removed for:', query)
         return null
       }
       
-      console.log('📋 Search results restored from cache for:', query)
       return cacheData
     } catch (error) {
       console.error('❌ Failed to read cache:', error)
@@ -148,7 +118,6 @@ export default function Search() {
             const cached = JSON.parse(localStorage.getItem(key))
             if (cached && now > cached.expiresAt) {
               localStorage.removeItem(key)
-              console.log('🗑️ Cleaned expired cache:', key)
             }
           } catch (e) {
             // Remove corrupted cache entries
@@ -184,12 +153,7 @@ export default function Search() {
         }
       })
       
-      if (mostRecentCache) {
-        console.log('🔄 Found most recent cached search:', mostRecentCache.query)
-        return mostRecentCache
-      }
-      
-      return null
+      return mostRecentCache
     } catch (error) {
       console.error('❌ Failed to find recent cache:', error)
       return null
@@ -211,8 +175,6 @@ export default function Search() {
   // Restore cached search results after user authentication is complete
   useEffect(() => {
     if (mounted && user?.id && !loading && !hasSearched && searchResults.length === 0) {
-      console.log('🔐 User auth complete - checking for cached search results...')
-      
       // Try to restore most recent cached search
       const mostRecentCache = restoreMostRecentCachedSearch()
       if (mostRecentCache) {
@@ -220,9 +182,6 @@ export default function Search() {
         setHasSearched(true)
         setNextPageToken(mostRecentCache.nextPageToken)
         setSearchQuery(mostRecentCache.query)
-        console.log('✅ Cached search restored after auth completion:', mostRecentCache.query)
-      } else {
-        console.log('❌ No cached searches found after auth completion')
       }
     }
   }, [mounted, user?.id, loading, hasSearched, searchResults.length])
@@ -230,36 +189,15 @@ export default function Search() {
   // Handle page visibility changes (browser back button, tab switching, etc.)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      console.log('👁️ VISIBILITY CHANGE EVENT FIRED:', {
-        visibilityState: document.visibilityState,
-        mounted,
-        userId: user?.id,
-        searchQuery,
-        hasSearched,
-        searchResultsLength: searchResults.length
-      })
-      
       if (document.visibilityState === 'visible' && mounted && user?.id) {
-        console.log('👁️ Page became visible - checking for cached search results...')
-        
         // If we have a search query but no results, try to restore from cache
         if (searchQuery && !hasSearched && searchResults.length === 0) {
-          console.log('🔍 Attempting to restore cached results for:', searchQuery)
           const cachedResults = getSearchFromCache(searchQuery)
           if (cachedResults) {
             setSearchResults(cachedResults.results)
             setHasSearched(true)
             setNextPageToken(cachedResults.nextPageToken)
-            console.log('✅ Cached results restored from page visibility change!')
-          } else {
-            console.log('❌ No cached results found for:', searchQuery)
           }
-        } else {
-          console.log('⚠️ Cache restoration conditions not met:', {
-            hasSearchQuery: !!searchQuery,
-            hasSearched,
-            searchResultsLength: searchResults.length
-          })
         }
       }
     }
@@ -269,78 +207,37 @@ export default function Search() {
     
     // Also check when the page becomes visible (browser back button)
     const handlePageShow = () => {
-      console.log('📱 PAGESHOW EVENT FIRED:', {
-        mounted,
-        userId: user?.id,
-        searchQuery,
-        hasSearched,
-        searchResultsLength: searchResults.length,
-        currentTime: new Date().toISOString()
-      })
-      
       if (mounted && user?.id) {
-        console.log('📱 Page show event - checking for cached search results...')
-        
         // First try to restore from current search query if it exists
         if (searchQuery && !hasSearched && searchResults.length === 0) {
-          console.log('🔍 Attempting to restore cached results for current query:', searchQuery)
           const cachedResults = getSearchFromCache(searchQuery)
           if (cachedResults) {
             setSearchResults(cachedResults.results)
             setHasSearched(true)
             setNextPageToken(cachedResults.nextPageToken)
-            console.log('✅ Cached results restored from current query!')
             return
           }
         }
         
         // If no current query or no results, try to restore most recent cached search
         if (!hasSearched && searchResults.length === 0) {
-          console.log('🔄 No current query, attempting to restore most recent cached search...')
           const mostRecentCache = restoreMostRecentCachedSearch()
           if (mostRecentCache) {
             setSearchResults(mostRecentCache.results)
             setHasSearched(true)
             setNextPageToken(mostRecentCache.nextPageToken)
             setSearchQuery(mostRecentCache.query)
-            console.log('✅ Most recent cached search restored:', mostRecentCache.query)
-          } else {
-            console.log('❌ No recent cached searches found')
           }
-        } else {
-          console.log('⚠️ Cache restoration conditions not met:', {
-            hasSearchQuery: !!searchQuery,
-            hasSearched,
-            searchResultsLength: searchResults.length
-          })
         }
-      } else {
-        console.log('⚠️ Page show event conditions not met:', {
-          mounted,
-          hasUser: !!user?.id
-        })
       }
     }
 
     // Listen for page show events (browser back button)
     window.addEventListener('pageshow', handlePageShow)
 
-    // Add focus event listener as backup
-    const handleFocus = () => {
-      console.log('🎯 WINDOW FOCUS EVENT FIRED:', {
-        mounted,
-        userId: user?.id,
-        searchQuery,
-        hasSearched,
-        searchResultsLength: searchResults.length
-      })
-    }
-    window.addEventListener('focus', handleFocus)
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pageshow', handlePageShow)
-      window.removeEventListener('focus', handleFocus)
     }
   }, [mounted, user?.id, searchQuery, hasSearched, searchResults.length])
 
