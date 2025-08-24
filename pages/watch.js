@@ -34,6 +34,16 @@ import {
   LoopConfigModal,
   CustomAlertModal
 } from '../components/CaptionModals'
+import {
+  saveUserDefaultCaptionDuration,
+  checkIfVideoFavorited,
+  removeFavorite,
+  loadCaptions,
+  saveCaption,
+  updateCaption,
+  deleteCaption,
+  addFavorite
+} from '../utils/CaptionDatabase'
 
 export default function Watch() {
 
@@ -124,26 +134,7 @@ export default function Watch() {
     }
   }
 
-  // Save user's default caption duration to database
-  const saveUserDefaultCaptionDuration = async (duration) => {
-    if (!user?.id) return
-    
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ default_caption_duration_seconds: duration })
-        .eq('id', user.id)
-      
-      if (error) {
-        console.error('Error saving default caption duration:', error)
-        return
-      }
-      
-      
-    } catch (error) {
-      console.error('Error saving default caption duration:', error)
-    }
-  }
+  // Save user's default caption duration to database - now imported from CaptionDatabase
 
 
     
@@ -283,111 +274,11 @@ export default function Watch() {
     }
   }
 
-  const loadCaptions = async (videoId) => {
-    try {
-      setIsLoadingCaptions(true)
-      setDbError(null)
-      
-      // First get the favorite record for this video
-      const { data: favoriteData, error: favoriteError } = await supabase
-        .from('favorites')
-        .select('id')
-        .eq('user_id', user?.id)
-        .eq('video_id', videoId)
-        .single()
-      
-      if (favoriteError) {
-        if (favoriteError.code === 'PGRST116') {
-          // No favorite found, return empty array
-          // No favorite found for video, no captions to load
-          return []
-        }
-        throw favoriteError
-      }
-      
-      // Now get captions for this favorite
-      const { data, error } = await supabase
-        .from('captions')
-        .select('*')
-        .eq('favorite_id', favoriteData.id)
-        .order('start_time', { ascending: true })
-      
-      if (error) throw error
-      
-      // Transform database field names to frontend field names
-      const transformedCaptions = (data || []).map(caption => ({
-        id: caption.id,
-        startTime: caption.start_time,
-        endTime: caption.end_time,
-        line1: caption.line1,
-        line2: caption.line2,
-        rowType: caption.row_type,
-        serial_number: caption.serial_number, // Add serial number field
-        favorite_id: caption.favorite_id,
-        user_id: caption.user_id,
-        created_at: caption.created_at,
-        updated_at: caption.updated_at
-      }))
-      
-      // Ensure all captions have serial numbers
-      const captionsWithSerialNumbers = assignSerialNumbersToCaptions(transformedCaptions)
-      
-      
-              // Transformed captions for frontend
-              // Captions with serial numbers
-      return captionsWithSerialNumbers
-    } catch (error) {
-      console.error('❌ Error loading captions:', error)
-      setDbError('Failed to load captions')
-      return []
-    } finally {
-      setIsLoadingCaptions(false)
-    }
-  }
+  // Load captions function - now imported from CaptionDatabase
 
-  const checkIfVideoFavorited = async (videoId) => {
-    try {
-      if (!user?.id || !videoId) return false
-      
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('video_id', videoId)
-        .single()
-      
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('❌ Error checking favorite status:', error)
-        return false
-      }
-      
-      return !!data // Convert to boolean
-    } catch (error) {
-      console.error('❌ Error checking favorite status:', error)
-      return false
-    }
-  }
+  // checkIfVideoFavorited function - now imported from CaptionDatabase
 
-  const removeFavorite = async (videoId) => {
-    try {
-      if (!user?.id || !videoId) return false
-      
-      const { error } = await supabase
-        .from('favorites')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('video_id', videoId)
-      
-      if (error) throw error
-      
-      
-      return true
-    } catch (error) {
-      console.error('❌ Error removing favorite:', error)
-      setDbError('Failed to remove favorite')
-      return false
-    }
-  }
+  // removeFavorite function - now imported from CaptionDatabase
 
 
 
@@ -1002,7 +893,7 @@ export default function Watch() {
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       if (videoId && user?.id) {
-        const isFavorited = await checkIfVideoFavorited(videoId)
+        const isFavorited = await checkIfVideoFavorited(videoId, user?.id)
         setIsVideoFavorited(isFavorited)
         // Favorite status checked
       }
@@ -1018,7 +909,7 @@ export default function Watch() {
       
       if (videoId && user?.id && isVideoFavorited) {
   
-        const videoCaptions = await loadCaptions(videoId)
+        const videoCaptions = await loadCaptions(videoId, user?.id, setIsLoadingCaptions, setDbError)
         
         setCaptions(videoCaptions)
         
@@ -1427,7 +1318,7 @@ export default function Watch() {
   // Handle unfavorite confirmation
   const handleUnfavoriteConfirm = async () => {
     try {
-      const removed = await removeFavorite(videoId)
+      const removed = await removeFavorite(videoId, user?.id)
       if (removed) {
         setIsVideoFavorited(false)
         setShowUnfavoriteWarning(false)
@@ -1531,7 +1422,7 @@ export default function Watch() {
             endTime: tempLoopEnd,
             line1: captionToUpdate.line1,
             line2: captionToUpdate.line2
-          })
+          }, user?.id, setIsLoadingCaptions, setDbError)
           
           if (updatedCaption) {
             // Update local state with database response
@@ -1831,7 +1722,7 @@ export default function Watch() {
     }
 
     // Save caption to database
-    const savedCaption = await saveCaption(newCaption)
+    const savedCaption = await saveCaption(newCaption, videoId, user?.id, setIsLoadingCaptions, setDbError)
     if (savedCaption) {
       // Add to local state with database ID
       setCaptions(prev => {
@@ -1997,7 +1888,7 @@ export default function Watch() {
                       endTime: caption.endTime,
                       line1: caption.line1,
                       line2: caption.line2
-                    }))
+                    }, user?.id, setIsLoadingCaptions, setDbError))
                   } else {
                     // New caption - save it
                     savePromises.push(saveCaption({
@@ -2006,7 +1897,7 @@ export default function Watch() {
                       line1: caption.line1,
                       line2: caption.line2,
                       rowType: caption.rowType
-                    }))
+                    }, videoId, user?.id, setIsLoadingCaptions, setDbError))
                   }
                 }
                 
@@ -2234,7 +2125,7 @@ export default function Watch() {
               // Delete all captions from database
               for (const caption of captions) {
                 if (caption.id) {
-                  await deleteCaption(caption.id)
+                  await deleteCaption(caption.id, user?.id, setIsLoadingCaptions, setDbError)
                 }
               }
               
@@ -2263,7 +2154,7 @@ export default function Watch() {
       try {
         const captionToDeleteObj = captions[captionToDelete]
         if (captionToDeleteObj?.id) {
-          const deleted = await deleteCaption(captionToDeleteObj.id)
+          const deleted = await deleteCaption(captionToDeleteObj.id, user?.id, setIsLoadingCaptions, setDbError)
           if (deleted) {
             const newCaptions = captions.filter((_, i) => i !== captionToDelete)
             setCaptions(newCaptions)
