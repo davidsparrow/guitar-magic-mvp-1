@@ -54,10 +54,97 @@ export default function Search() {
   // Plan Selection Alert State
   const [showPlanSelectionAlert, setShowPlanSelectionAlert] = useState(false)
 
+  // Search Cache Management Functions
+  const getSearchCacheKey = (query) => {
+    return user?.id ? `search_cache_${user.id}_${encodeURIComponent(query)}` : null
+  }
+
+  const saveSearchToCache = (query, results, nextPageToken) => {
+    if (!user?.id) return
+    
+    const cacheKey = getSearchCacheKey(query)
+    if (!cacheKey) return
+    
+    const cacheData = {
+      query,
+      results,
+      nextPageToken,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours TTL
+    }
+    
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData))
+      console.log('💾 Search results cached for:', query)
+    } catch (error) {
+      console.error('❌ Failed to cache search results:', error)
+    }
+  }
+
+  const getSearchFromCache = (query) => {
+    if (!user?.id) return null
+    
+    const cacheKey = getSearchCacheKey(query)
+    if (!cacheKey) return null
+    
+    try {
+      const cached = localStorage.getItem(cacheKey)
+      if (!cached) return null
+      
+      const cacheData = JSON.parse(cached)
+      
+      // Check if cache is expired
+      if (Date.now() > cacheData.expiresAt) {
+        localStorage.removeItem(cacheKey)
+        console.log('🗑️ Expired cache removed for:', query)
+        return null
+      }
+      
+      console.log('📋 Search results restored from cache for:', query)
+      return cacheData
+    } catch (error) {
+      console.error('❌ Failed to read cache:', error)
+      return null
+    }
+  }
+
+  const clearExpiredCache = () => {
+    if (!user?.id) return
+    
+    try {
+      const keys = Object.keys(localStorage)
+      const now = Date.now()
+      
+      keys.forEach(key => {
+        if (key.startsWith(`search_cache_${user.id}_`)) {
+          try {
+            const cached = JSON.parse(localStorage.getItem(key))
+            if (cached && now > cached.expiresAt) {
+              localStorage.removeItem(key)
+              console.log('🗑️ Cleaned expired cache:', key)
+            }
+          } catch (e) {
+            // Remove corrupted cache entries
+            localStorage.removeItem(key)
+          }
+        }
+      })
+    } catch (error) {
+      console.error('❌ Failed to clean cache:', error)
+    }
+  }
+
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Clean up expired cache on mount
+  useEffect(() => {
+    if (mounted && user?.id) {
+      clearExpiredCache()
+    }
+  }, [mounted, user?.id])
 
   // Auto-search when page loads with query parameter
   useEffect(() => {
@@ -128,6 +215,21 @@ export default function Search() {
       // Clear saved session and favorites when user logs out
       setSavedSession(null)
       setUserFavorites([])
+      
+      // Clear user's search cache when they log out
+      if (user?.id) {
+        try {
+          const keys = Object.keys(localStorage)
+          keys.forEach(key => {
+            if (key.startsWith(`search_cache_${user.id}_`)) {
+              localStorage.removeItem(key)
+              console.log('🗑️ Cleared search cache for logged out user')
+            }
+          })
+        } catch (error) {
+          console.error('❌ Failed to clear search cache:', error)
+        }
+      }
     }
   }, [isAuthenticated, user?.id, loading])
 
@@ -156,6 +258,18 @@ export default function Search() {
       return
     }
 
+    // For new searches (not load more), check cache first
+    if (!pageToken) {
+      const cachedResults = getSearchFromCache(searchQuery.trim())
+      if (cachedResults) {
+        setSearchResults(cachedResults.results)
+        setHasSearched(true)
+        setNextPageToken(cachedResults.nextPageToken)
+        console.log('🚀 Search results restored from cache - no API call needed!')
+        return
+      }
+    }
+
     if (pageToken) {
       setIsLoadingMore(true)
     } else {
@@ -177,6 +291,9 @@ export default function Search() {
         // Replace results for new search
         setSearchResults(results.videos)
         setHasSearched(true)
+        
+        // Save to cache for future use
+        saveSearchToCache(searchQuery.trim(), results.videos, results.nextPageToken)
       }
 
       setNextPageToken(results.nextPageToken)
@@ -200,6 +317,17 @@ export default function Search() {
       return
     }
 
+    // Check cache first
+    const cachedResults = getSearchFromCache(query)
+    if (cachedResults) {
+      setSearchResults(cachedResults.results)
+      setHasSearched(true)
+      setNextPageToken(cachedResults.nextPageToken)
+      setSearchQuery(query)
+      console.log('🚀 Search results restored from cache - no API call needed!')
+      return
+    }
+
     setIsSearching(true)
     setSearchError('')
 
@@ -213,6 +341,10 @@ export default function Search() {
       setSearchResults(results.videos)
       setHasSearched(true)
       setNextPageToken(results.nextPageToken)
+      setSearchQuery(query)
+
+      // Save to cache for future use
+      saveSearchToCache(query, results.videos, results.nextPageToken)
 
     } catch (error) {
       console.error('Search error:', error)
