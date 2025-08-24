@@ -1,6 +1,6 @@
 // components/admin/FeatureGates.js - Feature Gates Management Component
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase/client'
 
 export default function FeatureGates() {
   const [featureGates, setFeatureGates] = useState(null)
@@ -9,15 +9,26 @@ export default function FeatureGates() {
   const [message, setMessage] = useState('')
   const [editingFeature, setEditingFeature] = useState(null)
 
+  // Debug logging
+  console.log('🔍 FeatureGates: Component initialized')
+  console.log('🔍 FeatureGates: Supabase client status:', !!supabase)
+  console.log('🔍 FeatureGates: Environment check:', {
+    hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  })
+
   // Load feature gates from admin settings
   useEffect(() => {
+    console.log('🔍 FeatureGates: useEffect triggered, calling loadFeatureGates')
     loadFeatureGates()
   }, [])
 
   const loadFeatureGates = async () => {
     try {
+      console.log('🔍 FeatureGates: loadFeatureGates started')
       setLoading(true)
       
+      console.log('🔍 FeatureGates: Attempting to query admin_settings table')
       // Load feature gates
       const { data: featureGatesData, error: featureGatesError } = await supabase
         .from('admin_settings')
@@ -25,8 +36,11 @@ export default function FeatureGates() {
         .eq('setting_key', 'feature_gates')
         .single()
 
+      console.log('🔍 FeatureGates: Feature gates query result:', { data: featureGatesData, error: featureGatesError })
+      
       if (featureGatesError) throw featureGatesError
 
+      console.log('🔍 FeatureGates: Loading error messages')
       // Load error messages
       const { data: errorMessagesData, error: errorMessagesError } = await supabase
         .from('admin_settings')
@@ -38,18 +52,28 @@ export default function FeatureGates() {
         console.error('Error loading error messages:', errorMessagesError)
       }
 
+      console.log('🔍 FeatureGates: Error messages query result:', { data: errorMessagesData, error: errorMessagesError })
+
       // Combine both configurations
       const combinedConfig = {
         ...(featureGatesData?.setting_value || {}),
         error_messages: errorMessagesData?.setting_value || {}
       }
 
+      console.log('🔍 FeatureGates: Combined config created:', combinedConfig)
       setFeatureGates(combinedConfig)
+      console.log('🔍 FeatureGates: State updated successfully')
     } catch (error) {
-      console.error('Error loading feature gates:', error)
+      console.error('🔍 FeatureGates: ERROR in loadFeatureGates:', error)
+      console.error('🔍 FeatureGates: Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details
+      })
       setMessage('Error loading feature gates')
     } finally {
       setLoading(false)
+      console.log('🔍 FeatureGates: Loading completed')
     }
   }
 
