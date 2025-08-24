@@ -1,9 +1,9 @@
 // components/MenuModal.js - Standalone Menu Modal Component
 import { useState } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useUser } from '../contexts/UserContext'
 
 export default function MenuModal({ isOpen, onClose, onSupportClick }) {
-  const { user, profile } = useAuth()
+  const { user, profile } = useUser()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
 
