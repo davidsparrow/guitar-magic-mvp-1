@@ -161,6 +161,41 @@ export default function Search() {
     }
   }
 
+  // Find and restore the most recent cached search
+  const restoreMostRecentCachedSearch = () => {
+    if (!user?.id) return null
+    
+    try {
+      const keys = Object.keys(localStorage)
+      let mostRecentCache = null
+      let mostRecentTime = 0
+      
+      keys.forEach(key => {
+        if (key.startsWith(`search_cache_${user.id}_`)) {
+          try {
+            const cached = JSON.parse(localStorage.getItem(key))
+            if (cached && Date.now() <= cached.expiresAt && cached.timestamp > mostRecentTime) {
+              mostRecentCache = cached
+              mostRecentTime = cached.timestamp
+            }
+          } catch (e) {
+            // Skip corrupted cache entries
+          }
+        }
+      })
+      
+      if (mostRecentCache) {
+        console.log('🔄 Found most recent cached search:', mostRecentCache.query)
+        return mostRecentCache
+      }
+      
+      return null
+    } catch (error) {
+      console.error('❌ Failed to find recent cache:', error)
+      return null
+    }
+  }
+
   // Prevent hydration issues
   useEffect(() => {
     setMounted(true)
@@ -227,17 +262,31 @@ export default function Search() {
       if (mounted && user?.id) {
         console.log('📱 Page show event - checking for cached search results...')
         
-        // If we have a search query but no results, try to restore from cache
+        // First try to restore from current search query if it exists
         if (searchQuery && !hasSearched && searchResults.length === 0) {
-          console.log('🔍 Attempting to restore cached results for:', searchQuery)
+          console.log('🔍 Attempting to restore cached results for current query:', searchQuery)
           const cachedResults = getSearchFromCache(searchQuery)
           if (cachedResults) {
             setSearchResults(cachedResults.results)
             setHasSearched(true)
             setNextPageToken(cachedResults.nextPageToken)
-            console.log('✅ Cached results restored from page show event!')
+            console.log('✅ Cached results restored from current query!')
+            return
+          }
+        }
+        
+        // If no current query or no results, try to restore most recent cached search
+        if (!hasSearched && searchResults.length === 0) {
+          console.log('🔄 No current query, attempting to restore most recent cached search...')
+          const mostRecentCache = restoreMostRecentCachedSearch()
+          if (mostRecentCache) {
+            setSearchResults(mostRecentCache.results)
+            setHasSearched(true)
+            setNextPageToken(mostRecentCache.nextPageToken)
+            setSearchQuery(mostRecentCache.query)
+            console.log('✅ Most recent cached search restored:', mostRecentCache.query)
           } else {
-            console.log('❌ No cached results found for:', searchQuery)
+            console.log('❌ No recent cached searches found')
           }
         } else {
           console.log('⚠️ Cache restoration conditions not met:', {
