@@ -174,9 +174,16 @@ export default function Search() {
     }
   }, [mounted, user?.id])
 
-  // Restore cached search results after user authentication is complete
+  // Restore cached search results after user authentication is complete - BUT RESPECT SEARCH GATING!
   useEffect(() => {
     if (mounted && user?.id && !loading && !hasSearched && searchResults.length === 0) {
+      // Check if user can search before restoring cached results
+      if (!canSearch) {
+        console.log('🚨 Cache restoration blocked - user cannot search, showing PlanSelectionAlert')
+        setShowPlanSelectionAlert(true)
+        return
+      }
+      
       // Try to restore most recent cached search
       const mostRecentCache = restoreMostRecentCachedSearch()
       if (mostRecentCache) {
@@ -186,7 +193,7 @@ export default function Search() {
         setSearchQuery(mostRecentCache.query)
       }
     }
-  }, [mounted, user?.id, loading, hasSearched, searchResults.length])
+  }, [mounted, user?.id, loading, hasSearched, searchResults.length, canSearch])
 
   // Handle page visibility changes (browser back button, tab switching, etc.)
   useEffect(() => {
@@ -221,8 +228,15 @@ export default function Search() {
           }
         }
         
-        // If no current query or no results, try to restore most recent cached search
+        // If no current query or no results, try to restore most recent cached search - BUT RESPECT SEARCH GATING!
         if (!hasSearched && searchResults.length === 0) {
+          // Check if user can search before restoring cached results
+          if (!canSearch) {
+            console.log('🚨 Page show cache restoration blocked - user cannot search, showing PlanSelectionAlert')
+            setShowPlanSelectionAlert(true)
+            return
+          }
+          
           const mostRecentCache = restoreMostRecentCachedSearch()
           if (mostRecentCache) {
             setSearchResults(mostRecentCache.results)
