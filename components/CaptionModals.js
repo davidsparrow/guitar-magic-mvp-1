@@ -75,7 +75,9 @@ export const CaptionEditorModal = ({
   player,
   isPlayerReady,
   saveUserDefaultCaptionDuration,
-  originalCaptionsSnapshot
+  originalCaptionsSnapshot,
+  showCustomAlertModal,
+  hideCustomAlertModal
 }) => {
   // Local state to prevent jumping during start time editing
   const [editingStartTime, setEditingStartTime] = React.useState('')
@@ -144,7 +146,33 @@ export const CaptionEditorModal = ({
             
             {/* Cancel Button */}
             <button
-              onClick={handleCancelCaptions}
+              onClick={() => {
+                // Show confirmation modal with same message as Footer CANCEL button
+                if (showCustomAlertModal) {
+                  showCustomAlertModal(
+                    'Cancelling reverts all changes. Proceed?',
+                    [
+                      { 
+                        text: 'PROCEED', 
+                        action: () => {
+                          handleCancelCaptions()
+                          if (hideCustomAlertModal) {
+                            hideCustomAlertModal()
+                          }
+                        }
+                      },
+                      { text: 'KEEP EDITING', action: () => {
+                        if (hideCustomAlertModal) {
+                          hideCustomAlertModal()
+                        }
+                      }}
+                    ]
+                  )
+                } else {
+                  // Fallback to direct cancel if modal function not available
+                  handleCancelCaptions()
+                }
+              }}
               className="w-[95px] px-3 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors text-sm flex items-center justify-center space-x-1"
               title="Cancel and revert all changes"
             >
