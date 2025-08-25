@@ -34,6 +34,14 @@ import {
   calculateSmartCaptionDuration
 } from '../utils/captionUtils'
 import {
+  loadYouTubeIframeAPI,
+  initializeYouTubePlayer,
+  setupYouTubeAPIReadyCallback,
+  handlePlayerStateChange,
+  handleYouTubeAPIError,
+  isPlayerReady
+} from '../utils/videoPlayerUtils'
+import {
   DeleteConfirmModal,
   CaptionEditorModal,
   LoopConfigModal,
@@ -592,98 +600,68 @@ export default function Watch() {
   // Load YouTube API script
   useEffect(() => {
     if (mounted && !window.YT) {
-      // Loading YouTube iframe API
+      // Loading YouTube iframe API using utility function
       setYoutubeAPILoading(true)
       setYoutubeAPIError(false)
       
-      const tag = document.createElement('script')
-      tag.src = 'https://www.youtube.com/iframe_api'
-      
-      // Add more detailed error handling
-      tag.onerror = (error) => {
-        console.error('❌ Failed to load YouTube iframe API:', error)
-        console.error('❌ Error details:', { 
-          error: error.message, 
-          type: error.type,
-          target: tag.src 
-        })
-        setYoutubeAPILoading(false)
-        setYoutubeAPIError(true)
-        handleYouTubeAPIError()
-      }
-      
-      tag.onload = () => {
-
-        setYoutubeAPILoading(false)
-      }
-      
-      // Add timeout to detect hanging script loading
-      const timeoutId = setTimeout(() => {
-        if (!window.YT) {
-          console.error('⏰ YouTube API script loading timeout - script may be hanging')
+      const { cleanup } = loadYouTubeIframeAPI({
+        onLoad: () => {
+          setYoutubeAPILoading(false)
+        },
+        onError: () => {
+          setYoutubeAPILoading(false)
+          setYoutubeAPIError(true)
+          handleYouTubeAPIError(() => {
+            // Could show a retry button or fallback message
+          })
+        },
+        onTimeout: () => {
           setYoutubeAPILoading(false)
           setYoutubeAPIError(true)
         }
-      }, 10000) // 10 second timeout
+      })
       
-      const firstScriptTag = document.getElementsByTagName('script')[0]
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
-      
-      // Cleanup timeout if script loads successfully
-      if (window.YT) {
-        clearTimeout(timeoutId)
-      }
+      // Cleanup function for component unmount
+      return cleanup
     } else if (mounted && window.YT) {
-      
+      // API already loaded
     }
   }, [mounted])
 
   // Initialize YouTube player when API is ready
   useEffect(() => {
     if (mounted && videoId) {
-      // Initializing YouTube player for video
+      // Initializing YouTube player for video using utility function
       
       const initPlayer = () => {
-        if (window.YT && window.YT.Player) {
-  
-          const newPlayer = new window.YT.Player('youtube-player', {
-            height: '100%',
-            width: '100%',
-            videoId: videoId,
-            playerVars: {
-              controls: 1,
-              modestbranding: 1,
-              rel: 0,
-              showinfo: 0,
-              fs: 0, // Disable YouTube's fullscreen button
-              origin: window.location.origin
-            },
-            events: {
-              onReady: (event) => handleVideoReady(event, newPlayer),
-              onStateChange: (event) => handlePlayerStateChange(event),
-              onError: handleVideoError
+        const newPlayer = initializeYouTubePlayer({
+          videoId: videoId,
+          containerId: 'youtube-player',
+          onReady: (event, playerInstance) => handleVideoReady(event, playerInstance),
+          onStateChange: (event) => handlePlayerStateChange(event, {
+            onPause: (event) => {
+              // Save session data for Login-Resume functionality when user pauses
+              if (user?.id && profile?.subscription_tier !== 'freebird') {
+                // Use the ref for immediate access to the player instance
+                if (playerRef.current && playerRef.current.getPlayerState && typeof playerRef.current.getPlayerState === 'function') {
+                  saveSessionOnPause()
+                }
+              }
             }
-          })
-          
+          }),
+          onError: (event) => handleVideoError(event)
+        })
+        
+        if (newPlayer) {
           // Store the player reference for later use
           // Player created, waiting for onReady event
         } else {
-
+          // Player initialization failed
         }
       }
 
-      // Check if API is already loaded
-      if (window.YT && window.YT.Player) {
-
-        initPlayer()
-      } else {
-        // Wait for API to be ready
-        // Setting up YouTube API ready callback
-        window.onYouTubeIframeAPIReady = () => {
-                      // YouTube API ready callback triggered
-          initPlayer()
-        }
-      }
+      // Use utility function to handle API ready callback
+      setupYouTubeAPIReadyCallback(initPlayer)
     }
   }, [mounted, videoId])
 
@@ -802,7 +780,7 @@ export default function Watch() {
     // Track execution count
     useEffect.executionCount = (useEffect.executionCount || 0) + 1
     
-    if (!player || !isPlayerReady() || !user?.id || !videoId || !videoChannel) {
+    if (!player || !isPlayerReady(player) || !user?.id || !videoId || !videoChannel) {
       // Watch time tracking paused - conditions not met
       return
     }
@@ -810,7 +788,7 @@ export default function Watch() {
     // Set up polling to check player state
     const checkPlayerState = () => {
       try {
-        if (!player || !isPlayerReady()) return
+        if (!player || !isPlayerReady(player)) return
         
         const playerState = player.getPlayerState()
         // Player state check
@@ -963,52 +941,15 @@ export default function Watch() {
 
 
 
-  // Handle YouTube player state changes - Global event handler for all play/pause actions
-  const handlePlayerStateChange = (event) => {
-            // YouTube player state changed
-    
-    // YouTube player states:
-    // -1: UNSTARTED, 0: ENDED, 1: PLAYING, 2: PAUSED, 3: BUFFERING, 5: CUED
-    
-    // Log state changes for debugging (watch time tracking still works)
-    if (event.data === 1) { // PLAYING
-                // Video started playing
-    } else if (event.data === 2) { // PAUSED
-                // Video paused
-      
-      // Save session data for Login-Resume functionality when user pauses
-      
-      if (user?.id && profile?.subscription_tier !== 'freebird') {
 
-        
-        // Use the ref for immediate access to the player instance
-        if (playerRef.current && playerRef.current.getPlayerState && typeof playerRef.current.getPlayerState === 'function') {
-  
-          saveSessionOnPause()
-        } else {
-  
-        }
-      } else {
-        // Save conditions NOT met - session save blocked
-      }
-    } else if (event.data === 3) { // BUFFERING
-              // Video buffering
-    } else if (event.data === 5) { // CUED
-              // Video cued
-    }
-  }
 
-  // Handle YouTube API loading errors
-  const handleYouTubeAPIError = () => {
-    console.error('❌ YouTube API failed to load')
-    // Could show a retry button or fallback message
-  }
+
 
   // Handle keyboard shortcuts for video control
   useEffect(() => {
     const handleKeyPress = (e) => {
       // Spacebar for play/pause
-      if (e.code === 'Space' && isPlayerReady()) {
+      if (e.code === 'Space' && isPlayerReady(player)) {
         // Check if any input field is currently focused - disable video control if so
         if (document.activeElement && 
             (document.activeElement.tagName === 'INPUT' || 
@@ -1082,20 +1023,7 @@ export default function Watch() {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [player, isVideoReady, isFullscreen])
 
-  // Check if player is fully ready with all methods available
-  const isPlayerReady = () => {
-    const result = player && 
-           player.getPlayerState && 
-           typeof player.getPlayerState === 'function' &&
-           player.playVideo && 
-           typeof player.playVideo === 'function' &&
-           player.pauseVideo && 
-           typeof player.pauseVideo === 'function'
-    
 
-    
-    return result
-  }
 
   // Check if user can access loop functionality
   const canAccessLoops = () => {
@@ -1426,7 +1354,7 @@ export default function Watch() {
 
     // Get current video time
     let currentTime = 0
-    if (player && isPlayerReady()) {
+    if (player && isPlayerReady(player)) {
       try {
         currentTime = Math.floor(player.getCurrentTime())
       } catch (error) {
@@ -1707,7 +1635,7 @@ export default function Watch() {
     
     // Get video duration for validation (Rule 6)
     let videoDurationSeconds = 0
-    if (player && isPlayerReady()) {
+    if (player && isPlayerReady(player)) {
       try {
         videoDurationSeconds = Math.floor(player.getDuration())
         console.log('🔍 Video duration from player:', videoDurationSeconds, 'seconds')
@@ -2149,7 +2077,7 @@ export default function Watch() {
 
   // Check if video should loop (runs every second when loop is active)
   useEffect(() => {
-    if (!isLoopActive || !player || !isPlayerReady()) return
+    if (!isLoopActive || !player || !isPlayerReady(player)) return
 
     const loopInterval = setInterval(() => {
       try {
@@ -2199,7 +2127,7 @@ export default function Watch() {
 
   // Effect to update displayed caption based on video time
   useEffect(() => {
-    if (!player || !isPlayerReady() || captions.length === 0) return
+    if (!player || !isPlayerReady(player) || captions.length === 0) return
 
     const captionUpdateInterval = setInterval(() => {
       try {
