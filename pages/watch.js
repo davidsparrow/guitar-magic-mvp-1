@@ -1848,132 +1848,76 @@ export default function Watch() {
       const originalCaption = captions[captionIndex]
       if (!originalCaption) return
       
-      // Check if this is the last caption in the list
-      const isLastCaption = captionIndex === captions.length - 1
+      // Check if there's enough space before duplicating ANY caption
+      const sortedCaptionsForCheck = [...captions].sort((a, b) => {
+        const timeA = parseTimeToSeconds(a.startTime)
+        const timeB = parseTimeToSeconds(b.startTime)
+        return timeA - timeB
+      })
       
-      if (isLastCaption) {
-        // Special behavior for last caption: simple duplicate with user-preferred duration
-        const originalEndTime = parseTimeToSeconds(originalCaption.endTime)
-        const newStartTime = originalEndTime
-        let newEndTime = originalEndTime + (userDefaultCaptionDuration || 10)
+      const currentCaptionIndex = sortedCaptionsForCheck.findIndex(c => c.id === originalCaption.id)
+      const nextCaption = sortedCaptionsForCheck[currentCaptionIndex + 1]
+      
+      if (nextCaption) {
+        // Calculate available space between current caption end and next caption start
+        const currentCaptionEndTime = parseTimeToSeconds(originalCaption.endTime)
+        const nextCaptionStartTime = parseTimeToSeconds(nextCaption.startTime)
+        const availableSpace = nextCaptionStartTime - currentCaptionEndTime
+        const requiredSpace = userDefaultCaptionDuration || 10
         
-        // Use utility function for smart duration calculation and video length validation
-        const { startTime: calculatedStartTime, endTime: calculatedEndTime, wasTrimmed, reason } = calculateSmartCaptionDuration(
-          newStartTime,
-          captions,
-          userDefaultCaptionDuration,
-          getVideoDuration()
-        )
-        
-        // Update the calculated end time
-        newEndTime = calculatedEndTime
-        
-        const duplicateCaption = {
-          ...originalCaption,
-          id: null, // Will get new ID when saved
-          startTime: formatSecondsToTime(newStartTime), // Start where original ends
-          endTime: formatSecondsToTime(newEndTime), // Add user-preferred duration
-          serial_number: null // Will be assigned by database
+        if (availableSpace < requiredSpace) {
+          // NOT ENOUGH SPACE - Show alert and don't duplicate
+          showCustomAlertModal(
+            `New caption cannot be created because there is less than ${requiredSpace} seconds of space before next caption.`,
+            [
+              { text: 'OK', action: hideCustomAlertModal }
+            ]
+          )
+          return // Exit function, don't duplicate
         }
-        
-        // Add duplicate caption without modifying original
-        const newCaptions = [...captions, duplicateCaption]
-        
-        // Sort by start time and reassign serial numbers
-        const sortedCaptions = newCaptions.sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.startTime)
-          const timeB = parseTimeToSeconds(b.startTime)
-          return timeA - timeB
-        }).map((caption, index) => ({
-          ...caption,
-          serial_number: index + 1
-        }))
-        
-        // Update state with sorted captions and new serial numbers
-        setCaptions(sortedCaptions)
-        
-        // Last caption duplicated with extension
-      } else {
-        // NEW LOGIC: Check if there's enough space before duplicating middle captions
-        
-        // Find the next caption by start time
-        const sortedCaptionsForCheck = [...captions].sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.startTime)
-          const timeB = parseTimeToSeconds(b.startTime)
-          return timeA - timeB
-        })
-        
-        const currentCaptionIndex = sortedCaptionsForCheck.findIndex(c => c.id === originalCaption.id)
-        const nextCaption = sortedCaptionsForCheck[currentCaptionIndex + 1]
-        
-        if (nextCaption) {
-          // Calculate available space between current caption end and next caption start
-          const currentCaptionEndTime = parseTimeToSeconds(originalCaption.endTime)
-          const nextCaptionStartTime = parseTimeToSeconds(nextCaption.startTime)
-          const availableSpace = nextCaptionStartTime - currentCaptionEndTime
-          const requiredSpace = userDefaultCaptionDuration || 10
-          
-  
-          
-          if (availableSpace < requiredSpace) {
-            // NOT ENOUGH SPACE - Show alert and don't duplicate
-            showCustomAlertModal(
-              `New caption cannot be created because there is less than ${requiredSpace} seconds of space before next caption.`,
-              [
-                { text: 'OK', action: hideCustomAlertModal }
-              ]
-            )
-            // Not enough space to duplicate
-            return // Exit function, don't duplicate
-          }
-        }
-        
-        // ENOUGH SPACE - Proceed with normal duplication
-        // Calculate original duration
-        const startTime = parseTimeToSeconds(originalCaption.startTime)
-        const endTime = parseTimeToSeconds(originalCaption.endTime)
-        const originalDuration = endTime - startTime
-        
-        // Step 3a: Modify original caption - reduce duration by 50%
-        const newOriginalEndTime = startTime + (originalDuration / 2)
-        const newOriginalEndTimeFormatted = formatSecondsToTime(newOriginalEndTime)
-        
-        // Step 3b: Create duplicate caption
-        const duplicateCaption = {
-          ...originalCaption,
-          id: null, // Will get new ID when saved
-          startTime: newOriginalEndTimeFormatted, // Start where original now ends
-          endTime: originalCaption.endTime, // Keep original end time
-          serial_number: null // Will be assigned by database
-        }
-        
-        // Update original caption with new end time
-        const newCaptions = [...captions]
-        newCaptions[captionIndex] = {
-          ...newCaptions[captionIndex],
-          endTime: newOriginalEndTimeFormatted
-        }
-        
-        // Add duplicate caption
-        newCaptions.push(duplicateCaption)
-        
-        // Sort by start time and reassign serial numbers
-        const sortedCaptions = newCaptions.sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.startTime)
-          const timeB = parseTimeToSeconds(b.startTime)
-          return timeA - timeB
-        }).map((caption, index) => ({
-          ...caption,
-          serial_number: index + 1
-        }))
-        
-        // Update state with sorted captions and new serial numbers
-        setCaptions(sortedCaptions)
-        
-        // Caption duplicated successfully with refreshed serial numbers
       }
       
-      // TODO: Maintain user focus on duplicate record
+      // ENOUGH SPACE - Use consistent duplication logic for ALL captions
+      const originalEndTime = parseTimeToSeconds(originalCaption.endTime)
+      const newStartTime = originalEndTime
+      let newEndTime = originalEndTime + (userDefaultCaptionDuration || 10)
+      
+      // Use utility function for smart duration calculation and video length validation
+      const { startTime: calculatedStartTime, endTime: calculatedEndTime, wasTrimmed, reason } = calculateSmartCaptionDuration(
+        newStartTime,
+        captions,
+        userDefaultCaptionDuration,
+        getVideoDuration()
+      )
+      
+      // Update the calculated end time
+      newEndTime = calculatedEndTime
+      
+      const duplicateCaption = {
+        ...originalCaption,
+        id: null, // Will get new ID when saved
+        startTime: formatSecondsToTime(newStartTime), // Start where original ends
+        endTime: formatSecondsToTime(newEndTime), // Add user-preferred duration
+        serial_number: null // Will be assigned by database
+      }
+      
+      // Add duplicate caption WITHOUT modifying original caption
+      const newCaptions = [...captions, duplicateCaption]
+      
+      // Sort by start time and reassign serial numbers
+      const sortedCaptions = newCaptions.sort((a, b) => {
+        const timeA = parseTimeToSeconds(a.startTime)
+        const timeB = parseTimeToSeconds(b.startTime)
+        return timeA - timeB
+      }).map((caption, index) => ({
+        ...caption,
+        serial_number: index + 1
+      }))
+      
+      // Update state with sorted captions and new serial numbers
+      setCaptions(sortedCaptions)
+      
+      // Caption duplicated successfully with consistent logic
       
     } catch (error) {
       console.error('❌ Error duplicating caption:', error)
