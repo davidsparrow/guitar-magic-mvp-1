@@ -233,6 +233,13 @@ export const CaptionEditorModal = ({
                         onChange={(e) => {
                           const newValue = e.target.value
                           
+                          // Allow empty field for clearing
+                          if (newValue === '') {
+                            setEditingStartTime('')
+                            setEditingStartTimeIndex(index)
+                            return
+                          }
+                          
                           // Check for any non-numeric characters (except colons)
                           if (/[^0-9:]/.test(newValue)) {
                             console.log(`⚠️  Invalid character detected: ${newValue}, reverting caption #${index + 1}`)
@@ -246,55 +253,54 @@ export const CaptionEditorModal = ({
                             return
                           }
                           
-                          // Validate time format (M:SS or H:MM:SS)
-                          if (newValue && !/^(\d{1,2}:)?(\d{1,2}:)?\d{1,2}$/.test(newValue)) {
-                            console.log(`⚠️  Invalid time format: ${newValue}, reverting caption #${index + 1}`)
-                            // Find original value from snapshot
-                            const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
-                            const originalValue = originalCaption?.startTime || caption.startTime
-                            console.log(`🔍 Original start time: ${originalValue}`)
-                            // Revert to original value
-                            setEditingStartTime(originalValue)
-                            console.log(`✅ Reverted to original value: ${originalValue}`)
+                          // Allow intermediate states while building time value
+                          // Examples: "1", "1:", "1:3", "1:30", "1:3:", "1:30:4", "1:30:45"
+                          if (/^(\d{1,2}:)*\d{0,2}$/.test(newValue)) {
+                            setEditingStartTime(newValue)
+                            setEditingStartTimeIndex(index)
                             return
                           }
                           
-                          // Validate time segments if format is correct
-                          if (newValue && /^(\d{1,2}:)?(\d{1,2}:)?\d{1,2}$/.test(newValue)) {
-                            const segments = newValue.split(':')
-                            const hasHours = segments.length === 3
-                            const hasMinutes = segments.length >= 2
-                            
-                            // Validate minutes (0-59)
-                            if (hasMinutes && (parseInt(segments[segments.length - 2]) > 59 || parseInt(segments[segments.length - 2]) < 0)) {
-                              console.log(`⚠️  Invalid minutes: ${segments[segments.length - 2]}, reverting caption #${index + 1}`)
-                              const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
-                              const originalValue = originalCaption?.startTime || caption.startTime
-                              setEditingStartTime(originalValue)
-                              return
-                            }
-                            
-                            // Validate seconds (0-59)
-                            if (parseInt(segments[segments.length - 1]) > 59 || parseInt(segments[segments.length - 1]) < 0) {
-                              console.log(`⚠️  Invalid seconds: ${segments[segments.length - 1]}, reverting caption #${index + 1}`)
-                              const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
-                              const originalValue = originalCaption?.startTime || caption.startTime
-                              setEditingStartTime(originalValue)
-                              return
-                            }
-                          }
-                          
-                          setEditingStartTime(newValue)
-                          setEditingStartTimeIndex(index)
+                          // If we get here, the format is invalid - revert
+                          console.log(`⚠️  Invalid time format: ${newValue}, reverting caption #${index + 1}`)
+                          const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
+                          const originalValue = originalCaption?.startTime || caption.startTime
+                          setEditingStartTime(originalValue)
                         }}
                         onFocus={() => {
                           setEditingStartTime(caption.startTime)
                           setEditingStartTimeIndex(index)
                         }}
                         onBlur={() => {
-                          // Update the actual caption when user exits field
+                          // Auto-correct incomplete time entries
+                          let finalValue = editingStartTime
+                          
+                          if (finalValue) {
+                            // Rule 1: M:S → M:S0 (add trailing zero to seconds)
+                            if (/^\d{1,2}:\d$/.test(finalValue)) {
+                              finalValue = finalValue + '0'
+                              console.log(`🔧 Auto-corrected: ${editingStartTime} → ${finalValue}`)
+                            }
+                            
+                            // Rule 2: H:M:SS → H:0M:SS (add leading zero to minutes)
+                            if (/^\d{1,2}:\d:\d{2}$/.test(finalValue)) {
+                              const segments = finalValue.split(':')
+                              if (segments[1].length === 1) {
+                                finalValue = `${segments[0]}:0${segments[1]}:${segments[2]}`
+                                console.log(`🔧 Auto-corrected: ${editingStartTime} → ${finalValue}`)
+                              }
+                            }
+                            
+                            // Rule 3: H:MM:S → H:MM:S0 (add trailing zero to seconds in H:MM:SS)
+                            if (/^\d{1,2}:\d{2}:\d$/.test(finalValue)) {
+                              finalValue = finalValue + '0'
+                              console.log(`🔧 Auto-corrected: ${editingStartTime} → ${finalValue}`)
+                            }
+                          }
+                          
+                          // Update the actual caption with corrected value
                           const newCaptions = [...captions]
-                          newCaptions[index].startTime = editingStartTime
+                          newCaptions[index].startTime = finalValue
                           setCaptions(newCaptions)
                           // Reset local state
                           setEditingStartTime('')
@@ -310,6 +316,14 @@ export const CaptionEditorModal = ({
                         onChange={(e) => {
                           const newValue = e.target.value
                           
+                          // Allow empty field for clearing
+                          if (newValue === '') {
+                            const newCaptions = [...captions]
+                            newCaptions[index].endTime = ''
+                            setCaptions(newCaptions)
+                            return
+                          }
+                          
                           // Check for any non-numeric characters (except colons)
                           if (/[^0-9:]/.test(newValue)) {
                             console.log(`⚠️  Invalid character detected in end time: ${newValue}, reverting caption #${index + 1}`)
@@ -324,53 +338,56 @@ export const CaptionEditorModal = ({
                             return
                           }
                           
-                          // Validate time format (M:SS or H:MM:SS)
-                          if (newValue && !/^(\d{1,2}:)?(\d{1,2}:)?\d{1,2}$/.test(newValue)) {
-                            console.log(`⚠️  Invalid time format in end time: ${newValue}, reverting caption #${index + 1}`)
-                            // Find original value from snapshot
-                            const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
-                            const originalValue = originalCaption?.endTime || caption.endTime
-                            console.log(`🔍 Original end time: ${originalValue}`)
-                            // Revert to original value
+                          // Allow intermediate states while building time value
+                          // Examples: "1", "1:", "1:3", "1:30", "1:3:", "1:30:4", "1:30:45"
+                          if (/^(\d{1,2}:)*\d{0,2}$/.test(newValue)) {
                             const newCaptions = [...captions]
-                            newCaptions[index].endTime = originalValue
+                            newCaptions[index].endTime = newValue
                             setCaptions(newCaptions)
                             return
                           }
                           
-                          // Validate time segments if format is correct
-                          if (newValue && /^(\d{1,2}:)?(\d{1,2}:)?\d{1,2}$/.test(newValue)) {
-                            const segments = newValue.split(':')
-                            const hasHours = segments.length === 3
-                            const hasMinutes = segments.length >= 2
-                            
-                            // Validate minutes (0-59)
-                            if (hasMinutes && (parseInt(segments[segments.length - 2]) > 59 || parseInt(segments[segments.length - 2]) < 0)) {
-                              console.log(`⚠️  Invalid minutes in end time: ${segments[segments.length - 2]}, reverting caption #${index + 1}`)
-                              const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
-                              const originalValue = originalCaption?.endTime || caption.endTime
-                              const newCaptions = [...captions]
-                              newCaptions[index].endTime = originalValue
-                              setCaptions(newCaptions)
-                              return
+                          // If we get here, the format is invalid - revert
+                          console.log(`⚠️  Invalid time format in end time: ${newValue}, reverting caption #${index + 1}`)
+                          const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
+                          const originalValue = originalCaption?.endTime || caption.endTime
+                          const newCaptions = [...captions]
+                          newCaptions[index].endTime = originalValue
+                          setCaptions(newCaptions)
+                        }}
+                        onBlur={() => {
+                          // Auto-correct incomplete time entries for end time
+                          let finalValue = caption.endTime
+                          
+                          if (finalValue) {
+                            // Rule 1: M:S → M:S0 (add trailing zero to seconds)
+                            if (/^\d{1,2}:\d$/.test(finalValue)) {
+                              finalValue = finalValue + '0'
+                              console.log(`🔧 Auto-corrected end time: ${caption.endTime} → ${finalValue}`)
                             }
                             
-                            // Validate seconds (0-59)
-                            if (parseInt(segments[segments.length - 1]) > 59 || parseInt(segments[segments.length - 1]) < 0) {
-                              console.log(`⚠️  Invalid seconds in end time: ${segments[segments.length - 1]}, reverting caption #${index + 1}`)
-                              const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
-                              const originalValue = originalCaption?.endTime || caption.endTime
-                              const newCaptions = [...captions]
-                              newCaptions[index].endTime = originalValue
-                              setCaptions(newCaptions)
-                              return
+                            // Rule 2: H:M:SS → H:0M:SS (add leading zero to minutes)
+                            if (/^\d{1,2}:\d:\d{2}$/.test(finalValue)) {
+                              const segments = finalValue.split(':')
+                              if (segments[1].length === 1) {
+                                finalValue = `${segments[0]}:0${segments[1]}:${segments[2]}`
+                                console.log(`🔧 Auto-corrected end time: ${caption.endTime} → ${finalValue}`)
+                              }
+                            }
+                            
+                            // Rule 3: H:MM:S → H:MM:S0 (add trailing zero to seconds in H:MM:SS)
+                            if (/^\d{1,2}:\d{2}:\d$/.test(finalValue)) {
+                              finalValue = finalValue + '0'
+                              console.log(`🔧 Auto-corrected end time: ${caption.endTime} → ${finalValue}`)
                             }
                           }
                           
-                          // If all validation passes, update the caption
-                          const newCaptions = [...captions]
-                          newCaptions[index].endTime = newValue
-                          setCaptions(newCaptions)
+                          // Update the actual caption with corrected value
+                          if (finalValue !== caption.endTime) {
+                            const newCaptions = [...captions]
+                            newCaptions[index].endTime = finalValue
+                            setCaptions(newCaptions)
+                          }
                         }}
                         className="w-16 px-2 py-1 text-xs bg-transparent text-blue-400 border border-white/20 focus:border-blue-400 focus:outline-none rounded"
                         placeholder="End"

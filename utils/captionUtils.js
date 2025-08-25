@@ -126,27 +126,38 @@ export const autoResolveCaptionConflicts = (captionsArray) => {
 }
 
 /**
- * Validates that time string follows XX:XX format (MM:SS)
+ * Validates that time string follows XX:XX format (MM:SS) or H:MM:SS format
  * @param {string} timeString - Time string to validate
- * @returns {boolean} True if valid XX:XX format
+ * @returns {boolean} True if valid MM:SS or H:MM:SS format
  */
 export const isValidXXFormat = (timeString) => {
   if (!timeString || typeof timeString !== 'string') return false
   
-  // Must be exactly MM:SS format
+  // Must be exactly MM:SS format (2 parts) or H:MM:SS format (3 parts)
   const parts = timeString.split(':')
-  if (parts.length !== 2) return false
+  if (parts.length !== 2 && parts.length !== 3) return false
   
   // Check each part is a valid number
   for (const part of parts) {
     if (!/^\d+$/.test(part)) return false
   }
   
-  const minutes = parseInt(parts[0])
-  const seconds = parseInt(parts[1])
-  
-  // Must be non-negative and seconds < 60
-  return minutes >= 0 && seconds >= 0 && seconds < 60
+  if (parts.length === 2) {
+    // MM:SS format validation
+    const minutes = parseInt(parts[0])
+    const seconds = parseInt(parts[1])
+    
+    // Must be non-negative and seconds < 60
+    return minutes >= 0 && seconds >= 0 && seconds < 60
+  } else {
+    // H:MM:SS format validation
+    const hours = parseInt(parts[0])
+    const minutes = parseInt(parts[1])
+    const seconds = parseInt(parts[2])
+    
+    // Must be non-negative, minutes < 60, seconds < 60
+    return hours >= 0 && minutes >= 0 && minutes < 60 && seconds >= 0 && seconds < 60
+  }
 }
 
 /**
@@ -160,8 +171,8 @@ export const validateMinimumStartTime = (startTime) => {
     return {
       isValid: false,
       rule: 5,
-      reason: `Start time (${startTime}) must be in MM:SS format (e.g., 0:00, 1:30)`,
-      suggestion: `Enter time in MM:SS format (e.g., 0:00, 1:30)`
+      reason: `Start time (${startTime}) must be in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`,
+      suggestion: `Enter time in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`
     }
   }
   
@@ -191,8 +202,8 @@ export const validateMaximumEndTime = (endTime, videoDurationSeconds) => {
     return {
       isValid: false,
       rule: 6,
-      reason: `End time (${endTime}) must be in MM:SS format (e.g., 0:00, 1:30)`,
-      suggestion: `Enter time in MM:SS format (e.g., 0:00, 1:30)`
+      reason: `End time (${endTime}) must be in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`,
+      suggestion: `Enter time in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`
     }
   }
   
@@ -230,8 +241,8 @@ export const validateTimeNotInOtherCaptionRange = (timePoint, captionIndex, allC
     return {
       isValid: false,
       rule,
-      reason: `${timeTypeText} time (${timePoint}) must be in MM:SS format (e.g., 0:00, 1:30)`,
-      suggestion: `Enter time in MM:SS format (e.g., 0:00, 1:30)`
+      reason: `${timeTypeText} time (${timePoint}) must be in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`,
+      suggestion: `Enter time in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`
     }
   }
   
@@ -294,8 +305,8 @@ export const validateRangeNotContainingNextCaption = (newStartTime, newEndTime, 
     return {
       isValid: false,
       rule: 3,
-      reason: `Time values must be in MM:SS format (e.g., 0:00, 1:30)`,
-      suggestion: `Enter times in MM:SS format (e.g., 0:00, 1:30)`
+      reason: `Time values must be in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`,
+      suggestion: `Enter times in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`
     }
   }
   
@@ -313,6 +324,13 @@ export const validateRangeNotContainingNextCaption = (newStartTime, newEndTime, 
   // Check if there's a next caption (not the last one)
   if (currentSortedIndex < sortedCaptions.length - 1) {
     const nextCaption = sortedCaptions[currentSortedIndex + 1]
+    
+    // 🆕 ADD SELF-VALIDATION PROTECTION: Skip if next caption is the same as current
+    if (nextCaption.id === currentCaption.id) {
+      console.log(`   ⏭️  RULE 3: Skipping self-validation (next caption is same as current)`)
+      return { isValid: true, rule: 3 }
+    }
+    
     const newStartSeconds = parseTimeToSeconds(newStartTime)
     const newEndSeconds = parseTimeToSeconds(newEndTime)
     const nextStartSeconds = parseTimeToSeconds(nextCaption.startTime)
@@ -345,20 +363,31 @@ export const validateStartBeforeEnd = (startTime, endTime) => {
     return {
       isValid: false,
       rule: 4,
-      reason: `Time values must be in MM:SS format (e.g., 0:00, 1:30)`,
-      suggestion: `Enter times in MM:SS format (e.g., 0:00, 1:30)`
+      reason: `Time values must be in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`,
+      suggestion: `Enter times in MM:SS or H:MM:SS format (e.g., 0:00, 1:30, 2:20:18)`
     }
   }
   
   const startSeconds = parseTimeToSeconds(startTime)
   const endSeconds = parseTimeToSeconds(endTime)
   
+  // Check for zero duration (start = end)
+  if (startSeconds === endSeconds) {
+    return {
+      isValid: false,
+      rule: 4,
+      reason: `Start time (${startTime}) cannot equal end time (${endTime}) - caption must have duration`,
+      suggestion: `End time must be after start time to create a valid caption duration`
+    }
+  }
+  
+  // Check for invalid order (start > end)
   if (startSeconds > endSeconds) {
     return {
       isValid: false,
       rule: 4,
       reason: `Start time (${startTime}) cannot be after end time (${endTime})`,
-      suggestion: `Start time must be before or equal to end time`
+      suggestion: `Start time must be before end time`
     }
   }
   
@@ -444,13 +473,7 @@ export const validateAllCaptions = (captions, videoDurationSeconds) => {
   }
   
   for (let i = 0; i < captions.length; i++) {
-    // Skip validation for new captions that don't have proper IDs yet
-    if (!captions[i].id) {
-      console.log(`⏭️  Skipping validation for new caption #${i + 1} (no ID yet)`)
-      results.captionResults.push({ isValid: true, captionIndex: i, failures: [], suggestions: [] })
-      continue
-    }
-    
+    // Validate ALL captions regardless of ID status
     const captionResult = validateCaptionTimes(captions[i], i, captions, videoDurationSeconds)
     results.captionResults.push(captionResult)
     
