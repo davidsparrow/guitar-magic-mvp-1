@@ -27,7 +27,11 @@ import {
   timeToSeconds,
   assignSerialNumbersToCaptions,
   autoResolveCaptionConflicts,
-  validateAllCaptions
+  validateAllCaptions,
+  captureVideoParameters,
+  getVideoDuration,
+  getCurrentVideoTime,
+  calculateSmartCaptionDuration
 } from '../utils/captionUtils'
 import {
   DeleteConfirmModal,
@@ -96,6 +100,9 @@ export default function Watch() {
   // Caption management states
   const [showCaptionModal, setShowCaptionModal] = useState(false)
   const [captions, setCaptions] = useState([])
+  
+  // Create a wrapped setCaptions that logs all calls
+
   const [editingCaption, setEditingCaption] = useState(null)
   const [isAddingNewCaption, setIsAddingNewCaption] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -103,7 +110,6 @@ export default function Watch() {
   const [conflictRowIndex, setConflictRowIndex] = useState(-1)
   const [isInCaptionMode, setIsInCaptionMode] = useState(false)
   const [editingCaptionId, setEditingCaptionId] = useState(null)
-  const [originalCaptionState, setOriginalCaptionState] = useState(null) // Track original caption before editing
   const [originalCaptionsSnapshot, setOriginalCaptionsSnapshot] = useState(null) // Store original state when modal opens
   const [userDefaultCaptionDuration, setUserDefaultCaptionDuration] = useState(10) // User's preferred caption duration in seconds
   
@@ -873,6 +879,9 @@ export default function Watch() {
       
       setPlayer(playerInstance)
       playerRef.current = playerInstance
+      
+      // Capture video parameters for centralized access
+      captureVideoParameters(playerInstance, videoTitle, videoChannel)
     } else {
       
     }
@@ -1252,139 +1261,13 @@ export default function Watch() {
     setEditingCaption({ rowType: rowNumber, rowName: rowNumber === 1 ? 'Text Captions' : rowNumber === 2 ? 'Chords Captions' : 'Auto-Gen' })
   }
 
-  // Handle entering caption editing mode
-  const handleEnterCaptionMode = (mode, captionId = null) => {
-    // Store current loop state if active
-    if (isLoopActive) {
-      setTempLoopStart(loopStartTime)
-      setTempLoopEnd(loopEndTime)
-      setIsLoopActive(false)
-              // Loop paused and stored
-    }
-    
-    // Store original caption state if editing existing caption
-    if (captionId && mode === 'edit') {
-      const existingCaption = captions.find(c => c.id === captionId)
-      if (existingCaption) {
-        setOriginalCaptionState({ ...existingCaption })
 
-      }
-    }
-    
-    // Enter caption mode
-    setIsInCaptionMode(true)
-    setEditingCaptionId(captionId)
-    
-  }
 
-  // Handle saving caption changes and exiting edit mode
-  const handleSaveCaptionChanges = async () => {
-    if (editingCaptionId) {
-      const captionToUpdate = captions.find(c => c.id === editingCaptionId)
-      if (captionToUpdate) {
-        try {
-          // Update caption in database
-          const updatedCaption = await updateCaption(editingCaptionId, {
-            startTime: tempLoopStart,
-            endTime: tempLoopEnd,
-            line1: captionToUpdate.line1,
-            line2: captionToUpdate.line2
-          }, user?.id, setIsLoadingCaptions, setDbError)
-          
-          if (updatedCaption) {
-            // Update local state with database response
-            setCaptions(prev => prev.map(caption => 
-              caption.id === editingCaptionId 
-                ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
-                : caption
-            ))
-    
-          } else {
-            console.error('❌ Failed to save caption changes to database')
-            return // Don't exit edit mode if save failed
-          }
-        } catch (error) {
-          console.error('❌ Error saving caption changes:', error)
-          return // Don't exit edit mode if save failed
-        }
-      }
-    }
-    
-    // Exit caption mode WITHOUT restoring loop state
-    setIsInCaptionMode(false)
-    setEditingCaptionId(null)
-    
-  }
 
-  // Handle canceling caption changes and reverting to original state
-  const handleCancelCaptionChanges = () => {
-            // CANCEL button clicked! Starting cancel process
-    
-    if (editingCaptionId) {
-      // Find the current caption
-      const currentCaption = captions.find(c => c.id === editingCaptionId)
-      
-      
-      if (currentCaption) {
-        // Check if this was a newly added caption by checking if we have original state
-        // If we have originalCaptionState, it means this was an existing caption being edited
-        // If we don't have originalCaptionState, it means this was a newly added caption
-        const isNewCaption = !originalCaptionState
-        
 
-        
-        if (isNewCaption) {
-          // Remove the newly added caption completely
-          setCaptions(prev => prev.filter(caption => caption.id !== editingCaptionId))
-  
-        } else {
-          // Restore existing caption to original state
-          setCaptions(prev => prev.map(caption => 
-            caption.id === editingCaptionId 
-              ? { ...originalCaptionState }
-              : caption
-          ))
-          // Existing caption restored to original state
-        }
-      }
-    }
-    
-    // Clear original state and exit caption mode completely
-    setOriginalCaptionState(null)
-    setIsInCaptionMode(false)
-    setEditingCaptionId(null)
 
-  }
 
-  // Handle exiting caption editing mode
-  const handleExitCaptionMode = () => {
-    // Save any pending caption changes
-    if (editingCaptionId) {
-      const captionToUpdate = captions.find(c => c.id === editingCaptionId)
-      if (captionToUpdate) {
-        // Update the caption with any changes made
-        setCaptions(prev => prev.map(caption => 
-          caption.id === editingCaptionId 
-            ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
-            : caption
-        ))
 
-      }
-    }
-    
-    // Restore loop state if it was active
-    if (tempLoopStart && tempLoopEnd && !isLoopActive) {
-      setLoopStartTime(tempLoopStart)
-      setLoopEndTime(tempLoopEnd)
-      setIsLoopActive(true)
-              // Loop restored
-    }
-    
-    // Exit caption mode
-    setIsInCaptionMode(false)
-    setEditingCaptionId(null)
-
-  }
 
   // Handle adding new caption from timeline
   const handleAddCaptionFromTimeline = () => {
@@ -1567,18 +1450,17 @@ export default function Watch() {
       return // Exit function, do nothing
     }
 
-    // SIMPLE RULE 4a: No caption exists, add new caption with user-preferred duration
-    const newCaptionStartTime = currentTime
-    const newCaptionEndTime = currentTime + (userDefaultCaptionDuration || 10)
+    // Use utility function for smart duration calculation and video length validation
+    const { startTime, endTime, wasTrimmed, reason } = calculateSmartCaptionDuration(
+      currentTime,
+      captions,
+      userDefaultCaptionDuration,
+      getVideoDuration()
+    )
     
-    
-    
-
-
-
     // Convert to MM:SS format using the existing formatSecondsToTime function
-    const startTimeString = formatSecondsToTime(newCaptionStartTime)
-    const endTimeString = formatSecondsToTime(newCaptionEndTime)
+    const startTimeString = formatSecondsToTime(startTime)
+    const endTimeString = formatSecondsToTime(endTime)
 
     const newCaption = {
       startTime: startTimeString,
@@ -1614,13 +1496,133 @@ export default function Watch() {
       // Set this as the editing caption
       setEditingCaptionId(savedCaption.id)
       
-      // NOW enter caption mode with the new caption ID
-      handleEnterCaptionMode('add', savedCaption.id)
+      // Set caption mode and editing ID for the new caption
+      setIsInCaptionMode(true)
+      setEditingCaptionId(savedCaption.id)
+      
+      // Capture original caption state for potential reversion
+      setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(captions)))
       
 
     } else {
       console.error('❌ Failed to save new caption to database')
       setDbError('Failed to save new caption')
+    }
+  }
+
+  // Handle saving newly added caption from footer
+  const handleSaveNewCaption = async () => {
+    if (editingCaptionId) {
+      try {
+        // Find the current caption to save
+        const currentCaption = captions.find(caption => caption.id === editingCaptionId)
+        if (currentCaption) {
+          // Save any changes to the database
+          const updatedCaption = await updateCaption(
+            editingCaptionId,
+            {
+              startTime: currentCaption.startTime,
+              endTime: currentCaption.endTime,
+              line1: currentCaption.line1,
+              line2: currentCaption.line2
+            },
+            user?.id,
+            setIsLoadingCaptions,
+            setDbError
+          )
+          
+          if (updatedCaption) {
+            console.log('✅ Caption changes saved to database')
+          } else {
+            console.error('❌ Failed to save caption changes to database')
+            setDbError('Failed to save caption changes')
+            return
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error saving caption changes:', error)
+        setDbError('Failed to save caption changes')
+        return
+      }
+    }
+    
+    // Exit caption mode after successful save
+    setIsInCaptionMode(false)
+    setEditingCaptionId(null)
+    setTempLoopStart('0:00')
+    setTempLoopEnd('0:00')
+    
+    // Reset original caption snapshot since we're exiting mode
+    if (typeof setOriginalCaptionsSnapshot === 'function') {
+      setOriginalCaptionsSnapshot(null)
+    }
+    
+    console.log('✅ Caption saved and edit mode exited')
+  }
+
+  // Handle canceling caption changes from footer (NEW records: delete, EXISTING records: revert text)
+  const handleCancelNewCaption = () => {
+    if (editingCaptionId) {
+      // Check if this is a NEW record or EXISTING record
+      const existingCaption = captions.find(caption => caption.id === editingCaptionId)
+      const isNewRecord = !existingCaption || !existingCaption.startTime || !existingCaption.endTime
+      
+      // Show generic confirmation for both cases
+      showCustomAlertModal(
+        'Cancelling reverts all changes. Proceed?',
+        [
+          { 
+            text: 'PROCEED', 
+            action: async () => {
+              try {
+                if (isNewRecord) {
+                  // NEW RECORD: Delete from database
+                  const deleted = await deleteCaption(editingCaptionId, user?.id, setIsLoadingCaptions, setDbError)
+                  if (deleted) {
+                    // Remove from local state
+                    setCaptions(prev => prev.filter(caption => caption.id !== editingCaptionId))
+                    console.log('✅ New caption deleted and caption mode exited')
+                  }
+                } else {
+                  // EXISTING RECORD: Revert text changes
+                  const originalCaption = originalCaptionsSnapshot?.find(c => c.id === editingCaptionId)
+                  if (originalCaption) {
+                    setCaptions(prev => prev.map(caption =>
+                      caption.id === editingCaptionId 
+                        ? { ...caption, line1: originalCaption.line1, line2: originalCaption.line2 }
+                        : caption
+                    ))
+                    console.log('✅ Existing caption text reverted and caption mode exited')
+                  }
+                }
+                
+                // Exit caption mode for both cases
+                setIsInCaptionMode(false)
+                setEditingCaptionId(null)
+                
+                // Reset footer fields
+                setTempLoopStart('0:00')
+                setTempLoopEnd('0:00')
+                
+                // Reset original caption snapshot since we're exiting mode
+                if (typeof setOriginalCaptionsSnapshot === 'function') {
+                  setOriginalCaptionsSnapshot(null)
+                }
+                
+                // Close the confirmation modal
+                hideCustomAlertModal()
+              } catch (error) {
+                console.error('❌ Error in cancel operation:', error)
+                setDbError('Failed to cancel changes')
+              }
+            }
+          },
+          { text: 'KEEP EDITING', action: hideCustomAlertModal }
+        ]
+      )
+    } else {
+      setIsInCaptionMode(false)
+      setEditingCaptionId(null)
     }
   }
 
@@ -1678,7 +1680,11 @@ export default function Watch() {
     }
 
     // Enter caption mode for editing
-    handleEnterCaptionMode('edit', currentCaption.id)
+    setIsInCaptionMode(true)
+    setEditingCaptionId(currentCaption.id)
+    
+    // Capture original caption state for potential reversion
+    setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(captions)))
     
     // Update footer fields to control this caption
     setTempLoopStart(currentCaption.startTime)
@@ -1842,121 +1848,76 @@ export default function Watch() {
       const originalCaption = captions[captionIndex]
       if (!originalCaption) return
       
-      // Check if this is the last caption in the list
-      const isLastCaption = captionIndex === captions.length - 1
+      // Check if there's enough space before duplicating ANY caption
+      const sortedCaptionsForCheck = [...captions].sort((a, b) => {
+        const timeA = parseTimeToSeconds(a.startTime)
+        const timeB = parseTimeToSeconds(b.startTime)
+        return timeA - timeB
+      })
       
-      if (isLastCaption) {
-        // Special behavior for last caption: simple duplicate with user-preferred duration
-        const originalEndTime = parseTimeToSeconds(originalCaption.endTime)
-        const newStartTime = originalEndTime
-        const newEndTime = originalEndTime + (userDefaultCaptionDuration || 10)
+      const currentCaptionIndex = sortedCaptionsForCheck.findIndex(c => c.id === originalCaption.id)
+      const nextCaption = sortedCaptionsForCheck[currentCaptionIndex + 1]
+      
+      if (nextCaption) {
+        // Calculate available space between current caption end and next caption start
+        const currentCaptionEndTime = parseTimeToSeconds(originalCaption.endTime)
+        const nextCaptionStartTime = parseTimeToSeconds(nextCaption.startTime)
+        const availableSpace = nextCaptionStartTime - currentCaptionEndTime
+        const requiredSpace = userDefaultCaptionDuration || 10
         
-        const duplicateCaption = {
-          ...originalCaption,
-          id: null, // Will get new ID when saved
-          startTime: formatSecondsToTime(newStartTime), // Start where original ends
-          endTime: formatSecondsToTime(newEndTime), // Add user-preferred duration
-          serial_number: null // Will be assigned by database
+        if (availableSpace < requiredSpace) {
+          // NOT ENOUGH SPACE - Show alert and don't duplicate
+          showCustomAlertModal(
+            `New caption cannot be created because there is less than ${requiredSpace} seconds of space before next caption.`,
+            [
+              { text: 'OK', action: hideCustomAlertModal }
+            ]
+          )
+          return // Exit function, don't duplicate
         }
-        
-        // Add duplicate caption without modifying original
-        const newCaptions = [...captions, duplicateCaption]
-        
-        // Sort by start time and reassign serial numbers
-        const sortedCaptions = newCaptions.sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.startTime)
-          const timeB = parseTimeToSeconds(b.startTime)
-          return timeA - timeB
-        }).map((caption, index) => ({
-          ...caption,
-          serial_number: index + 1
-        }))
-        
-        // Update state with sorted captions and new serial numbers
-        setCaptions(sortedCaptions)
-        
-        // Last caption duplicated with extension
-      } else {
-        // NEW LOGIC: Check if there's enough space before duplicating middle captions
-        
-        // Find the next caption by start time
-        const sortedCaptionsForCheck = [...captions].sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.startTime)
-          const timeB = parseTimeToSeconds(b.startTime)
-          return timeA - timeB
-        })
-        
-        const currentCaptionIndex = sortedCaptionsForCheck.findIndex(c => c.id === originalCaption.id)
-        const nextCaption = sortedCaptionsForCheck[currentCaptionIndex + 1]
-        
-        if (nextCaption) {
-          // Calculate available space between current caption end and next caption start
-          const currentCaptionEndTime = parseTimeToSeconds(originalCaption.endTime)
-          const nextCaptionStartTime = parseTimeToSeconds(nextCaption.startTime)
-          const availableSpace = nextCaptionStartTime - currentCaptionEndTime
-          const requiredSpace = userDefaultCaptionDuration || 10
-          
-  
-          
-          if (availableSpace < requiredSpace) {
-            // NOT ENOUGH SPACE - Show alert and don't duplicate
-            showCustomAlertModal(
-              `New caption cannot be created because there is less than ${requiredSpace} seconds of space before next caption.`,
-              [
-                { text: 'OK', action: hideCustomAlertModal }
-              ]
-            )
-            // Not enough space to duplicate
-            return // Exit function, don't duplicate
-          }
-        }
-        
-        // ENOUGH SPACE - Proceed with normal duplication
-        // Calculate original duration
-        const startTime = parseTimeToSeconds(originalCaption.startTime)
-        const endTime = parseTimeToSeconds(originalCaption.endTime)
-        const originalDuration = endTime - startTime
-        
-        // Step 3a: Modify original caption - reduce duration by 50%
-        const newOriginalEndTime = startTime + (originalDuration / 2)
-        const newOriginalEndTimeFormatted = formatSecondsToTime(newOriginalEndTime)
-        
-        // Step 3b: Create duplicate caption
-        const duplicateCaption = {
-          ...originalCaption,
-          id: null, // Will get new ID when saved
-          startTime: newOriginalEndTimeFormatted, // Start where original now ends
-          endTime: originalCaption.endTime, // Keep original end time
-          serial_number: null // Will be assigned by database
-        }
-        
-        // Update original caption with new end time
-        const newCaptions = [...captions]
-        newCaptions[captionIndex] = {
-          ...newCaptions[captionIndex],
-          endTime: newOriginalEndTimeFormatted
-        }
-        
-        // Add duplicate caption
-        newCaptions.push(duplicateCaption)
-        
-        // Sort by start time and reassign serial numbers
-        const sortedCaptions = newCaptions.sort((a, b) => {
-          const timeA = parseTimeToSeconds(a.startTime)
-          const timeB = parseTimeToSeconds(b.startTime)
-          return timeA - timeB
-        }).map((caption, index) => ({
-          ...caption,
-          serial_number: index + 1
-        }))
-        
-        // Update state with sorted captions and new serial numbers
-        setCaptions(sortedCaptions)
-        
-        // Caption duplicated successfully with refreshed serial numbers
       }
       
-      // TODO: Maintain user focus on duplicate record
+      // ENOUGH SPACE - Use consistent duplication logic for ALL captions
+      const originalEndTime = parseTimeToSeconds(originalCaption.endTime)
+      const newStartTime = originalEndTime
+      let newEndTime = originalEndTime + (userDefaultCaptionDuration || 10)
+      
+      // Use utility function for smart duration calculation and video length validation
+      const { startTime: calculatedStartTime, endTime: calculatedEndTime, wasTrimmed, reason } = calculateSmartCaptionDuration(
+        newStartTime,
+        captions,
+        userDefaultCaptionDuration,
+        getVideoDuration()
+      )
+      
+      // Update the calculated end time
+      newEndTime = calculatedEndTime
+      
+      const duplicateCaption = {
+        ...originalCaption,
+        id: null, // Will get new ID when saved
+        startTime: formatSecondsToTime(newStartTime), // Start where original ends
+        endTime: formatSecondsToTime(newEndTime), // Add user-preferred duration
+        serial_number: null // Will be assigned by database
+      }
+      
+      // Add duplicate caption WITHOUT modifying original caption
+      const newCaptions = [...captions, duplicateCaption]
+      
+      // Sort by start time and reassign serial numbers
+      const sortedCaptions = newCaptions.sort((a, b) => {
+        const timeA = parseTimeToSeconds(a.startTime)
+        const timeB = parseTimeToSeconds(b.startTime)
+        return timeA - timeB
+      }).map((caption, index) => ({
+        ...caption,
+        serial_number: index + 1
+      }))
+      
+      // Update state with sorted captions and new serial numbers
+      setCaptions(sortedCaptions)
+      
+      // Caption duplicated successfully with consistent logic
       
     } catch (error) {
       console.error('❌ Error duplicating caption:', error)
@@ -2243,15 +2204,22 @@ export default function Watch() {
     const captionUpdateInterval = setInterval(() => {
       try {
         const currentTime = player.getCurrentTime()
-        // Force re-render to update displayed caption
-        setCaptions(prev => [...prev])
+        
+        // SMART UPDATE: Only force re-render if NOT currently editing inline
+        // This prevents the 500ms updates from clearing user input while typing
+        if (!isInCaptionMode) {
+          // Force re-render to update displayed caption
+          setCaptions(prev => [...prev])
+        }
       } catch (error) {
         console.error('Caption update error:', error)
       }
     }, 500) // Update every 500ms for smooth caption transitions
 
     return () => clearInterval(captionUpdateInterval)
-  }, [player, captions.length])
+  }, [player, captions.length, isInCaptionMode])
+
+
 
   // Effect to load user's default caption duration on component mount
   useEffect(() => {
@@ -2260,17 +2228,9 @@ export default function Watch() {
     }
   }, [user?.id])
 
-  // Effect to update caption timing when footer fields change in caption mode
-  useEffect(() => {
-    if (isInCaptionMode && editingCaptionId && tempLoopStart && tempLoopEnd) {
-      setCaptions(prev => prev.map(caption => 
-        caption.id === editingCaptionId 
-          ? { ...caption, startTime: tempLoopStart, endTime: tempLoopEnd }
-          : caption
-      ))
-              // Caption timing updated via footer
-    }
-  }, [tempLoopStart, tempLoopEnd, isInCaptionMode, editingCaptionId])
+  // REMOVED: Problematic useEffect that was corrupting caption data
+  // This useEffect was bypassing validation and setting invalid times
+  // Caption updates now only happen through the SAVE button with proper validation
 
   // Fullscreen toggle handler
   const handleFullscreenToggle = async () => {
@@ -2684,10 +2644,10 @@ export default function Watch() {
 
       {/* PERMANENT FOOTER CONTROL AREA - NEVER DISAPPEARS */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-t border-white/20 p-1">
-        <div className="grid grid-cols-3 max-w-7xl mx-auto h-full">
+        <div className="flex justify-between max-w-7xl mx-auto h-full">
           
           {/* Left Column - Left-justified content with Video Controls */}
-          <div className="flex items-center justify-start space-x-3 -ml-3 md:ml-0" style={{ paddingLeft: '11px' }}>
+          <div className="flex items-center justify-start space-x-3" style={{ paddingLeft: '11px' }}>
             {/* Flip Video Button - 3 States */}
             <button
               onClick={handleFlipVideo}
@@ -2738,41 +2698,30 @@ export default function Watch() {
               )}
               
               {isInCaptionMode ? (
-                /* Editable caption timing fields with SAVE button */
+                /* Caption timing display with SAVE/CANCEL buttons */
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={tempLoopStart}
-                    onChange={(e) => setTempLoopStart(e.target.value)}
-                    className="w-16 px-2 py-1 text-xs bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
-                    placeholder="0:00"
-                  />
+                  <span className="w-16 px-2 py-1 text-xs bg-white/20 text-white border border-white/30 rounded">
+                    {tempLoopStart}
+                  </span>
                   <span className="text-white text-xs">-</span>
-                  <input
-                    type="text"
-                    value={tempLoopEnd}
-                    onChange={(e) => setTempLoopEnd(e.target.value)}
-                    className="w-16 px-2 py-1 text-xs bg-white/20 text-white border border-white/30 rounded focus:border-blue-400 focus:outline-none"
-                    placeholder="0:00"
-                  />
-                  {/* SAVE button for caption changes */}
+                  <span className="w-16 px-2 py-1 text-xs bg-white/20 text-white border border-white/30 rounded">
+                    {tempLoopEnd}
+                  </span>
+                  
+                  {/* SAVE button for new caption */}
                   <button
-                    onClick={handleSaveCaptionChanges}
-                    className="px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-                    title="Save caption changes and exit edit mode"
+                    onClick={handleSaveNewCaption}
+                    className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors cursor-pointer min-w-[50px] text-center"
+                    title="Save new caption and exit edit mode"
                   >
                     SAVE
                   </button>
-                  {/* CANCEL button for caption changes */}
+                  
+                  {/* CANCEL button for new caption */}
                   <button
-                    onClick={() => {
-                      // CANCEL button clicked directly
-                      handleCancelCaptionChanges()
-                    }}
-                    className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors ml-2 cursor-pointer z-10 relative border border-red-500"
-                    title="Cancel all changes and revert to original state"
-                    style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-                    data-testid="cancel-button"
+                    onClick={handleCancelNewCaption}
+                    className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors cursor-pointer min-w-[50px] text-center"
+                    title="Cancel new caption and exit edit mode"
                   >
                     CANCEL
                   </button>
@@ -2792,13 +2741,8 @@ export default function Watch() {
             </div>
           </div>
 
-          {/* Middle Column - Center-justified content (Empty for spacing) */}
-          <div className="flex items-center justify-center">
-            {/* Empty - just for spacing */}
-          </div>
-
           {/* Right Column - Right-justified content */}
-          <div className="flex items-center justify-end mr-0 space-x-3" style={{ paddingRight: '12px' }}>
+          <div className="flex items-center justify-end space-x-3" style={{ paddingRight: '12px' }}>
             {/* Guitar Pick Favorites */}
             <button 
               onClick={handleFavoriteToggle}
@@ -2965,6 +2909,8 @@ export default function Watch() {
         isPlayerReady={isPlayerReady}
         saveUserDefaultCaptionDuration={saveUserDefaultCaptionDuration}
         originalCaptionsSnapshot={originalCaptionsSnapshot}
+        showCustomAlertModal={showCustomAlertModal}
+        hideCustomAlertModal={hideCustomAlertModal}
         onLocalStateChange={(newLocalCaptions) => {
           // IS THIS NEEDED???
           // This callback allows the modal to update its local state

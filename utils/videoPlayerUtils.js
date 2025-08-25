@@ -203,14 +203,13 @@ export const handleYouTubeAPIError = (onError = () => {}) => {
 }
 
 /**
- * Checks if YouTube player is fully ready with all methods available
+ * Checks if the YouTube player is fully ready with all necessary methods available
  * @param {Object} player - YouTube player instance
- * @returns {boolean} True if player is ready and all methods are available
+ * @returns {boolean} - True if player is ready, false otherwise
  */
 export const isPlayerReady = (player) => {
-  if (!player) return false
-  
-  const result = player.getPlayerState && 
+  const result = player && 
+         player.getPlayerState && 
          typeof player.getPlayerState === 'function' &&
          player.playVideo && 
          typeof player.playVideo === 'function' &&
@@ -369,6 +368,134 @@ export const showResumePrompt = (timestamp, title, options = {}) => {
     showCustomAlertModal(message, buttons)
   }
 }
+
+/**
+ * Handles keyboard shortcuts for video control
+ * @param {Object} event - Keyboard event object
+ * @param {Object} options - Configuration options
+ * @param {Function} options.isPlayerReady - Function to check if player is ready
+ * @param {Object} options.player - YouTube player instance
+ * @param {Function} options.getDailyWatchTimeTotal - Function to query daily watch time total
+ */
+export const handleKeyPress = (event, options = {}) => {
+  const {
+    isPlayerReady,
+    player,
+    getDailyWatchTimeTotal
+  } = options
+
+  // Spacebar for play/pause
+  if (event.code === 'Space' && isPlayerReady()) {
+    // Check if any input field is currently focused - disable video control if so
+    if (document.activeElement && 
+        (document.activeElement.tagName === 'INPUT' || 
+         document.activeElement.tagName === 'TEXTAREA')) {
+      // Input field focused - spacebar video control disabled
+      return // Exit early, don't handle video control
+    }
+    
+    event.preventDefault()
+
+    try {
+      // Try to get player state first
+      if (player.getPlayerState && typeof player.getPlayerState === 'function') {
+        const playerState = player.getPlayerState()
+        // Player state
+        
+        if (playerState === 1) { // Playing
+          player.pauseVideo()
+          // Video paused
+        } else { // Paused or other states
+          player.playVideo()
+          // Video playing
+          
+          // Query daily watch time total only when starting from beginning (0:00)
+          if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
+            const currentTime = player.getCurrentTime()
+            if (currentTime <= 1) { // Within 1 second of start (0:00)
+      
+              getDailyWatchTimeTotal()
+            } else {
+              // Video resuming from position - skipping daily total query
+            }
+          }
+        }
+      } else {
+        // Fallback: try to pause if we can't determine state
+  
+        if (player.pauseVideo && typeof player.pauseVideo === 'function') {
+          player.pauseVideo()
+          // Video paused (fallback)
+        }
+      }
+    } catch (error) {
+      console.error('❌ Spacebar handler error:', error)
+      // Final fallback: try to pause
+      try {
+        if (player.pauseVideo && typeof player.pauseVideo === 'function') {
+          player.pauseVideo()
+          // Video paused (final fallback)
+        }
+      } catch (fallbackError) {
+        console.error('💥 All fallbacks failed:', fallbackError)
+      }
+    }
+  }
+}
+
+/**
+ * Checks player state and manages watch time tracking
+ * @param {Object} options - Configuration options
+ * @param {Object} options.player - YouTube player instance
+ * @param {Function} options.isPlayerReady - Function to check if player is ready
+ * @param {boolean} options.isTrackingWatchTime - Current tracking state
+ * @param {Function} options.startWatchTimeTracking - Function to start watch time tracking
+ * @param {Function} options.stopWatchTimeTracking - Function to stop watch time tracking
+ * @param {Function} options.setWatchStartTime - Function to set watch start time
+ * @param {Function} options.setIsTrackingWatchTime - Function to set tracking state
+ * @param {Object} options.watchStartTime - Current watch start time
+ * @returns {Object} Object with tracking state changes
+ */
+export const checkPlayerStateForWatchTime = (options = {}) => {
+  const {
+    player,
+    isPlayerReady,
+    isTrackingWatchTime,
+    startWatchTimeTracking,
+    stopWatchTimeTracking,
+    setWatchStartTime,
+    setIsTrackingWatchTime,
+    watchStartTime
+  } = options
+
+  try {
+    if (!player || !isPlayerReady()) return { changed: false }
+    
+    const playerState = player.getPlayerState()
+    // Player state check
+    
+    if (playerState === 1 && !isTrackingWatchTime) { // Playing
+      // Starting watch time tracking
+      const startTime = startWatchTimeTracking()
+      setWatchStartTime(startTime)
+      setIsTrackingWatchTime(true)
+      return { changed: true, action: 'started', startTime }
+    } else if ((playerState === 2 || playerState === 0) && isTrackingWatchTime && watchStartTime) { // Paused or Ended
+      // Stopping watch time tracking
+      stopWatchTimeTracking(watchStartTime)
+      setWatchStartTime(null)
+      setIsTrackingWatchTime(false)
+      return { changed: true, action: 'stopped', startTime: watchStartTime }
+    }
+    
+    return { changed: false }
+  } catch (error) {
+    console.error('❌ Error checking player state for watch time:', error)
+    return { changed: false, error }
+  }
+}
+
+
 
 /**
  * Starts video from beginning (timestamp 0)

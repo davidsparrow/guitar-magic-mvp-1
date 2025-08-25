@@ -55,7 +55,10 @@ import {
   checkForSavedSession as checkForSavedSessionFromUtils,
   showResumePrompt as showResumePromptFromUtils,
   resumeVideo as resumeVideoFromUtils,
-  startFromBeginning as startFromBeginningFromUtils
+  startFromBeginning as startFromBeginningFromUtils,
+  checkPlayerStateForWatchTime as checkPlayerStateForWatchTimeFromUtils,
+  handleKeyPress as handleKeyPressFromUtils,
+  isPlayerReady as isPlayerReadyFromUtils
 } from '../utils/videoPlayerUtils'
 
 export default function Watch() {
@@ -810,32 +813,27 @@ export default function Watch() {
     // Track execution count
     useEffect.executionCount = (useEffect.executionCount || 0) + 1
     
-    if (!player || !isPlayerReady() || !user?.id || !videoId || !videoChannel) {
+    if (!player || !isPlayerReadyFromUtils(player) || !user?.id || !videoId || !videoChannel) {
       // Watch time tracking paused - conditions not met
       return
     }
 
     // Set up polling to check player state
     const checkPlayerState = () => {
-      try {
-        if (!player || !isPlayerReady()) return
-        
-        const playerState = player.getPlayerState()
-        // Player state check
-        
-        if (playerState === 1 && !isTrackingWatchTime) { // Playing
-          // Starting watch time tracking
-          const startTime = startWatchTimeTracking()
-          setWatchStartTime(startTime)
-          setIsTrackingWatchTime(true)
-        } else if ((playerState === 2 || playerState === 0) && isTrackingWatchTime && watchStartTime) { // Paused or Ended
-          // Stopping watch time tracking
-          stopWatchTimeTracking(watchStartTime)
-          setWatchStartTime(null)
-          setIsTrackingWatchTime(false)
-        }
-      } catch (error) {
-
+      // Use utility function for checking player state and managing watch time tracking
+      const result = checkPlayerStateForWatchTimeFromUtils({
+        player,
+        isPlayerReady,
+        isTrackingWatchTime,
+        startWatchTimeTracking,
+        stopWatchTimeTracking,
+        setWatchStartTime,
+        setIsTrackingWatchTime,
+        watchStartTime
+      })
+      
+      if (result.changed) {
+        console.log(`🔄 Watch time tracking ${result.action}`)
       }
     }
 
@@ -985,63 +983,13 @@ export default function Watch() {
   // Handle keyboard shortcuts for video control
   useEffect(() => {
     const handleKeyPress = (e) => {
-      // Spacebar for play/pause
-      if (e.code === 'Space' && isPlayerReady()) {
-        // Check if any input field is currently focused - disable video control if so
-        if (document.activeElement && 
-            (document.activeElement.tagName === 'INPUT' || 
-             document.activeElement.tagName === 'TEXTAREA')) {
-          // Input field focused - spacebar video control disabled
-          return // Exit early, don't handle video control
-        }
-        
-        e.preventDefault()
-
-        
-        try {
-          // Try to get player state first
-          if (player.getPlayerState && typeof player.getPlayerState === 'function') {
-            const playerState = player.getPlayerState()
-            // Player state
-            
-            if (playerState === 1) { // Playing
-              player.pauseVideo()
-              // Video paused
-            } else { // Paused or other states
-              player.playVideo()
-              // Video playing
-              
-              // Query daily watch time total only when starting from beginning (0:00)
-              if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
-                const currentTime = player.getCurrentTime()
-                if (currentTime <= 1) { // Within 1 second of start (0:00)
-          
-                  getDailyWatchTimeTotal()
-                } else {
-                  // Video resuming from position - skipping daily total query
-                }
-              }
-            }
-          } else {
-            // Fallback: try to pause if we can't determine state
-    
-            if (player.pauseVideo && typeof player.pauseVideo === 'function') {
-              player.pauseVideo()
-              // Video paused (fallback)
-            }
-          }
-        } catch (error) {
-          console.error('❌ Spacebar handler error:', error)
-          // Final fallback: try to pause
-          try {
-            if (player.pauseVideo && typeof player.pauseVideo === 'function') {
-              player.pauseVideo()
-              // Video paused (final fallback)
-            }
-          } catch (fallbackError) {
-            console.error('💥 All fallbacks failed:', fallbackError)
-          }
-        }
+      // Spacebar for play/pause - use utility function
+      if (e.code === 'Space' && isPlayerReadyFromUtils(player)) {
+        handleKeyPressFromUtils(e, {
+          isPlayerReady: isPlayerReadyFromUtils,
+          player,
+          getDailyWatchTimeTotal
+        })
       }
       
       // F11 for fullscreen toggle
@@ -1060,20 +1008,7 @@ export default function Watch() {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [player, isVideoReady, isFullscreen])
 
-  // Check if player is fully ready with all methods available
-  const isPlayerReady = () => {
-    const result = player && 
-           player.getPlayerState && 
-           typeof player.getPlayerState === 'function' &&
-           player.playVideo && 
-           typeof player.playVideo === 'function' &&
-           player.pauseVideo && 
-           typeof player.pauseVideo === 'function'
-    
 
-    
-    return result
-  }
 
   // Check if user can access loop functionality
   const canAccessLoops = () => {
@@ -1404,7 +1339,7 @@ export default function Watch() {
 
     // Get current video time
     let currentTime = 0
-    if (player && isPlayerReady()) {
+    if (player && isPlayerReadyFromUtils(player)) {
       try {
         currentTime = Math.floor(player.getCurrentTime())
       } catch (error) {
@@ -1638,7 +1573,7 @@ export default function Watch() {
 
     // Find current caption at this time
     let currentTime = 0
-    if (player && isPlayerReady()) {
+    if (player && isPlayerReadyFromUtils(player)) {
       try {
         currentTime = Math.floor(player.getCurrentTime())
       } catch (error) {
@@ -1683,9 +1618,9 @@ export default function Watch() {
     // Comprehensive validation of all caption times using the new 6-rule system
     console.log('🔍 Validating all captions with comprehensive 6-rule system...')
     
-    // Get video duration for validation (Rule 6)
+        // Get video duration for validation (Rule 6)
     let videoDurationSeconds = 0
-    if (player && isPlayerReady()) {
+    if (player && isPlayerReadyFromUtils(player)) {
       try {
         videoDurationSeconds = Math.floor(player.getDuration())
         console.log('🔍 Video duration from player:', videoDurationSeconds, 'seconds')
@@ -1697,11 +1632,11 @@ export default function Watch() {
           const videoElement = document.querySelector('video')
           if (videoElement && !isNaN(videoElement.duration)) {
             videoDurationSeconds = Math.floor(videoElement.duration)
-            console.log('🔍 Video duration from video element:', videoDurationSeconds, 'seconds')
+            console.log('🔍 Video duration from player:', videoDurationSeconds, 'seconds')
             console.log('🔍 Video duration formatted:', formatSecondsToTime(videoDurationSeconds))
           }
         } catch (altError) {
-          console.warn('⚠️ Could not get video duration from video element either')
+        console.warn('⚠️ Could not get video duration from video element either')
         }
       }
     }
@@ -2127,7 +2062,7 @@ export default function Watch() {
 
   // Check if video should loop (runs every second when loop is active)
   useEffect(() => {
-    if (!isLoopActive || !player || !isPlayerReady()) return
+    if (!isLoopActive || !player || !isPlayerReadyFromUtils(player)) return
 
     const loopInterval = setInterval(() => {
       try {
@@ -2177,7 +2112,7 @@ export default function Watch() {
 
   // Effect to update displayed caption based on video time
   useEffect(() => {
-    if (!player || !isPlayerReady() || captions.length === 0) return
+    if (!player || !isPlayerReadyFromUtils(player) || captions.length === 0) return
 
     const captionUpdateInterval = setInterval(() => {
       try {
