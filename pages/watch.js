@@ -58,7 +58,9 @@ import {
   startFromBeginning as startFromBeginningFromUtils,
   checkPlayerStateForWatchTime as checkPlayerStateForWatchTimeFromUtils,
   handleKeyPress as handleKeyPressFromUtils,
-  isPlayerReady as isPlayerReadyFromUtils
+  isPlayerReady as isPlayerReadyFromUtils,
+  isVideoPlaying as isVideoPlayingFromUtils,
+  showVideoPlayingRestriction as showVideoPlayingRestrictionFromUtils
 } from '../utils/videoPlayerUtils'
 
 export default function Watch() {
@@ -318,14 +320,7 @@ export default function Watch() {
     return featureGates?.global_settings?.[messageKey] || fallback
   }
 
-  // Show video playing restriction modal
-  const showVideoPlayingRestriction = () => {
-    const message = getAdminMessage('video_playing_message', 'Please pause video before using this feature')
-    
-    showCustomAlertModal(message, [
-      { text: 'OK', action: hideCustomAlertModal }
-    ])
-  }
+
 
   // saveCaption function - now imported from CaptionDatabase
 
@@ -532,7 +527,7 @@ export default function Watch() {
     }
 
     // Check video playing restriction
-    if (options.checkVideoPlaying && feature.video_restricted && isVideoPlaying()) {
+            if (options.checkVideoPlaying && feature.video_restricted && isVideoPlayingFromUtils(player)) {
       const message = feature.messages?.video_playing || 
         featureGates.global_settings?.video_playing_message || 
         'Please pause video before using this feature'
@@ -546,12 +541,7 @@ export default function Watch() {
     return { hasAccess: true }
   }
 
-  const isVideoPlaying = () => {
-    if (!player || !player.getPlayerState) return false
-    const state = player.getPlayerState()
-    // YouTube states: 1=playing, 2=paused, 3=buffering, 5=video cued
-    return state === 1 || state === 3
-  }
+
 
   const getFeatureRestrictionMessage = (featureKey, options = {}) => {
     const access = checkFeatureAccess(featureKey, options)
@@ -823,7 +813,7 @@ export default function Watch() {
       // Use utility function for checking player state and managing watch time tracking
       const result = checkPlayerStateForWatchTimeFromUtils({
         player,
-        isPlayerReady,
+        isPlayerReady: isPlayerReadyFromUtils,
         isTrackingWatchTime,
         startWatchTimeTracking,
         stopWatchTimeTracking,
@@ -1041,8 +1031,12 @@ export default function Watch() {
   // Handle individual row hide/show
   const handleRowToggle = (rowNumber) => {
     // Check if video is playing
-    if (isVideoPlaying()) {
-      showVideoPlayingRestriction()
+    if (isVideoPlayingFromUtils(player)) {
+      showVideoPlayingRestrictionFromUtils({
+        getAdminMessage,
+        showCustomAlertModal,
+        hideCustomAlertModal
+      })
       return
     }
     
@@ -1064,8 +1058,12 @@ export default function Watch() {
   // Handle show all rows (reset)
   const handleShowAllRows = () => {
     // Check if video is playing
-    if (isVideoPlaying()) {
-      showVideoPlayingRestriction()
+    if (isVideoPlayingFromUtils(player)) {
+      showVideoPlayingRestrictionFromUtils({
+        getAdminMessage,
+        showCustomAlertModal,
+        hideCustomAlertModal
+      })
       return
     }
     
@@ -1140,8 +1138,12 @@ export default function Watch() {
   // Handle caption edit click with access control
   const handleCaptionEditClick = (rowNumber) => {
     // Check if video is playing
-    if (isVideoPlaying()) {
-      showVideoPlayingRestriction()
+    if (isVideoPlayingFromUtils(player)) {
+      showVideoPlayingRestrictionFromUtils({
+        getAdminMessage,
+        showCustomAlertModal,
+        hideCustomAlertModal
+      })
       return
     }
     
@@ -1332,8 +1334,12 @@ export default function Watch() {
     }
 
     // Check if video is playing
-    if (isVideoPlaying()) {
-      showVideoPlayingRestriction()
+    if (isVideoPlayingFromUtils(player)) {
+      showVideoPlayingRestrictionFromUtils({
+        getAdminMessage,
+        showCustomAlertModal,
+        hideCustomAlertModal
+      })
       return
     }
 
@@ -1560,8 +1566,12 @@ export default function Watch() {
     }
 
     // Check if video is playing
-    if (isVideoPlaying()) {
-      showVideoPlayingRestriction()
+    if (isVideoPlayingFromUtils(player)) {
+      showVideoPlayingRestrictionFromUtils({
+        getAdminMessage,
+        showCustomAlertModal,
+        hideCustomAlertModal
+      })
       return
     }
 
@@ -2819,7 +2829,7 @@ export default function Watch() {
         handleDuplicateCaption={handleDuplicateCaption}
         handleDeleteCaption={handleDeleteCaption}
         player={player}
-        isPlayerReady={isPlayerReady}
+        isPlayerReady={isPlayerReadyFromUtils}
         saveUserDefaultCaptionDuration={saveUserDefaultCaptionDuration}
         originalCaptionsSnapshot={originalCaptionsSnapshot}
         showCustomAlertModal={showCustomAlertModal}

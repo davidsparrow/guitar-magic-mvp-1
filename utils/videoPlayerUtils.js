@@ -543,3 +543,36 @@ export const resumeVideo = (timestamp, options = {}) => {
     console.warn('⚠️ Player not ready for resume operation')
   }
 }
+
+/**
+ * Checks if the YouTube video is currently playing
+ * @param {Object} player - YouTube player instance
+ * @returns {boolean} - True if video is playing or buffering, false otherwise
+ */
+export const isVideoPlaying = (player) => {
+  if (!player || !player.getPlayerState) return false
+  const state = player.getPlayerState()
+  // YouTube states: 1=playing, 2=paused, 3=buffering, 5=video cued
+  return state === 1 || state === 3
+}
+
+/**
+ * Shows a restriction modal when trying to edit captions while video is playing
+ * @param {Object} options - Configuration options
+ * @param {Function} options.getAdminMessage - Function to get admin message
+ * @param {Function} options.showCustomAlertModal - Function to show custom alert modal
+ * @param {Function} options.hideCustomAlertModal - Function to hide custom alert modal
+ */
+export const showVideoPlayingRestriction = (options = {}) => {
+  const {
+    getAdminMessage,
+    showCustomAlertModal,
+    hideCustomAlertModal
+  } = options
+
+  const message = getAdminMessage('video_playing_message', 'Please pause video before using this feature')
+  
+  showCustomAlertModal(message, [
+    { text: 'OK', action: hideCustomAlertModal }
+  ])
+}
