@@ -21,12 +21,13 @@ import TopBanner from '../components/TopBanner'
 import Header from '../components/Header'
 import MenuModal from '../components/MenuModal'
 import SupportModal from '../components/SupportModal'
-import { 
-  parseTimeToSeconds, 
-  formatSecondsToTime, 
-  timeToSeconds, 
-  assignSerialNumbersToCaptions, 
-  autoResolveCaptionConflicts 
+import {
+  parseTimeToSeconds,
+  formatSecondsToTime,
+  timeToSeconds,
+  assignSerialNumbersToCaptions,
+  autoResolveCaptionConflicts,
+  validateAllCaptions
 } from '../utils/captionUtils'
 import {
   DeleteConfirmModal,
@@ -1695,114 +1696,68 @@ export default function Watch() {
       return aStart - bStart
     })
 
-    // Check for time overlaps and find the conflicting row
-    let hasOverlap = false
-    let conflictIndex = -1
+    // Comprehensive validation of all caption times using the new 6-rule system
+    console.log('🔍 Validating all captions with comprehensive 6-rule system...')
     
-    for (let i = 0; i < sortedCaptions.length - 1; i++) {
-      const current = sortedCaptions[i]
-      const next = sortedCaptions[i + 1]
-      
-      const currentEnd = timeToSeconds(current.endTime)
-      const nextStart = timeToSeconds(next.startTime)
-      
-      if (currentEnd > nextStart) {
-        hasOverlap = true
-        // Highlight the LOWER row (next one) that's causing the conflict
-        conflictIndex = i + 1
-        break
+    // Get video duration for validation (Rule 6)
+    let videoDurationSeconds = 0
+    if (player && isPlayerReady()) {
+      try {
+        videoDurationSeconds = Math.floor(player.getDuration())
+        console.log('🔍 Video duration from player:', videoDurationSeconds, 'seconds')
+        console.log('🔍 Video duration formatted:', formatSecondsToTime(videoDurationSeconds))
+      } catch (error) {
+        console.warn('⚠️ Could not get video duration from player, trying alternative method')
+        // Try alternative method - get from video element if available
+        try {
+          const videoElement = document.querySelector('video')
+          if (videoElement && !isNaN(videoElement.duration)) {
+            videoDurationSeconds = Math.floor(videoElement.duration)
+            console.log('🔍 Video duration from video element:', videoDurationSeconds, 'seconds')
+            console.log('🔍 Video duration formatted:', formatSecondsToTime(videoDurationSeconds))
+          }
+        } catch (altError) {
+          console.warn('⚠️ Could not get video duration from video element either')
+        }
       }
     }
-
-    if (hasOverlap) {
-      // Find the actual index in the original array for highlighting
-      const conflictCaption = sortedCaptions[conflictIndex]
-      const originalIndex = captions.findIndex(c => c.id === conflictCaption.id)
+    
+    if (videoDurationSeconds === 0) {
+      console.warn('⚠️ Video duration is 0, skipping Rule 6 validation')
+    }
+    
+    // Validate all captions
+    const validationResults = validateAllCaptions(sortedCaptions, videoDurationSeconds)
+    
+    if (!validationResults.isValid) {
+      console.log('❌ Validation failed:', validationResults)
       
-      // Set the conflict index for highlighting
-      setConflictRowIndex(originalIndex)
+      // Find the first caption with validation failures for highlighting
+      const firstFailedCaption = validationResults.captionResults.find(result => !result.isValid)
+      if (firstFailedCaption) {
+        setConflictRowIndex(firstFailedCaption.captionIndex)
+      }
       
-      // Calculate what the new start time would be to resolve the conflict
-      const currentCaption = sortedCaptions[conflictIndex - 1]
-      const newStartTime = formatSecondsToTime(timeToSeconds(currentCaption.endTime))
-      const currentStartTime = conflictCaption.startTime
-      const serialNumber = conflictCaption.serial_number || conflictIndex + 1
+      // Get the first failure reason for the alert
+      const firstFailure = validationResults.allFailures[0]
       
-      // Show user choice dialog for auto-resolution
+      // Show validation failure alert
       showCustomAlertModal(
-        `Time overlap detected!\n\n` +
-        `Caption #${serialNumber} conflicts with the previous row:\n` +
-        `• Current Start Time: ${currentStartTime}\n` +
-        `• New Start Time: ${newStartTime} (will eliminate overlap)\n\n` +
-        `Would you like to auto-resolve this conflict and save?`,
+        `Caption validation failed!\n\n` +
+        `Rule ${firstFailure.rule} failed: ${firstFailure.reason}\n\n` +
+        `Suggestion: ${firstFailure.suggestion}\n\n` +
+        `Please fix the validation errors before saving.`,
         [
           {
-            text: 'YES - Auto-resolve & Save',
-            action: async () => {
-              try {
-                // Auto-resolve the conflict
-                const resolvedCaptions = autoResolveCaptionConflicts(sortedCaptions)
-                
-                // Save all modified captions to database
-                const savePromises = []
-                
-                for (const caption of resolvedCaptions) {
-                  if (caption.id) {
-                    // Existing caption - update if modified
-                    savePromises.push(updateCaption(caption.id, {
-                      startTime: caption.startTime,
-                      endTime: caption.endTime,
-                      line1: caption.line1,
-                      line2: caption.line2
-                    }, user?.id, setIsLoadingCaptions, setDbError))
-                  } else {
-                    // New caption - save it
-                    savePromises.push(saveCaption({
-                      startTime: caption.startTime,
-                      endTime: caption.endTime,
-                      line1: caption.line1,
-                      line2: caption.line2,
-                      rowType: caption.rowType
-                    }, videoId, user?.id, setIsLoadingCaptions, setDbError))
-                  }
-                }
-                
-                // Wait for all database operations to complete
-                const savedResults = await Promise.all(savePromises)
-        
-                
-                // Clear conflict highlighting
-                setConflictRowIndex(-1)
-                
-                // Update local state with resolved captions (now with database IDs)
-                setCaptions(resolvedCaptions)
-                
-                // Update the snapshot to reflect the new "saved" state
-                setOriginalCaptionsSnapshot(JSON.parse(JSON.stringify(resolvedCaptions)))
-        
-                
-                // Close modal
-                setShowCaptionModal(false)
-                setEditingCaption(null)
-                setIsAddingNewCaption(false)
-                
-              } catch (error) {
-                console.error('❌ Error saving auto-resolved captions:', error)
-                // Keep modal open if save fails
-              }
-            }
-          },
-          {
-            text: 'NO - Fix Manually',
-            action: () => {
-              // Keep modal open, let user fix manually
-              // User chose to fix conflicts manually
-            }
+            text: 'OK - I\'ll Fix It',
+            action: hideCustomAlertModal
           }
         ]
       )
       return
     }
+    
+    console.log('✅ All captions passed validation')
 
     // Clear any previous conflict highlighting
     setConflictRowIndex(-1)
@@ -2996,6 +2951,7 @@ export default function Watch() {
         showCaptionModal={showCaptionModal}
         editingCaption={editingCaption}
         captions={captions}
+        setCaptions={setCaptions}
         conflictRowIndex={conflictRowIndex}
         userDefaultCaptionDuration={userDefaultCaptionDuration}
         setUserDefaultCaptionDuration={setUserDefaultCaptionDuration}
@@ -3008,6 +2964,12 @@ export default function Watch() {
         player={player}
         isPlayerReady={isPlayerReady}
         saveUserDefaultCaptionDuration={saveUserDefaultCaptionDuration}
+        originalCaptionsSnapshot={originalCaptionsSnapshot}
+        onLocalStateChange={(newLocalCaptions) => {
+          // IS THIS NEEDED???
+          // This callback allows the modal to update its local state
+          // when captions are added/removed from the parent
+        }}
       />
 
       {/* New Caption Placement Dialog */}

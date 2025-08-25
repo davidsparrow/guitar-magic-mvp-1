@@ -124,3 +124,342 @@ export const autoResolveCaptionConflicts = (captionsArray) => {
   
   return hasChanges ? sortedCaptions : captionsArray
 }
+
+/**
+ * Validates that time string follows XX:XX format (MM:SS)
+ * @param {string} timeString - Time string to validate
+ * @returns {boolean} True if valid XX:XX format
+ */
+export const isValidXXFormat = (timeString) => {
+  if (!timeString || typeof timeString !== 'string') return false
+  
+  // Must be exactly MM:SS format
+  const parts = timeString.split(':')
+  if (parts.length !== 2) return false
+  
+  // Check each part is a valid number
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) return false
+  }
+  
+  const minutes = parseInt(parts[0])
+  const seconds = parseInt(parts[1])
+  
+  // Must be non-negative and seconds < 60
+  return minutes >= 0 && seconds >= 0 && seconds < 60
+}
+
+/**
+ * Validates that start time is at least 0:00
+ * @param {string} startTime - Start time string
+ * @returns {Object} Validation result with details
+ */
+export const validateMinimumStartTime = (startTime) => {
+  // First check format
+  if (!isValidXXFormat(startTime)) {
+    return {
+      isValid: false,
+      rule: 5,
+      reason: `Start time (${startTime}) must be in MM:SS format (e.g., 0:00, 1:30)`,
+      suggestion: `Enter time in MM:SS format (e.g., 0:00, 1:30)`
+    }
+  }
+  
+  const startSeconds = parseTimeToSeconds(startTime)
+  
+  if (startSeconds < 0) {
+    return {
+      isValid: false,
+      rule: 5,
+      reason: `Start time (${startTime}) cannot be negative`,
+      suggestion: `Start time must be at least 0:00`
+    }
+  }
+  
+  return { isValid: true, rule: 5 }
+}
+
+/**
+ * Validates that end time is not beyond video duration
+ * @param {string} endTime - End time string
+ * @param {number} videoDurationSeconds - Video duration in seconds
+ * @returns {Object} Validation result with details
+ */
+export const validateMaximumEndTime = (endTime, videoDurationSeconds) => {
+  // First check format
+  if (!isValidXXFormat(endTime)) {
+    return {
+      isValid: false,
+      rule: 6,
+      reason: `End time (${endTime}) must be in MM:SS format (e.g., 0:00, 1:30)`,
+      suggestion: `Enter time in MM:SS format (e.g., 0:00, 1:30)`
+    }
+  }
+  
+  if (!videoDurationSeconds || videoDurationSeconds <= 0) {
+    return { isValid: true, rule: 6 } // Skip validation if video duration unknown
+  }
+  
+  const endSeconds = parseTimeToSeconds(endTime)
+  
+  if (endSeconds > videoDurationSeconds) {
+    return {
+      isValid: false,
+      rule: 6,
+      reason: `End time (${endTime}) is beyond video duration (${formatSecondsToTime(videoDurationSeconds)})`,
+      suggestion: `End time must be within video duration`
+    }
+  }
+  
+  return { isValid: true, rule: 6 }
+}
+
+/**
+ * Validates that a time point is not within another caption's range
+ * @param {string} timePoint - Time to check (start or end time)
+ * @param {number} captionIndex - Index of caption being edited
+ * @param {Array} allCaptions - All captions array
+ * @param {string} timeType - 'start' or 'end' for error messages
+ * @returns {Object} Validation result with details
+ */
+export const validateTimeNotInOtherCaptionRange = (timePoint, captionIndex, allCaptions, timeType) => {
+  // First check format
+  if (!isValidXXFormat(timePoint)) {
+    const rule = timeType === 'start' ? 1 : 2
+    const timeTypeText = timeType === 'start' ? 'Start' : 'Stop'
+    return {
+      isValid: false,
+      rule,
+      reason: `${timeTypeText} time (${timePoint}) must be in MM:SS format (e.g., 0:00, 1:30)`,
+      suggestion: `Enter time in MM:SS format (e.g., 0:00, 1:30)`
+    }
+  }
+  
+  const timeSeconds = parseTimeToSeconds(timePoint)
+  
+  console.log(`🔍 RULE ${timeType === 'start' ? '1' : '2'} VALIDATION:`)
+  console.log(`   Checking ${timeType} time: ${timePoint} (${timeSeconds}s) for caption #${captionIndex + 1}`)
+  
+  for (let i = 0; i < allCaptions.length; i++) {
+    if (i === captionIndex) {
+      console.log(`   ⏭️  Skipping self (caption #${i + 1})`)
+      continue // Skip the caption being edited
+    }
+    
+    const otherCaption = allCaptions[i]
+    const otherStart = parseTimeToSeconds(otherCaption.startTime)
+    const otherEnd = parseTimeToSeconds(otherCaption.endTime)
+    
+    console.log(`   📋 Checking against caption #${i + 1}: ${otherCaption.startTime} (${otherStart}s) - ${otherCaption.endTime} (${otherEnd}s)`)
+    
+    // Check if time point is within this caption's range
+    // Changed from inclusive (>=, <=) to exclusive (>, <) to allow touching captions
+    const isInRange = timeSeconds > otherStart && timeSeconds < otherEnd
+    console.log(`   🔍 Range check: ${timeSeconds}s > ${otherStart}s && ${timeSeconds}s < ${otherEnd}s = ${isInRange}`)
+    
+    if (isInRange) {
+      const rule = timeType === 'start' ? 1 : 2
+      const timeTypeText = timeType === 'start' ? 'Start' : 'Stop'
+      
+      console.log(`   ❌ RULE ${rule} FAILED: ${timeTypeText} time ${timePoint} is inside caption #${i + 1} range`)
+      
+      return {
+        isValid: false,
+        rule,
+        reason: `${timeTypeText} time (${timePoint}) is within caption #${otherCaption.serial_number || i + 1} range (${otherCaption.startTime} - ${otherCaption.endTime})`,
+        suggestion: `${timeTypeText} time must be outside all other caption ranges`,
+        conflictingCaptionIndex: i
+      }
+    } else {
+      console.log(`   ✅ Range check passed for caption #${i + 1}`)
+    }
+  }
+  
+  const rule = timeType === 'start' ? 1 : 2
+  console.log(`   🎉 RULE ${rule} PASSED: ${timeType} time ${timePoint} is valid`)
+  return { isValid: true, rule: rule }
+}
+
+/**
+ * Validates that new caption range doesn't completely contain the next caption
+ * @param {string} newStartTime - New start time
+ * @param {string} newEndTime - New end time
+ * @param {number} captionIndex - Index of caption being edited
+ * @param {Array} allCaptions - All captions array
+ * @returns {Object} Validation result with details
+ */
+export const validateRangeNotContainingNextCaption = (newStartTime, newEndTime, captionIndex, allCaptions) => {
+  // First check format
+  if (!isValidXXFormat(newStartTime) || !isValidXXFormat(newEndTime)) {
+    return {
+      isValid: false,
+      rule: 3,
+      reason: `Time values must be in MM:SS format (e.g., 0:00, 1:30)`,
+      suggestion: `Enter times in MM:SS format (e.g., 0:00, 1:30)`
+    }
+  }
+  
+  // Sort captions by start time to find the next one
+  const sortedCaptions = [...allCaptions].sort((a, b) => {
+    const timeA = parseTimeToSeconds(a.startTime)
+    const timeB = parseTimeToSeconds(b.startTime)
+    return timeA - timeB
+  })
+  
+  // Find the current caption in sorted order
+  const currentCaption = allCaptions[captionIndex]
+  const currentSortedIndex = sortedCaptions.findIndex(c => c.id === currentCaption.id)
+  
+  // Check if there's a next caption (not the last one)
+  if (currentSortedIndex < sortedCaptions.length - 1) {
+    const nextCaption = sortedCaptions[currentSortedIndex + 1]
+    const newStartSeconds = parseTimeToSeconds(newStartTime)
+    const newEndSeconds = parseTimeToSeconds(newEndTime)
+    const nextStartSeconds = parseTimeToSeconds(nextCaption.startTime)
+    const nextEndSeconds = parseTimeToSeconds(nextCaption.endTime)
+    
+    // Check if new range completely contains next caption
+    if (newStartSeconds <= nextStartSeconds && newEndSeconds >= nextEndSeconds) {
+      return {
+        isValid: false,
+        rule: 3,
+        reason: `New time range (${newStartTime} - ${newEndTime}) completely contains the next caption #${nextCaption.serial_number || currentSortedIndex + 2} (${nextCaption.startTime} - ${nextCaption.endTime})`,
+        suggestion: `Time range must not completely contain other captions`,
+        conflictingCaptionIndex: allCaptions.findIndex(c => c.id === nextCaption.id)
+      }
+    }
+  }
+  
+  return { isValid: true, rule: 3 }
+}
+
+/**
+ * Validates that start time is before or equal to end time
+ * @param {string} startTime - Start time string
+ * @param {string} endTime - End time string
+ * @returns {Object} Validation result with details
+ */
+export const validateStartBeforeEnd = (startTime, endTime) => {
+  // First check format
+  if (!isValidXXFormat(startTime) || !isValidXXFormat(endTime)) {
+    return {
+      isValid: false,
+      rule: 4,
+      reason: `Time values must be in MM:SS format (e.g., 0:00, 1:30)`,
+      suggestion: `Enter times in MM:SS format (e.g., 0:00, 1:30)`
+    }
+  }
+  
+  const startSeconds = parseTimeToSeconds(startTime)
+  const endSeconds = parseTimeToSeconds(endTime)
+  
+  if (startSeconds > endSeconds) {
+    return {
+      isValid: false,
+      rule: 4,
+      reason: `Start time (${startTime}) cannot be after end time (${endTime})`,
+      suggestion: `Start time must be before or equal to end time`
+    }
+  }
+  
+  return { isValid: true, rule: 4 }
+}
+
+/**
+ * Comprehensive validation of a single caption's times
+ * @param {Object} caption - Caption object to validate
+ * @param {number} captionIndex - Index of caption in array
+ * @param {Array} allCaptions - All captions array
+ * @param {number} videoDurationSeconds - Video duration in seconds
+ * @returns {Object} Validation result with all rule results
+ */
+export const validateCaptionTimes = (caption, captionIndex, allCaptions, videoDurationSeconds) => {
+  const results = {
+    isValid: true,
+    captionIndex,
+    failures: [],
+    suggestions: []
+  }
+  
+  // Rule 4: Start ≤ End
+  const startEndValidation = validateStartBeforeEnd(caption.startTime, caption.endTime)
+  if (!startEndValidation.isValid) {
+    results.isValid = false
+    results.failures.push(startEndValidation)
+  }
+  
+  // Rule 5: Start ≥ 0:00
+  const minStartValidation = validateMinimumStartTime(caption.startTime)
+  if (!minStartValidation.isValid) {
+    results.isValid = false
+    results.failures.push(minStartValidation)
+  }
+  
+  // Rule 6: End ≤ Video Duration
+  const maxEndValidation = validateMaximumEndTime(caption.endTime, videoDurationSeconds)
+  if (!maxEndValidation.isValid) {
+    results.isValid = false
+    results.failures.push(maxEndValidation)
+  }
+  
+  // Rule 1: Start time not in other caption ranges
+  const startOverlapValidation = validateTimeNotInOtherCaptionRange(caption.startTime, captionIndex, allCaptions, 'start')
+  if (!startOverlapValidation.isValid) {
+    results.isValid = false
+    results.failures.push(startOverlapValidation)
+  }
+  
+  // Rule 2: End time not in other caption ranges
+  const endOverlapValidation = validateTimeNotInOtherCaptionRange(caption.endTime, captionIndex, allCaptions, 'end')
+  if (!endOverlapValidation.isValid) {
+    results.isValid = false
+    results.failures.push(endOverlapValidation)
+  }
+  
+  // Rule 3: Range doesn't contain next caption
+  const containmentValidation = validateRangeNotContainingNextCaption(caption.startTime, caption.endTime, captionIndex, allCaptions)
+  if (!containmentValidation.isValid) {
+    results.isValid = false
+    results.failures.push(containmentValidation)
+  }
+  
+  // Collect all suggestions
+  results.suggestions = results.failures.map(failure => failure.suggestion)
+  
+  return results
+}
+
+/**
+ * Validates all captions in an array
+ * @param {Array} captions - Array of captions to validate
+ * @param {number} videoDurationSeconds - Video duration in seconds
+ * @returns {Object} Validation result for all captions
+ */
+export const validateAllCaptions = (captions, videoDurationSeconds) => {
+  const results = {
+    isValid: true,
+    totalFailures: 0,
+    captionResults: [],
+    allFailures: []
+  }
+  
+  for (let i = 0; i < captions.length; i++) {
+    // Skip validation for new captions that don't have proper IDs yet
+    if (!captions[i].id) {
+      console.log(`⏭️  Skipping validation for new caption #${i + 1} (no ID yet)`)
+      results.captionResults.push({ isValid: true, captionIndex: i, failures: [], suggestions: [] })
+      continue
+    }
+    
+    const captionResult = validateCaptionTimes(captions[i], i, captions, videoDurationSeconds)
+    results.captionResults.push(captionResult)
+    
+    if (!captionResult.isValid) {
+      results.isValid = false
+      results.totalFailures += captionResult.failures.length
+      results.allFailures.push(...captionResult.failures)
+    }
+  }
+  
+  return results
+}

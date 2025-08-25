@@ -62,6 +62,7 @@ export const CaptionEditorModal = ({
   showCaptionModal,
   editingCaption,
   captions,
+  setCaptions,
   conflictRowIndex,
   userDefaultCaptionDuration,
   setUserDefaultCaptionDuration,
@@ -73,8 +74,13 @@ export const CaptionEditorModal = ({
   handleDeleteCaption,
   player,
   isPlayerReady,
-  saveUserDefaultCaptionDuration
+  saveUserDefaultCaptionDuration,
+  originalCaptionsSnapshot
 }) => {
+  // Local state to prevent jumping during start time editing
+  const [editingStartTime, setEditingStartTime] = React.useState('')
+  const [editingStartTimeIndex, setEditingStartTimeIndex] = React.useState(null)
+
   if (!showCaptionModal) return null
 
   return (
@@ -223,11 +229,38 @@ export const CaptionEditorModal = ({
                     <div className="flex items-center space-x-2">
                       <input
                         type="text"
-                        value={caption.startTime}
+                        value={editingStartTimeIndex === index ? editingStartTime : caption.startTime}
                         onChange={(e) => {
+                          const newValue = e.target.value
+                          
+                          // Check for negative numbers and revert if detected
+                          if (newValue.includes('-')) {
+                            console.log(`⚠️  Negative number detected: ${newValue}, reverting caption #${index + 1}`)
+                            // Find original value from snapshot
+                            const originalCaption = originalCaptionsSnapshot?.find(c => c.id === caption.id)
+                            const originalValue = originalCaption?.startTime || caption.startTime
+                            console.log(`🔍 Original start time: ${originalValue}`)
+                            // Revert to original value
+                            setEditingStartTime(originalValue)
+                            console.log(`✅ Reverted to original value: ${originalValue}`)
+                            return
+                          }
+                          
+                          setEditingStartTime(newValue)
+                          setEditingStartTimeIndex(index)
+                        }}
+                        onFocus={() => {
+                          setEditingStartTime(caption.startTime)
+                          setEditingStartTimeIndex(index)
+                        }}
+                        onBlur={() => {
+                          // Update the actual caption when user exits field
                           const newCaptions = [...captions]
-                          newCaptions[index].startTime = e.target.value
+                          newCaptions[index].startTime = editingStartTime
                           setCaptions(newCaptions)
+                          // Reset local state
+                          setEditingStartTime('')
+                          setEditingStartTimeIndex(null)
                         }}
                         className="w-16 px-2 py-1 text-xs bg-transparent text-blue-400 border border-white/20 focus:border-blue-400 focus:outline-none rounded"
                         placeholder="Start"
