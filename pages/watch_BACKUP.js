@@ -49,19 +49,6 @@ import {
   deleteCaption,
   addFavorite
 } from '../utils/CaptionDatabase'
-import {
-  handleVideoReady as handleVideoReadyFromUtils,
-  handleVideoError as handleVideoErrorFromUtils,
-  checkForSavedSession as checkForSavedSessionFromUtils,
-  showResumePrompt as showResumePromptFromUtils,
-  resumeVideo as resumeVideoFromUtils,
-  startFromBeginning as startFromBeginningFromUtils,
-  checkPlayerStateForWatchTime as checkPlayerStateForWatchTimeFromUtils,
-  handleKeyPress as handleKeyPressFromUtils,
-  isPlayerReady as isPlayerReadyFromUtils,
-  isVideoPlaying as isVideoPlayingFromUtils,
-  showVideoPlayingRestriction as showVideoPlayingRestrictionFromUtils
-} from '../utils/videoPlayerUtils'
 
 export default function Watch() {
 
@@ -320,7 +307,14 @@ export default function Watch() {
     return featureGates?.global_settings?.[messageKey] || fallback
   }
 
-
+  // Show video playing restriction modal
+  const showVideoPlayingRestriction = () => {
+    const message = getAdminMessage('video_playing_message', 'Please pause video before using this feature')
+    
+    showCustomAlertModal(message, [
+      { text: 'OK', action: hideCustomAlertModal }
+    ])
+  }
 
   // saveCaption function - now imported from CaptionDatabase
 
@@ -527,7 +521,7 @@ export default function Watch() {
     }
 
     // Check video playing restriction
-            if (options.checkVideoPlaying && feature.video_restricted && isVideoPlayingFromUtils(player)) {
+    if (options.checkVideoPlaying && feature.video_restricted && isVideoPlaying()) {
       const message = feature.messages?.video_playing || 
         featureGates.global_settings?.video_playing_message || 
         'Please pause video before using this feature'
@@ -541,7 +535,12 @@ export default function Watch() {
     return { hasAccess: true }
   }
 
-
+  const isVideoPlaying = () => {
+    if (!player || !player.getPlayerState) return false
+    const state = player.getPlayerState()
+    // YouTube states: 1=playing, 2=paused, 3=buffering, 5=video cued
+    return state === 1 || state === 3
+  }
 
   const getFeatureRestrictionMessage = (featureKey, options = {}) => {
     const access = checkFeatureAccess(featureKey, options)
@@ -803,27 +802,32 @@ export default function Watch() {
     // Track execution count
     useEffect.executionCount = (useEffect.executionCount || 0) + 1
     
-    if (!player || !isPlayerReadyFromUtils(player) || !user?.id || !videoId || !videoChannel) {
+    if (!player || !isPlayerReady() || !user?.id || !videoId || !videoChannel) {
       // Watch time tracking paused - conditions not met
       return
     }
 
     // Set up polling to check player state
     const checkPlayerState = () => {
-      // Use utility function for checking player state and managing watch time tracking
-      const result = checkPlayerStateForWatchTimeFromUtils({
-        player,
-        isPlayerReady: isPlayerReadyFromUtils,
-        isTrackingWatchTime,
-        startWatchTimeTracking,
-        stopWatchTimeTracking,
-        setWatchStartTime,
-        setIsTrackingWatchTime,
-        watchStartTime
-      })
-      
-      if (result.changed) {
-        console.log(`🔄 Watch time tracking ${result.action}`)
+      try {
+        if (!player || !isPlayerReady()) return
+        
+        const playerState = player.getPlayerState()
+        // Player state check
+        
+        if (playerState === 1 && !isTrackingWatchTime) { // Playing
+          // Starting watch time tracking
+          const startTime = startWatchTimeTracking()
+          setWatchStartTime(startTime)
+          setIsTrackingWatchTime(true)
+        } else if ((playerState === 2 || playerState === 0) && isTrackingWatchTime && watchStartTime) { // Paused or Ended
+          // Stopping watch time tracking
+          stopWatchTimeTracking(watchStartTime)
+          setWatchStartTime(null)
+          setIsTrackingWatchTime(false)
+        }
+      } catch (error) {
+
       }
     }
 
@@ -867,63 +871,94 @@ export default function Watch() {
 
   // Video player functions
   const handleVideoReady = (event, playerInstance) => {
-    // Use utility function for video ready handling
-    handleVideoReadyFromUtils(event, playerInstance, {
-      setIsVideoReady,
-      setPlayer,
-      setPlayerRef: (player) => { playerRef.current = player },
-      captureVideoParameters,
-      videoTitle,
-      videoChannel
-    })
+    setIsVideoReady(true)
+    // YouTube player ready and methods available
+    
+    // Set the fully ready player in both state and ref for immediate access
+    if (playerInstance) {
+      
+      setPlayer(playerInstance)
+      playerRef.current = playerInstance
+      
+      // Capture video parameters for centralized access
+      captureVideoParameters(playerInstance, videoTitle, videoChannel)
+    } else {
+      
+    }
   }
 
   const handleVideoError = (error) => {
-    // Use utility function for video error handling
-    handleVideoErrorFromUtils(error, {
-      onError: (error) => {
-        // Custom error handling if needed
-        console.error('Custom video error handling:', error)
-      }
-    })
+    console.error('Video error:', error)
+    // Handle video loading errors
   }
 
   // Check for saved session data and resume video if available
   const checkForSavedSession = async (currentVideoId) => {
-    // Use utility function for checking saved session
-    await checkForSavedSessionFromUtils(currentVideoId, {
-      userId: user?.id,
-      showResumePrompt,
-      supabase
-    })
+    if (!user?.id || !currentVideoId) return
+    
+    try {
+
+      
+      // Get user profile to check for saved session
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('last_video_id, last_video_timestamp, last_video_title, last_video_channel_name, last_session_date')
+        .eq('id', user.id)
+        .single()
+      
+      if (error) {
+
+        return
+      }
+      
+      if (profile?.last_video_id === currentVideoId && profile?.last_video_timestamp) {
+
+        
+        // Show resume prompt to user
+        showResumePrompt(profile.last_video_timestamp, profile.last_video_title)
+      } else {
+
+      }
+    } catch (error) {
+      console.error('❌ Error checking saved session:', error)
+    }
   }
 
   // Show resume prompt to user
   const showResumePrompt = (timestamp, title) => {
-    // Use utility function for showing resume prompt
-    showResumePromptFromUtils(timestamp, title, {
-      showCustomAlertModal,
-      resumeVideo,
-      startFromBeginning
-    })
+    const minutes = Math.floor(timestamp / 60)
+    const seconds = Math.floor(timestamp % 60)
+    const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`
+    
+    const message = `Resume "${title}" from ${timeString}?`
+    const buttons = [
+      { text: 'Resume', action: () => resumeVideo(timestamp) },
+      { text: 'Start from beginning', action: () => startFromBeginning() }
+    ]
+    
+    showCustomAlertModal(message, buttons)
   }
 
   // Resume video at saved timestamp
   const resumeVideo = (timestamp) => {
-    // Use utility function for resuming video
-    resumeVideoFromUtils(timestamp, {
-      playerRef,
-      hideCustomAlertModal
-    })
+    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+              // Resuming video at timestamp
+      playerRef.current.seekTo(timestamp, true)
+      hideCustomAlertModal()
+    } else {
+      
+    }
   }
 
   // Start video from beginning
   const startFromBeginning = () => {
-    // Use utility function for starting video from beginning
-    startFromBeginningFromUtils({
-      playerRef,
-      hideCustomAlertModal
-    })
+    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+              // Starting video from beginning
+      playerRef.current.seekTo(0, true)
+      hideCustomAlertModal()
+    } else {
+      
+    }
   }
 
 
@@ -943,16 +978,15 @@ export default function Watch() {
       
       // Save session data for Login-Resume functionality when user pauses
       
-      if (user?.id) {
+      if (user?.id && profile?.subscription_tier !== 'freebird') {
 
         
         // Use the ref for immediate access to the player instance
         if (playerRef.current && playerRef.current.getPlayerState && typeof playerRef.current.getPlayerState === 'function') {
   
-          console.log('🔄 Triggering session save on pause...')
           saveSessionOnPause()
         } else {
-          console.log('⚠️ Player not ready for session save')
+  
         }
       } else {
         // Save conditions NOT met - session save blocked
@@ -973,13 +1007,63 @@ export default function Watch() {
   // Handle keyboard shortcuts for video control
   useEffect(() => {
     const handleKeyPress = (e) => {
-      // Spacebar for play/pause - use utility function
-      if (e.code === 'Space' && isPlayerReadyFromUtils(player)) {
-        handleKeyPressFromUtils(e, {
-          isPlayerReady: isPlayerReadyFromUtils,
-          player,
-          getDailyWatchTimeTotal
-        })
+      // Spacebar for play/pause
+      if (e.code === 'Space' && isPlayerReady()) {
+        // Check if any input field is currently focused - disable video control if so
+        if (document.activeElement && 
+            (document.activeElement.tagName === 'INPUT' || 
+             document.activeElement.tagName === 'TEXTAREA')) {
+          // Input field focused - spacebar video control disabled
+          return // Exit early, don't handle video control
+        }
+        
+        e.preventDefault()
+
+        
+        try {
+          // Try to get player state first
+          if (player.getPlayerState && typeof player.getPlayerState === 'function') {
+            const playerState = player.getPlayerState()
+            // Player state
+            
+            if (playerState === 1) { // Playing
+              player.pauseVideo()
+              // Video paused
+            } else { // Paused or other states
+              player.playVideo()
+              // Video playing
+              
+              // Query daily watch time total only when starting from beginning (0:00)
+              if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
+                const currentTime = player.getCurrentTime()
+                if (currentTime <= 1) { // Within 1 second of start (0:00)
+          
+                  getDailyWatchTimeTotal()
+                } else {
+                  // Video resuming from position - skipping daily total query
+                }
+              }
+            }
+          } else {
+            // Fallback: try to pause if we can't determine state
+    
+            if (player.pauseVideo && typeof player.pauseVideo === 'function') {
+              player.pauseVideo()
+              // Video paused (fallback)
+            }
+          }
+        } catch (error) {
+          console.error('❌ Spacebar handler error:', error)
+          // Final fallback: try to pause
+          try {
+            if (player.pauseVideo && typeof player.pauseVideo === 'function') {
+              player.pauseVideo()
+              // Video paused (final fallback)
+            }
+          } catch (fallbackError) {
+            console.error('💥 All fallbacks failed:', fallbackError)
+          }
+        }
       }
       
       // F11 for fullscreen toggle
@@ -998,7 +1082,20 @@ export default function Watch() {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [player, isVideoReady, isFullscreen])
 
+  // Check if player is fully ready with all methods available
+  const isPlayerReady = () => {
+    const result = player && 
+           player.getPlayerState && 
+           typeof player.getPlayerState === 'function' &&
+           player.playVideo && 
+           typeof player.playVideo === 'function' &&
+           player.pauseVideo && 
+           typeof player.pauseVideo === 'function'
+    
 
+    
+    return result
+  }
 
   // Check if user can access loop functionality
   const canAccessLoops = () => {
@@ -1031,12 +1128,8 @@ export default function Watch() {
   // Handle individual row hide/show
   const handleRowToggle = (rowNumber) => {
     // Check if video is playing
-    if (isVideoPlayingFromUtils(player)) {
-      showVideoPlayingRestrictionFromUtils({
-        getAdminMessage,
-        showCustomAlertModal,
-        hideCustomAlertModal
-      })
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
       return
     }
     
@@ -1058,12 +1151,8 @@ export default function Watch() {
   // Handle show all rows (reset)
   const handleShowAllRows = () => {
     // Check if video is playing
-    if (isVideoPlayingFromUtils(player)) {
-      showVideoPlayingRestrictionFromUtils({
-        getAdminMessage,
-        showCustomAlertModal,
-        hideCustomAlertModal
-      })
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
       return
     }
     
@@ -1138,12 +1227,8 @@ export default function Watch() {
   // Handle caption edit click with access control
   const handleCaptionEditClick = (rowNumber) => {
     // Check if video is playing
-    if (isVideoPlayingFromUtils(player)) {
-      showVideoPlayingRestrictionFromUtils({
-        getAdminMessage,
-        showCustomAlertModal,
-        hideCustomAlertModal
-      })
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
       return
     }
     
@@ -1334,18 +1419,14 @@ export default function Watch() {
     }
 
     // Check if video is playing
-    if (isVideoPlayingFromUtils(player)) {
-      showVideoPlayingRestrictionFromUtils({
-        getAdminMessage,
-        showCustomAlertModal,
-        hideCustomAlertModal
-      })
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
       return
     }
 
     // Get current video time
     let currentTime = 0
-    if (player && isPlayerReadyFromUtils(player)) {
+    if (player && isPlayerReady()) {
       try {
         currentTime = Math.floor(player.getCurrentTime())
       } catch (error) {
@@ -1566,12 +1647,8 @@ export default function Watch() {
     }
 
     // Check if video is playing
-    if (isVideoPlayingFromUtils(player)) {
-      showVideoPlayingRestrictionFromUtils({
-        getAdminMessage,
-        showCustomAlertModal,
-        hideCustomAlertModal
-      })
+    if (isVideoPlaying()) {
+      showVideoPlayingRestriction()
       return
     }
 
@@ -1583,7 +1660,7 @@ export default function Watch() {
 
     // Find current caption at this time
     let currentTime = 0
-    if (player && isPlayerReadyFromUtils(player)) {
+    if (player && isPlayerReady()) {
       try {
         currentTime = Math.floor(player.getCurrentTime())
       } catch (error) {
@@ -1628,9 +1705,9 @@ export default function Watch() {
     // Comprehensive validation of all caption times using the new 6-rule system
     console.log('🔍 Validating all captions with comprehensive 6-rule system...')
     
-        // Get video duration for validation (Rule 6)
+    // Get video duration for validation (Rule 6)
     let videoDurationSeconds = 0
-    if (player && isPlayerReadyFromUtils(player)) {
+    if (player && isPlayerReady()) {
       try {
         videoDurationSeconds = Math.floor(player.getDuration())
         console.log('🔍 Video duration from player:', videoDurationSeconds, 'seconds')
@@ -1642,11 +1719,11 @@ export default function Watch() {
           const videoElement = document.querySelector('video')
           if (videoElement && !isNaN(videoElement.duration)) {
             videoDurationSeconds = Math.floor(videoElement.duration)
-            console.log('🔍 Video duration from player:', videoDurationSeconds, 'seconds')
+            console.log('🔍 Video duration from video element:', videoDurationSeconds, 'seconds')
             console.log('🔍 Video duration formatted:', formatSecondsToTime(videoDurationSeconds))
           }
         } catch (altError) {
-        console.warn('⚠️ Could not get video duration from video element either')
+          console.warn('⚠️ Could not get video duration from video element either')
         }
       }
     }
@@ -2072,7 +2149,7 @@ export default function Watch() {
 
   // Check if video should loop (runs every second when loop is active)
   useEffect(() => {
-    if (!isLoopActive || !player || !isPlayerReadyFromUtils(player)) return
+    if (!isLoopActive || !player || !isPlayerReady()) return
 
     const loopInterval = setInterval(() => {
       try {
@@ -2122,7 +2199,7 @@ export default function Watch() {
 
   // Effect to update displayed caption based on video time
   useEffect(() => {
-    if (!player || !isPlayerReadyFromUtils(player) || captions.length === 0) return
+    if (!player || !isPlayerReady() || captions.length === 0) return
 
     const captionUpdateInterval = setInterval(() => {
       try {
@@ -2829,7 +2906,7 @@ export default function Watch() {
         handleDuplicateCaption={handleDuplicateCaption}
         handleDeleteCaption={handleDeleteCaption}
         player={player}
-        isPlayerReady={isPlayerReadyFromUtils}
+        isPlayerReady={isPlayerReady}
         saveUserDefaultCaptionDuration={saveUserDefaultCaptionDuration}
         originalCaptionsSnapshot={originalCaptionsSnapshot}
         showCustomAlertModal={showCustomAlertModal}
