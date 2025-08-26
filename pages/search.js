@@ -29,6 +29,8 @@ export default function Search() {
   const { isAuthenticated, user, loading, signOut } = useAuth()
   const { profile, canSearch, checkDailySearchLimit, incrementDailySearchCount, getDailySearchLimit, dailySearchesUsed } = useUser()
   
+  // Toggle mock search results via env flag
+  const useMockSearch = process.env.NEXT_PUBLIC_USE_MOCK_SEARCH === 'true'
 
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showMenuModal, setShowMenuModal] = useState(false)
@@ -404,8 +406,7 @@ export default function Search() {
     }
 
     try {
-      // TEMPORARY MOCK FOR TESTING DAILY SEARCH LIMITS
-      // Remove this mock when YouTube API is working
+      // Mock payload for testing daily search limits
       const mockResults = {
         videos: [
           {
@@ -432,12 +433,13 @@ export default function Search() {
         nextPageToken: null
       };
 
-      const results = mockResults; // Use mock instead of real API call
-      // const results = await searchVideos(searchQuery.trim(), {
-      //   maxResults: 12, // Limit results per search
-      //   pageToken: pageToken,
-      //   order: sortOrder
-      // })
+      const results = useMockSearch
+        ? mockResults
+        : await searchVideos(searchQuery.trim(), {
+            maxResults: 12, // Limit results per search
+            pageToken: pageToken,
+            order: sortOrder
+          })
 
       if (pageToken) {
         // Append to existing results for load more
@@ -522,8 +524,7 @@ export default function Search() {
     setSearchError('')
 
     try {
-      // TEMPORARY MOCK FOR TESTING DAILY SEARCH LIMITS
-      // Remove this mock when YouTube API is working
+      // Mock payload for testing daily search limits
       const mockResults = {
         videos: [
           {
@@ -550,12 +551,13 @@ export default function Search() {
         nextPageToken: null
       };
 
-      const results = mockResults; // Use mock instead of real API call
-      // const results = await searchVideos(query.trim(), {
-      //   maxResults: 12,
-      //   pageToken: null,
-      //   order: sortOrder
-      // })
+      const results = useMockSearch
+        ? mockResults
+        : await searchVideos(query.trim(), {
+            maxResults: 12,
+            pageToken: null,
+            order: sortOrder
+          })
 
       setSearchResults(results.videos)
       setHasSearched(true)
