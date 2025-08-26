@@ -404,11 +404,40 @@ export default function Search() {
     }
 
     try {
-      const results = await searchVideos(searchQuery.trim(), {
-        maxResults: 12, // Limit results per search
-        pageToken: pageToken,
-        order: sortOrder
-      })
+      // TEMPORARY MOCK FOR TESTING DAILY SEARCH LIMITS
+      // Remove this mock when YouTube API is working
+      const mockResults = {
+        videos: [
+          {
+            id: { videoId: 'mock1' },
+            snippet: {
+              title: `[MOCK] ${searchQuery.trim()} - Guitar Lesson 1`,
+              description: 'Mock video for testing daily search limits',
+              thumbnails: { default: { url: 'https://via.placeholder.com/120x90?text=Mock+Video' } },
+              channelTitle: 'Mock Guitar Channel',
+              publishedAt: new Date().toISOString()
+            }
+          },
+          {
+            id: { videoId: 'mock2' },
+            snippet: {
+              title: `[MOCK] ${searchQuery.trim()} - Guitar Lesson 2`,
+              description: 'Mock video for testing daily search limits',
+              thumbnails: { default: { url: 'https://via.placeholder.com/120x90?text=Mock+Video' } },
+              channelTitle: 'Mock Guitar Channel',
+              publishedAt: new Date().toISOString()
+            }
+          }
+        ],
+        nextPageToken: null
+      };
+
+      const results = mockResults; // Use mock instead of real API call
+      // const results = await searchVideos(searchQuery.trim(), {
+      //   maxResults: 12, // Limit results per search
+      //   pageToken: pageToken,
+      //   order: sortOrder
+      // })
 
       if (pageToken) {
         // Append to existing results for load more
@@ -493,11 +522,40 @@ export default function Search() {
     setSearchError('')
 
     try {
-      const results = await searchVideos(query.trim(), {
-        maxResults: 12,
-        pageToken: null,
-        order: sortOrder
-      })
+      // TEMPORARY MOCK FOR TESTING DAILY SEARCH LIMITS
+      // Remove this mock when YouTube API is working
+      const mockResults = {
+        videos: [
+          {
+            id: { videoId: 'mock1' },
+            snippet: {
+              title: `[MOCK] ${query.trim()} - Guitar Lesson 1`,
+              description: 'Mock video for testing daily search limits',
+              thumbnails: { default: { url: 'https://via.placeholder.com/120x90?text=Mock+Video' } },
+              channelTitle: 'Mock Guitar Channel',
+              publishedAt: new Date().toISOString()
+            }
+          },
+          {
+            id: { videoId: 'mock2' },
+            snippet: {
+              title: `[MOCK] ${query.trim()} - Guitar Lesson 2`,
+              description: 'Mock video for testing daily search limits',
+              thumbnails: { default: { url: 'https://via.placeholder.com/120px?text=Mock+Video' } },
+              channelTitle: 'Mock Guitar Channel',
+              publishedAt: new Date().toISOString()
+            }
+          }
+        ],
+        nextPageToken: null
+      };
+
+      const results = mockResults; // Use mock instead of real API call
+      // const results = await searchVideos(query.trim(), {
+      //   maxResults: 12,
+      //   pageToken: null,
+      //   order: sortOrder
+      // })
 
       setSearchResults(results.videos)
       setHasSearched(true)
