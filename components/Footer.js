@@ -28,6 +28,8 @@ const Footer = forwardRef((props, ref) => {
             <div className="flex justify-center items-center space-x-4 text-white/60 text-xs">
               <span>© 2025 GuitarTube</span>
               <a href="/pricing" className="hover:text-white transition-colors underline">pricing</a>
+              <a href="/how-to-faqs" className="hover:text-white transition-colors underline">faq</a>
+              <a href="/community_guidelines" className="hover:text-white transition-colors underline">community</a>
               <button onClick={() => setShowSupportModal(true)} className="hover:text-white transition-colors underline bg-transparent border-none text-white/60 cursor-pointer">support</button>
               <a href="/terms" className="hover:text-white transition-colors underline">terms</a>
               <a href="/privacy" className="hover:text-white transition-colors underline">privacy</a>

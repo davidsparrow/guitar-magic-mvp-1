@@ -1,13 +1,59 @@
 // components/MenuModal.js - Standalone Menu Modal Component
 import { useState } from 'react'
 import { useUser } from '../contexts/UserContext'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function MenuModal({ isOpen, onClose, onSupportClick }) {
-  const { user, profile } = useUser()
+  const { profile, userEmail } = useUser()
+  const { isAuthenticated } = useAuth()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showBackstageAlert, setShowBackstageAlert] = useState(false)
 
   if (!isOpen) return null
+
+  // Check authentication - show backstage alert for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onClose()
+          }
+        }}
+      >
+        <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full relative text-white p-6">
+          {/* Modal Content */}
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold mb-4">🎭 Backstage Access Only</h2>
+            <p className="text-gray-300 text-sm">
+              You're only backstage. Signup to get in front of the crowd!
+            </p>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex space-x-3">
+            <button
+              onClick={() => {
+                onClose()
+                window.location.href = '/pricing'
+              }}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              Start Free
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -124,7 +170,7 @@ export default function MenuModal({ isOpen, onClose, onSupportClick }) {
               <h2 className="text-3xl font-bold mb-4">Profile</h2>
               <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <span className="text-white text-2xl font-bold">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  {userEmail?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
             </div>
@@ -132,12 +178,12 @@ export default function MenuModal({ isOpen, onClose, onSupportClick }) {
             <div className="space-y-4 text-gray-300">
               <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Name</p>
-                <p className="font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'User'}</p>
+                <p className="font-medium">{profile?.full_name || userEmail?.split('@')[0] || 'User'}</p>
               </div>
               
               <div className="bg-gray-800/50 p-4 rounded-lg">
                 <p className="text-sm text-gray-400 mb-1">Email</p>
-                <p className="font-medium">{user?.email || 'No email'}</p>
+                <p className="font-medium">{userEmail || 'No email'}</p>
               </div>
               
               <div className="bg-gray-800/50 p-4 rounded-lg">

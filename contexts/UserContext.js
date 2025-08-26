@@ -29,6 +29,18 @@ export const UserProvider = ({ children }) => {
     }
   }, [user])
 
+  // Daily search reset logic - check if we need to reset daily counts
+  useEffect(() => {
+    if (profile?.last_search_reset) {
+      const lastReset = new Date(profile.last_search_reset);
+      const today = new Date();
+      
+      if (lastReset.toDateString() !== today.toDateString()) {
+        resetDailySearchCount();
+      }
+    }
+  }, [profile?.last_search_reset])
+
   const fetchUserProfile = async (userId) => {
     if (!userId) return
     
@@ -62,6 +74,75 @@ export const UserProvider = ({ children }) => {
     }
   }
 
+  // Daily search limit management
+  const getDailySearchLimit = () => {
+    const limit = (() => {
+      switch (profile?.subscription_tier) {
+        case 'freebird': return 0;      // Free users: 0 searches
+        case 'roadie': return 36;       // Roadie users: 36 searches (from pricing.js)
+        case 'hero': return 999999;     // Hero users: unlimited
+        default: return 0;
+      }
+    })();
+    
+    console.log('🔍 getDailySearchLimit:', {
+      userTier: profile?.subscription_tier,
+      dailyLimit: limit,
+      dailyUsed: profile?.daily_searches_used || 0
+    });
+    
+    return limit;
+  }
+
+  const checkDailySearchLimit = () => {
+    const limit = getDailySearchLimit();
+    const used = profile?.daily_searches_used || 0;
+    const canSearch = limit === 999999 ? true : used < limit;
+    
+    console.log('🔍 checkDailySearchLimit:', {
+      userTier: profile?.subscription_tier,
+      dailyLimit: limit,
+      dailyUsed: used,
+      canSearch: canSearch,
+      remaining: limit === 999999 ? 'UNLIMITED' : Math.max(0, limit - used)
+    });
+    
+    return canSearch;
+  }
+
+  const incrementDailySearchCount = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { error } = await supabase.rpc('increment_search_usage', {
+        user_id_param: user.id
+      });
+      
+      if (!error) {
+        refreshProfile(); // Refresh to get updated count
+      } else {
+        console.error('Failed to increment search count:', error);
+      }
+    } catch (error) {
+      console.error('Failed to increment search count:', error);
+    }
+  }
+
+  const resetDailySearchCount = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { error } = await supabase.rpc('reset_daily_searches');
+      if (!error) {
+        refreshProfile();
+      } else {
+        console.error('Failed to reset search count:', error);
+      }
+    } catch (error) {
+      console.error('Failed to reset search count:', error);
+    }
+  }
+
   // Debug logging for profile state
   console.log('🔍 UserContext Debug:', {
     userId: user?.id,
@@ -92,7 +173,13 @@ export const UserProvider = ({ children }) => {
     userName: profile?.full_name || profile?.email?.split('@')[0] || 'User',
     userEmail: profile?.email,
     dailySearchesUsed: profile?.daily_searches_used || 0,
-    searchLimit: profile?.subscription_tier === 'premium' ? 999999 : 20,
+    searchLimit: getDailySearchLimit(),
+    
+    // Daily search management
+    getDailySearchLimit,
+    checkDailySearchLimit,
+    incrementDailySearchCount,
+    resetDailySearchCount,
     
     // Actions
     fetchUserProfile,

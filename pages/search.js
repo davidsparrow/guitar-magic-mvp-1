@@ -27,7 +27,7 @@ import { supabase } from '../lib/supabase'
 
 export default function Search() {
   const { isAuthenticated, user, loading, signOut } = useAuth()
-  const { profile, canSearch } = useUser()
+  const { profile, canSearch, checkDailySearchLimit, incrementDailySearchCount, getDailySearchLimit, dailySearchesUsed } = useUser()
   
 
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -359,6 +359,31 @@ export default function Search() {
       return
     }
 
+    // Check daily search limit for new searches (not load more)
+    if (!pageToken && !checkDailySearchLimit()) {
+      const limit = getDailySearchLimit();
+      const used = dailySearchesUsed;
+      
+      console.log('🚫 DAILY LIMIT REACHED in handleSearch:', {
+        userTier: profile?.subscription_tier,
+        dailyLimit: limit,
+        dailyUsed: used,
+        remaining: Math.max(0, limit - used)
+      });
+      
+      if (limit === 0) {
+        setCustomAlertMessage('Free users cannot search. Please upgrade to search for guitar videos.');
+      } else {
+        setCustomAlertMessage(`Daily search limit reached (${used}/${limit}). Upgrade to Hero for unlimited searches!`);
+        setCustomAlertButtons([
+          { text: 'Upgrade Now', action: () => router.push('/pricing') },
+          { text: 'Close', action: () => setShowCustomAlert(false) }
+        ]);
+      }
+      setShowCustomAlert(true);
+      return;
+    }
+
     // For new searches (not load more), check cache first
     if (!pageToken) {
       const cachedResults = getSearchFromCache(searchQuery.trim())
@@ -395,6 +420,15 @@ export default function Search() {
         
         // Save to cache for future use
         saveSearchToCache(searchQuery.trim(), results.videos, results.nextPageToken)
+        
+        // Increment daily search count after successful search
+        console.log('✅ SEARCH SUCCESSFUL - Incrementing daily count:', {
+          userTier: profile?.subscription_tier,
+          dailyLimit: getDailySearchLimit(),
+          dailyUsed: dailySearchesUsed,
+          remaining: Math.max(0, getDailySearchLimit() - dailySearchesUsed)
+        });
+        await incrementDailySearchCount()
       }
 
       setNextPageToken(results.nextPageToken)
@@ -418,6 +452,31 @@ export default function Search() {
     if (!canSearch) {
       setShowPlanSelectionAlert(true)
       return
+    }
+
+    // Check daily search limit
+    if (!checkDailySearchLimit()) {
+      const limit = getDailySearchLimit();
+      const used = dailySearchesUsed;
+      
+      console.log('🚫 DAILY LIMIT REACHED in performSearchWithQuery:', {
+        userTier: profile?.subscription_tier,
+        dailyLimit: limit,
+        dailyUsed: used,
+        remaining: Math.max(0, limit - used)
+      });
+      
+      if (limit === 0) {
+        setCustomAlertMessage('Free users cannot search. Please upgrade to search for guitar videos.');
+      } else {
+        setCustomAlertMessage(`Daily search limit reached (${used}/${limit}). Upgrade to Hero for unlimited searches!`);
+        setCustomAlertButtons([
+          { text: 'Upgrade Now', action: () => router.push('/pricing') },
+          { text: 'Close', action: () => setShowCustomAlert(false) }
+        ]);
+      }
+      setShowCustomAlert(true);
+      return;
     }
 
     // Check cache first
@@ -447,6 +506,15 @@ export default function Search() {
 
       // Save to cache for future use
       saveSearchToCache(query, results.videos, results.nextPageToken)
+      
+      // Increment daily search count after successful search
+      console.log('✅ SEARCH SUCCESSFUL (URL) - Incrementing daily count:', {
+        userTier: profile?.subscription_tier,
+        dailyLimit: getDailySearchLimit(),
+        dailyUsed: dailySearchesUsed,
+        remaining: Math.max(0, getDailySearchLimit() - dailySearchesUsed)
+      });
+      await incrementDailySearchCount()
 
     } catch (error) {
       console.error('Search error:', error)
