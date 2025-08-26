@@ -62,6 +62,35 @@ export const checkIfVideoFavorited = async (videoId, userId) => {
 }
 
 /**
+ * Get favorite ID for a video
+ * @param {string} videoId - YouTube video ID
+ * @param {string} userId - User ID
+ * @returns {Promise<string|null>} Favorite ID or null if not found
+ */
+export const getFavoriteId = async (videoId, userId) => {
+  try {
+    if (!userId || !videoId) return null
+    
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('video_id', videoId)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('❌ Error getting favorite ID:', error)
+      return null
+    }
+    
+    return data?.id || null
+  } catch (error) {
+    console.error('❌ Error getting favorite ID:', error)
+    return null
+  }
+}
+
+/**
  * Remove a video from favorites
  * @param {string} videoId - YouTube video ID
  * @param {string} userId - User ID

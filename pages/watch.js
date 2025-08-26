@@ -39,9 +39,11 @@ import {
   LoopConfigModal,
   CustomAlertModal
 } from '../components/CaptionModals'
+import ChordDiagramManager from '../components/ChordDiagramManager'
 import {
   saveUserDefaultCaptionDuration,
   checkIfVideoFavorited,
+  getFavoriteId,
   removeFavorite,
   loadCaptions,
   saveCaption,
@@ -108,6 +110,9 @@ export default function Watch() {
   
   // User access control states
   const [isVideoFavorited, setIsVideoFavorited] = useState(false)
+  const [currentFavoriteId, setCurrentFavoriteId] = useState(null)
+  const [videoDurationSeconds, setVideoDurationSeconds] = useState(0)
+  const [currentVideoTime, setCurrentVideoTime] = useState(0)
   const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
   
   // Caption management states
@@ -769,6 +774,14 @@ export default function Watch() {
       if (videoId && user?.id) {
         const isFavorited = await checkIfVideoFavorited(videoId, user?.id)
         setIsVideoFavorited(isFavorited)
+        
+        // Also get the favorite ID if favorited
+        if (isFavorited) {
+          const favoriteId = await getFavoriteId(videoId, user?.id)
+          setCurrentFavoriteId(favoriteId)
+        } else {
+          setCurrentFavoriteId(null)
+        }
         // Favorite status checked
       }
     }
@@ -864,6 +877,13 @@ export default function Watch() {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
+  
+  // Wrapper function to get video duration and update state
+  const getVideoDurationAndUpdateState = () => {
+    const duration = getVideoDuration()
+    setVideoDurationSeconds(duration)
+    return duration
+  }
 
   // Video player functions
   const handleVideoReady = (event, playerInstance) => {
@@ -876,6 +896,13 @@ export default function Watch() {
       videoTitle,
       videoChannel
     })
+    
+    // Update video duration when video is ready
+    if (playerInstance && playerInstance.getDuration) {
+      const duration = playerInstance.getDuration()
+      setVideoDurationSeconds(duration)
+      console.log('🎬 Video duration set to:', duration, 'seconds')
+    }
   }
 
   const handleVideoError = (error) => {
@@ -1374,7 +1401,7 @@ export default function Watch() {
       currentTime,
       captions,
       userDefaultCaptionDuration,
-      getVideoDuration()
+      getVideoDurationAndUpdateState()
     )
     
     // Convert to MM:SS format using the existing formatSecondsToTime function
@@ -1810,7 +1837,7 @@ export default function Watch() {
         newStartTime,
         captions,
         userDefaultCaptionDuration,
-        getVideoDuration()
+        getVideoDurationAndUpdateState()
       )
       
       // Update the calculated end time
@@ -2078,6 +2105,7 @@ export default function Watch() {
       try {
         if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
           const currentTime = player.getCurrentTime()
+          setCurrentVideoTime(currentTime)
           const startSeconds = timeToSeconds(loopStartTime)
           const endSeconds = timeToSeconds(loopEndTime)
           
@@ -2127,6 +2155,7 @@ export default function Watch() {
     const captionUpdateInterval = setInterval(() => {
       try {
         const currentTime = player.getCurrentTime()
+        setCurrentVideoTime(currentTime)
         
         // SMART UPDATE: Only force re-render if NOT currently editing inline
         // This prevents the 500ms updates from clearing user input while typing
@@ -2438,7 +2467,12 @@ export default function Watch() {
               }`}>
               {/* Left Column - Main Content (92% width) */}
               <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex items-center">
-                <span className="text-white text-sm font-medium">Chords Captions</span>
+                <ChordDiagramManager 
+                  favoriteId={currentFavoriteId || 'test-favorite-123'}
+                  currentTimeSeconds={currentVideoTime}
+                  videoDurationSeconds={videoDurationSeconds}
+                  isVisible={showRow2}
+                />
               </div>
               {/* Middle Column - ADD + EDIT icons (4% width) */}
               <div className="w-[4%] p-2 bg-transparent border-r-2 border-white flex flex-col items-center justify-center space-y-3">
