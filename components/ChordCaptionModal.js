@@ -30,7 +30,8 @@ import {
   createChordCaption as createChordInDB,
   updateChordCaption as updateChordInDB,
   deleteChordCaption as deleteChordInDB,
-  deleteAllChordCaptionsForFavorite
+  deleteAllChordCaptionsForFavorite,
+  parseTimeToSeconds
 } from '../utils/chordCaptionUtils'
 import { supabase } from '../lib/supabase/client'
 
@@ -40,7 +41,7 @@ import { supabase } from '../lib/supabase/client'
  * @param {Object} props
  * @param {boolean} props.showChordModal - Whether to show the modal
  * @param {Function} props.setShowChordModal - Function to close modal
- * @param {string} props.favoriteId - ID of the current favorite video
+ * @param {string} props.videoId - YouTube video ID of the current video
  * @param {number} props.videoDurationSeconds - Video duration in seconds
  * @param {number} props.currentTimeSeconds - Current video playback time
  * @param {Function} props.onChordsUpdated - Callback when chords are updated
@@ -48,7 +49,7 @@ import { supabase } from '../lib/supabase/client'
 export const ChordCaptionModal = ({
   showChordModal,
   setShowChordModal,
-  favoriteId,
+  videoId,
   videoDurationSeconds = 0,
   currentTimeSeconds = 0,
   onChordsUpdated,
@@ -79,15 +80,24 @@ export const ChordCaptionModal = ({
   // State for edit sub-modal
   const [showEditModal, setShowEditModal] = useState(false)
   
+  // Snapshot of original chord data for revert functionality
+  const [originalChordSnapshot, setOriginalChordSnapshot] = useState(null)
+  
+  // Separate UI state for chord selection in edit mode
+  const [editingChordUI, setEditingChordUI] = useState({
+    rootNote: '',
+    modifier: ''
+  })
+  
   // State for validation
   const [validationErrors, setValidationErrors] = useState([])
   
   // Load chord captions when modal opens
   useEffect(() => {
-    if (showChordModal && favoriteId && userId) {
+    if (showChordModal && videoId && userId) {
       loadChordCaptions()
     }
-  }, [showChordModal, favoriteId, userId])
+  }, [showChordModal, videoId, userId])
   
   /**
    * Load chord captions from database
@@ -102,7 +112,7 @@ export const ChordCaptionModal = ({
         .from('favorites')
         .select('id')
         .eq('user_id', userId)
-        .eq('video_id', favoriteId)
+        .eq('video_id', videoId)
         .single()
       
       if (favoriteError) {
@@ -127,7 +137,7 @@ export const ChordCaptionModal = ({
       console.error('❌ Error loading chord captions:', err)
       
       // Fallback to mock data for testing
-      if (favoriteId.includes('test-')) {
+      if (videoId.includes('test-')) {
         console.log('🔄 Using mock data for testing')
         const mockChords = [
           {
@@ -265,7 +275,7 @@ export const ChordCaptionModal = ({
       }
       
       // For testing: add directly to local state (skip database)
-      if (favoriteId.includes('test-')) {
+      if (videoId.includes('test-')) {
         console.log('🔄 Adding mock chord for testing:', chordData)
         
         const mockChord = {
@@ -308,7 +318,7 @@ export const ChordCaptionModal = ({
           .from('favorites')
           .select('id')
           .eq('user_id', userId)
-          .eq('video_id', favoriteId)
+          .eq('video_id', videoId)
           .single()
         
         if (favoriteError) {
@@ -368,6 +378,16 @@ export const ChordCaptionModal = ({
   const handleEditChord = (chord) => {
     setEditingChordId(chord.id)
     
+    // Create snapshot of original chord data for revert functionality
+    setOriginalChordSnapshot({
+      id: chord.id,
+      chord_name: chord.chord_name,
+      start_time: chord.start_time,
+      end_time: chord.end_time,
+      chord_data: chord.chord_data,
+      display_order: chord.display_order
+    })
+    
     // Parse the chord name to get root note and modifier
     const chordName = chord.chord_name || ''
     let rootNote = ''
@@ -393,6 +413,13 @@ export const ChordCaptionModal = ({
       rootNote: rootNote,
       modifier: modifier
     })
+    
+    // Set UI state for chord selection (separate from database fields)
+    setEditingChordUI({
+      rootNote: rootNote,
+      modifier: modifier
+    })
+    
     setShowEditModal(true)
   }
   
@@ -405,7 +432,7 @@ export const ChordCaptionModal = ({
       setError(null)
       
       // For testing: update local state
-      if (favoriteId.includes('test-')) {
+      if (videoId.includes('test-')) {
         setChords(prev => prev.map(chord => 
           chord.id === editingChordId 
             ? { ...chord, ...editingChord }
@@ -430,31 +457,46 @@ export const ChordCaptionModal = ({
         setTimeout(() => setError(null), 3000)
         
       } else {
-        // Real database update
-        const result = await updateChordInDB(editingChordId, editingChord)
+        // Real database update - filter out non-database fields
+        const { rootNote, modifier, ...dbFields } = editingChord
+        
+        // Get the favorite ID for this video
+        const { data: favoriteData, error: favoriteError } = await supabase
+          .from('favorites')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('video_id', videoId)
+          .single()
+        
+        if (favoriteError) {
+          setError('❌ Video must be favorited to update chord captions')
+          return
+        }
+        
+        const result = await updateChordInDB(editingChordId, dbFields, favoriteData.id)
         
         if (result.success) {
-          setChords(prev => prev.map(chord => 
+          // Update chords and re-sort by start time
+          const updatedChords = chords.map(chord => 
             chord.id === editingChordId 
-              ? { ...chord, ...editingChord }
+              ? { ...chord, ...dbFields }
               : chord
-          ))
+          )
+          
+          // Sort the updated chords by start time
+          const sortedChords = sortChordsByStartTime(updatedChords)
+          setChords(sortedChords)
           
           // Notify parent component
           if (onChordsUpdated) {
-            const updatedChords = chords.map(chord => 
-              chord.id === editingChordId 
-                ? { ...chord, ...editingChord }
-                : chord
-            )
-            onChordsUpdated(updatedChords)
+            onChordsUpdated(sortedChords)
           }
           
           setEditingChordId(null)
           setEditingChord({ chord_name: '', start_time: '', end_time: '' })
           setShowEditModal(false)
           
-          console.log('✅ Chord updated successfully')
+          console.log('✅ Chord updated successfully and list re-sorted')
         } else {
           setError(result.error || 'Failed to update chord caption')
         }
@@ -472,8 +514,40 @@ export const ChordCaptionModal = ({
    * Cancel editing chord
    */
   const handleCancelEditChord = () => {
+    // Revert to original chord data from snapshot
+    if (originalChordSnapshot) {
+      setEditingChord({
+        chord_name: originalChordSnapshot.chord_name,
+        start_time: originalChordSnapshot.start_time,
+        end_time: originalChordSnapshot.end_time
+      })
+      
+      // Parse the original chord name to restore UI state
+      const chordName = originalChordSnapshot.chord_name || ''
+      let rootNote = ''
+      let modifier = ''
+      
+      if (chordName) {
+        for (let i = 1; i <= 2; i++) {
+          const possibleRoot = chordName.substring(0, i)
+          if (ROOT_NOTES.some(note => note.value === possibleRoot)) {
+            rootNote = possibleRoot
+            modifier = chordName.substring(i)
+            break
+          }
+        }
+      }
+      
+      setEditingChordUI({
+        rootNote: rootNote,
+        modifier: modifier
+      })
+    }
+    
     setEditingChordId(null)
     setEditingChord({ chord_name: '', start_time: '', end_time: '' })
+    setEditingChordUI({ rootNote: '', modifier: '' })
+    setOriginalChordSnapshot(null)
     setShowEditModal(false)
   }
   
@@ -488,13 +562,13 @@ export const ChordCaptionModal = ({
       // Create the duplicated chord data
       const chordData = {
         chord_name: chord.chord_name,
-        start_time: formatTimeToTimeString(currentTimeSeconds),
-        end_time: formatTimeToTimeString(currentTimeSeconds + 30), // 30 second duration
+        start_time: chord.start_time, // Use original chord's start time
+        end_time: calculateEndTime(chord.start_time, chord.end_time), // Calculate proper end time
         chord_data: chord.chord_data || null
       }
       
       // For testing: add to local state with mock ID
-      if (favoriteId.includes('test-')) {
+      if (videoId.includes('test-')) {
         const duplicatedChord = {
           ...chord,
           id: `duplicate-${Date.now()}`,
@@ -525,7 +599,7 @@ export const ChordCaptionModal = ({
           .from('favorites')
           .select('id')
           .eq('user_id', userId)
-          .eq('video_id', favoriteId)
+          .eq('video_id', videoId)
           .single()
         
         if (favoriteError) {
@@ -536,14 +610,17 @@ export const ChordCaptionModal = ({
         const result = await createChordInDB(chordData, favoriteData.id, userId)
         
         if (result.success) {
-          setChords(prev => [...prev, result.data])
+          // Add the new chord and re-sort by start time
+          const updatedChords = [...chords, result.data]
+          const sortedChords = sortChordsByStartTime(updatedChords)
+          setChords(sortedChords)
           
-          // Notify parent component
+          // Notify parent component with sorted chords
           if (onChordsUpdated) {
-            onChordsUpdated([...chords, result.data])
+            onChordsUpdated(sortedChords)
           }
           
-          console.log('✅ Chord duplicated successfully:', result.data)
+          console.log('✅ Chord duplicated successfully and list re-sorted:', result.data)
         } else {
           setError(result.error || 'Failed to duplicate chord caption')
         }
@@ -566,7 +643,7 @@ export const ChordCaptionModal = ({
       setError(null)
       
       // For testing: remove from local state
-      if (favoriteId.includes('test-')) {
+      if (videoId.includes('test-')) {
         setChords(prev => prev.filter(chord => chord.id !== chordId))
         
         // Notify parent component
@@ -614,8 +691,21 @@ export const ChordCaptionModal = ({
         setIsLoading(true)
         setError(null)
         
+        // First get the favorite ID for this video
+        const { data: favoriteData, error: favoriteError } = await supabase
+          .from('favorites')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('video_id', videoId)
+          .single()
+        
+        if (favoriteError) {
+          setError('❌ Video must be favorited to delete chord captions')
+          return
+        }
+        
         // Call the database function to delete all chords
-        const result = await deleteAllChordCaptionsForFavorite(favoriteId)
+        const result = await deleteAllChordCaptionsForFavorite(favoriteData.id)
         
         if (result.success) {
           // Clear local state after successful database deletion
@@ -643,6 +733,23 @@ export const ChordCaptionModal = ({
   }
   
   /**
+   * Sort chords by start time (ascending) with creation order for identical times
+   */
+  const sortChordsByStartTime = (chordsToSort) => {
+    return [...chordsToSort].sort((a, b) => {
+      const aStart = parseTimeToSeconds(a.start_time)
+      const bStart = parseTimeToSeconds(b.start_time)
+      
+      if (aStart !== bStart) {
+        return aStart - bStart
+      }
+      
+      // If start times are identical, maintain creation order (display_order)
+      return (a.display_order || 0) - (b.display_order || 0)
+    })
+  }
+
+  /**
    * Helper function to format seconds to time string
    */
   const formatTimeToTimeString = (seconds) => {
@@ -650,6 +757,17 @@ export const ChordCaptionModal = ({
     const remainingSeconds = Math.floor(seconds % 60)
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
+
+  /**
+   * Helper function to calculate the end time of a chord based on its start time and duration.
+   * This is needed because the duplicate functionality should maintain the original chord's duration.
+   */
+  const calculateEndTime = (startTime, originalEndTime) => {
+    const startSeconds = parseTimeToSeconds(startTime);
+    const originalEndSeconds = parseTimeToSeconds(originalEndTime);
+    const durationSeconds = originalEndSeconds - startSeconds;
+    return formatTimeToTimeString(startSeconds + durationSeconds);
+  };
   
   if (!showChordModal) return null
   
@@ -681,7 +799,6 @@ export const ChordCaptionModal = ({
               title="Add new chord caption"
             >
               <FaPlus className="w-4 h-4" />
-              <span>Add Chord</span>
             </button>
             
             {/* Delete All Button */}
@@ -692,7 +809,7 @@ export const ChordCaptionModal = ({
                 title="Delete all chord captions"
               >
                 <MdDeleteSweep className="w-5 h-5" />
-                <span className="text-sm">Delete All</span>
+                <span className="text-sm">All</span>
               </button>
             )}
           </div>
@@ -707,15 +824,15 @@ export const ChordCaptionModal = ({
             </span>
           </div>
           
-          {/* Right side - Close button */}
+          {/* Right side - Save button */}
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowChordModal(false)}
-              className="px-3 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors flex items-center space-x-2"
-              title="Close modal"
+              className="w-20 px-3 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm flex items-center justify-center space-x-1"
+              title="Save and close modal"
             >
-              <FaTimes className="w-4 h-4" />
-              <span>Close</span>
+              <CiSaveDown1 className="w-6 h-6" />
+              <span>Save</span>
             </button>
           </div>
         </div>
@@ -907,16 +1024,13 @@ export const ChordCaptionModal = ({
                 <label className="block text-sm font-medium text-gray-300 mb-2">Chord:</label>
                 <div className="flex space-x-2">
                   <select 
-                    value={editingChord.rootNote || ''}
+                    value={editingChordUI.rootNote || ''}
                     onChange={(e) => {
                       const rootNote = e.target.value
-                      const modifier = editingChord.modifier || ''
+                      const modifier = editingChordUI.modifier || ''
                       const chordName = buildChordName(rootNote, modifier)
-                      setEditingChord(prev => ({ 
-                        ...prev, 
-                        rootNote,
-                        chord_name: chordName 
-                      }))
+                      setEditingChordUI(prev => ({ ...prev, rootNote }))
+                      setEditingChord(prev => ({ ...prev, chord_name: chordName }))
                     }}
                     className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
                   >
@@ -929,16 +1043,13 @@ export const ChordCaptionModal = ({
                   </select>
                   
                   <select 
-                    value={editingChord.modifier || ''}
+                    value={editingChordUI.modifier || ''}
                     onChange={(e) => {
                       const modifier = e.target.value
-                      const rootNote = editingChord.rootNote || ''
+                      const rootNote = editingChordUI.rootNote || ''
                       const chordName = buildChordName(rootNote, modifier)
-                      setEditingChord(prev => ({ 
-                        ...prev, 
-                        modifier,
-                        chord_name: chordName 
-                      }))
+                      setEditingChordUI(prev => ({ ...prev, modifier }))
+                      setEditingChord(prev => ({ ...prev, chord_name: chordName }))
                     }}
                     className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
                   >

@@ -271,6 +271,8 @@ export default function Watch() {
   const [customAlertMessage, setCustomAlertMessage] = useState('')
   const [customAlertButtons, setCustomAlertButtons] = useState([])
 
+
+
   // Basic Supabase database operations
   const saveFavorite = async (videoData) => {
     try {
@@ -290,7 +292,6 @@ export default function Watch() {
         .select()
       
       if (error) throw error
-      
       
       return data[0]
     } catch (error) {
@@ -2999,7 +3000,7 @@ export default function Watch() {
       <ChordCaptionModal
         showChordModal={showChordModal}
         setShowChordModal={setShowChordModal}
-        favoriteId={videoId}
+        videoId={videoId}
         videoDurationSeconds={player ? player.getDuration() : 0}
         currentTimeSeconds={player ? player.getCurrentTime() : 0}
         onChordsUpdated={() => {
