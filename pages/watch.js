@@ -2995,14 +2995,15 @@ export default function Watch() {
 
       {/* Chord Caption Modal */}
       <ChordCaptionModal
-        isOpen={showChordModal}
-        onClose={() => setShowChordModal(false)}
+        showChordModal={showChordModal}
+        setShowChordModal={setShowChordModal}
         favoriteId={videoId}
         videoDurationSeconds={player ? player.getDuration() : 0}
         currentTimeSeconds={player ? player.getCurrentTime() : 0}
-        chords={chordCaptions}
-        onChordsChange={setChordCaptions}
-        isLoading={isLoadingChords}
+        onChordsUpdated={() => {
+          // Handle chord updates - reload chord captions if needed
+          console.log('✅ Chord captions updated')
+        }}
       />
 
       {/* Auth Modal */}
