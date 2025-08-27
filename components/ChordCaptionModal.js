@@ -450,20 +450,80 @@ export const ChordCaptionModal = ({
   /**
    * Duplicate a chord
    */
-  const handleDuplicateChord = (chord) => {
-    const duplicatedChord = {
-      ...chord,
-      id: `duplicate-${Date.now()}`,
-      start_time: formatTimeToTimeString(currentTimeSeconds),
-      end_time: formatTimeToTimeString(currentTimeSeconds + 30), // 30 second duration
-      display_order: chords.length + 1
-    }
-    
-    setChords(prev => [...prev, duplicatedChord])
-    
-    // Notify parent component
-    if (onChordsUpdated) {
-      onChordsUpdated([...chords, duplicatedChord])
+  const handleDuplicateChord = async (chord) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      // Create the duplicated chord data
+      const chordData = {
+        chord_name: chord.chord_name,
+        start_time: formatTimeToTimeString(currentTimeSeconds),
+        end_time: formatTimeToTimeString(currentTimeSeconds + 30), // 30 second duration
+        chord_data: chord.chord_data || null
+      }
+      
+      // For testing: add to local state with mock ID
+      if (favoriteId.includes('test-')) {
+        const duplicatedChord = {
+          ...chord,
+          id: `duplicate-${Date.now()}`,
+          start_time: chordData.start_time,
+          end_time: chordData.end_time,
+          display_order: chords.length + 1
+        }
+        
+        setChords(prev => [...prev, duplicatedChord])
+        
+        // Notify parent component
+        if (onChordsUpdated) {
+          onChordsUpdated([...chords, duplicatedChord])
+        }
+        
+        setError('✅ Chord duplicated successfully! (Mock mode)')
+        setTimeout(() => setError(null), 3000)
+        
+      } else {
+        // Real database call - save the duplicate immediately
+        if (!userId) {
+          setError('User ID is required to duplicate chord captions')
+          return
+        }
+        
+        // Get the favorite ID (UUID) for this video
+        const { data: favoriteData, error: favoriteError } = await supabase
+          .from('favorites')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('video_id', favoriteId)
+          .single()
+        
+        if (favoriteError) {
+          setError('Video must be favorited to duplicate chord captions')
+          return
+        }
+        
+        const result = await createChordInDB(chordData, favoriteData.id, userId)
+        
+        if (result.success) {
+          setChords(prev => [...prev, result.data])
+          
+          // Notify parent component
+          if (onChordsUpdated) {
+            onChordsUpdated([...chords, result.data])
+          }
+          
+          console.log('✅ Chord duplicated successfully:', result.data)
+        } else {
+          setError(result.error || 'Failed to duplicate chord caption')
+        }
+      }
+      
+    } catch (err) {
+      console.error('❌ Error duplicating chord caption:', err)
+      setError('Failed to duplicate chord caption')
+    } finally {
+      setIsLoading(false)
     }
   }
   
