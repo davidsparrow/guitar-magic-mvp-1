@@ -39,11 +39,9 @@ import {
   LoopConfigModal,
   CustomAlertModal
 } from '../components/CaptionModals'
-import ChordDiagramManager from '../components/ChordDiagramManager'
 import {
   saveUserDefaultCaptionDuration,
   checkIfVideoFavorited,
-  getFavoriteId,
   removeFavorite,
   loadCaptions,
   saveCaption,
@@ -64,6 +62,7 @@ import {
   isVideoPlaying as isVideoPlayingFromUtils,
   showVideoPlayingRestriction as showVideoPlayingRestrictionFromUtils
 } from '../utils/videoPlayerUtils'
+import ChordCaptionModal from '../components/ChordCaptionModal'
 
 export default function Watch() {
 
@@ -110,9 +109,6 @@ export default function Watch() {
   
   // User access control states
   const [isVideoFavorited, setIsVideoFavorited] = useState(false)
-  const [currentFavoriteId, setCurrentFavoriteId] = useState(null)
-  const [videoDurationSeconds, setVideoDurationSeconds] = useState(0)
-  const [currentVideoTime, setCurrentVideoTime] = useState(0)
   const [showUnfavoriteWarning, setShowUnfavoriteWarning] = useState(false)
   
   // Caption management states
@@ -130,6 +126,13 @@ export default function Watch() {
   const [editingCaptionId, setEditingCaptionId] = useState(null)
   const [originalCaptionsSnapshot, setOriginalCaptionsSnapshot] = useState(null) // Store original state when modal opens
   const [userDefaultCaptionDuration, setUserDefaultCaptionDuration] = useState(10) // User's preferred caption duration in seconds
+  
+  // 🎸 CHORD CAPTION SYSTEM STATE VARIABLES 🎸
+  // =============================================
+  const [showChordModal, setShowChordModal] = useState(false)        // Controls chord modal visibility
+  const [chordCaptions, setChordCaptions] = useState([])             // Stores array of chord caption data
+  const [isLoadingChords, setIsLoadingChords] = useState(false)      // Loading state for chord operations
+  // =============================================
   
   // Search functionality states
   const [searchQuery, setSearchQuery] = useState('')
@@ -774,14 +777,6 @@ export default function Watch() {
       if (videoId && user?.id) {
         const isFavorited = await checkIfVideoFavorited(videoId, user?.id)
         setIsVideoFavorited(isFavorited)
-        
-        // Also get the favorite ID if favorited
-        if (isFavorited) {
-          const favoriteId = await getFavoriteId(videoId, user?.id)
-          setCurrentFavoriteId(favoriteId)
-        } else {
-          setCurrentFavoriteId(null)
-        }
         // Favorite status checked
       }
     }
@@ -877,13 +872,6 @@ export default function Watch() {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
-  
-  // Wrapper function to get video duration and update state
-  const getVideoDurationAndUpdateState = () => {
-    const duration = getVideoDuration()
-    setVideoDurationSeconds(duration)
-    return duration
-  }
 
   // Video player functions
   const handleVideoReady = (event, playerInstance) => {
@@ -896,13 +884,6 @@ export default function Watch() {
       videoTitle,
       videoChannel
     })
-    
-    // Update video duration when video is ready
-    if (playerInstance && playerInstance.getDuration) {
-      const duration = playerInstance.getDuration()
-      setVideoDurationSeconds(duration)
-      console.log('🎬 Video duration set to:', duration, 'seconds')
-    }
   }
 
   const handleVideoError = (error) => {
@@ -1203,6 +1184,41 @@ export default function Watch() {
     setEditingCaption({ rowType: rowNumber, rowName: rowNumber === 1 ? 'Text Captions' : rowNumber === 2 ? 'Chords Captions' : 'Auto-Gen' })
   }
 
+  // Handle chord modal open for Row 2
+  const handleChordModalOpen = () => {
+    // Check if video is playing
+    if (isVideoPlayingFromUtils(player)) {
+      showVideoPlayingRestrictionFromUtils({
+        getAdminMessage,
+        showCustomAlertModal,
+        hideCustomAlertModal
+      })
+      return
+    }
+    
+    // Check if user can access captions (same as loops)
+    if (!canAccessLoops()) {
+      if (planType === 'freebird') {
+        showCustomAlertModal(getAdminMessage('plan_upgrade_message', '🔒 Chord captions require a paid plan. Please upgrade to access this feature.'), [
+          { text: 'UPGRADE PLAN', action: () => window.open('/pricing', '_blank') },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
+        return
+      }
+      if (!isVideoFavorited) {
+        showCustomAlertModal(getAdminMessage('save_to_favorites_message', '⭐ Please save this video to favorites before editing chord captions.'), [
+          { text: 'SAVE TO FAVORITES', action: () => { hideCustomAlertModal(); handleFavoriteToggle(); } },
+          { text: 'OK', action: hideCustomAlertModal }
+        ])
+        return
+      }
+      return
+    }
+
+    // Open chord modal
+    setShowChordModal(true)
+  }
+
 
 
 
@@ -1401,7 +1417,7 @@ export default function Watch() {
       currentTime,
       captions,
       userDefaultCaptionDuration,
-      getVideoDurationAndUpdateState()
+      getVideoDuration()
     )
     
     // Convert to MM:SS format using the existing formatSecondsToTime function
@@ -1837,7 +1853,7 @@ export default function Watch() {
         newStartTime,
         captions,
         userDefaultCaptionDuration,
-        getVideoDurationAndUpdateState()
+        getVideoDuration()
       )
       
       // Update the calculated end time
@@ -2105,7 +2121,6 @@ export default function Watch() {
       try {
         if (player.getCurrentTime && typeof player.getCurrentTime === 'function') {
           const currentTime = player.getCurrentTime()
-          setCurrentVideoTime(currentTime)
           const startSeconds = timeToSeconds(loopStartTime)
           const endSeconds = timeToSeconds(loopEndTime)
           
@@ -2155,7 +2170,6 @@ export default function Watch() {
     const captionUpdateInterval = setInterval(() => {
       try {
         const currentTime = player.getCurrentTime()
-        setCurrentVideoTime(currentTime)
         
         // SMART UPDATE: Only force re-render if NOT currently editing inline
         // This prevents the 500ms updates from clearing user input while typing
@@ -2467,12 +2481,7 @@ export default function Watch() {
               }`}>
               {/* Left Column - Main Content (92% width) */}
               <div className="w-[92%] p-2 bg-transparent border-r-2 border-white flex items-center">
-                <ChordDiagramManager 
-                  favoriteId={currentFavoriteId || 'test-favorite-123'}
-                  currentTimeSeconds={currentVideoTime}
-                  videoDurationSeconds={videoDurationSeconds}
-                  isVisible={showRow2}
-                />
+                <span className="text-white text-sm font-medium">Chords Captions</span>
               </div>
               {/* Middle Column - ADD + EDIT icons (4% width) */}
               <div className="w-[4%] p-2 bg-transparent border-r-2 border-white flex flex-col items-center justify-center space-y-3">
@@ -2516,13 +2525,13 @@ export default function Watch() {
                   <FaRegEye className="w-5 h-5 text-white" />
                 </button>
                 <button 
-                  onClick={() => !isInCaptionMode && handleCaptionEditClick(2)}
+                  onClick={() => !isInCaptionMode && handleChordModalOpen()}
                   className={`transition-opacity cursor-pointer ${
                     isInCaptionMode 
                       ? 'opacity-30 cursor-not-allowed' 
                       : 'hover:opacity-70'
                   }`}
-                  title={isInCaptionMode ? "Disabled while editing" : "Open caption editor modal"}
+                  title={isInCaptionMode ? "Disabled while editing" : "Open chord modal"}
                   disabled={isInCaptionMode}
                 >
                   <CgViewList className="w-5 h-5 text-white" />
@@ -2984,7 +2993,17 @@ export default function Watch() {
         customAlertButtons={customAlertButtons}
       />
 
-
+      {/* Chord Caption Modal */}
+      <ChordCaptionModal
+        isOpen={showChordModal}
+        onClose={() => setShowChordModal(false)}
+        favoriteId={videoId}
+        videoDurationSeconds={player ? player.getDuration() : 0}
+        currentTimeSeconds={player ? player.getCurrentTime() : 0}
+        chords={chordCaptions}
+        onChordsChange={setChordCaptions}
+        isLoading={isLoadingChords}
+      />
 
       {/* Auth Modal */}
       {showAuthModal && (
