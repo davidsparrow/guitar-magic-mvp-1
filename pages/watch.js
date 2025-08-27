@@ -3004,6 +3004,7 @@ export default function Watch() {
           // Handle chord updates - reload chord captions if needed
           console.log('✅ Chord captions updated')
         }}
+        userId={user?.id}
       />
 
       {/* Auth Modal */}

@@ -421,13 +421,7 @@ export const loadChordCaptions = async (favoriteId) => {
   try {
     const { data, error } = await supabase
       .from('chord_captions')
-      .select(`
-        *,
-        chord_sync_groups (
-          id,
-          group_color
-        )
-      `)
+      .select('*')
       .eq('favorite_id', favoriteId)
       .order('display_order', { ascending: true })
     

@@ -49,7 +49,8 @@ export const ChordCaptionModal = ({
   favoriteId,
   videoDurationSeconds = 0,
   currentTimeSeconds = 0,
-  onChordsUpdated
+  onChordsUpdated,
+  userId
 }) => {
   // State for chord captions
   const [chords, setChords] = useState([])
@@ -275,7 +276,11 @@ export const ChordCaptionModal = ({
         
       } else {
         // Real database call (when not testing)
-        const result = await createChordInDB(favoriteId, chordData)
+        if (!userId) {
+          setError('User ID is required to create chord captions')
+          return
+        }
+        const result = await createChordInDB(chordData, favoriteId, userId)
         
         if (result.success) {
           setChords(prev => [...prev, result.data])
