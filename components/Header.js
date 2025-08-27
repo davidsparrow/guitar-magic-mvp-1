@@ -2,7 +2,7 @@
 import { useRouter } from 'next/router'
 import { IoMdPower } from "react-icons/io"
 import { RiLogoutCircleRLine } from "react-icons/ri"
-import { FaHamburger } from "react-icons/fa"
+import { PiHamburger } from "react-icons/pi"
 import { LuBrain } from "react-icons/lu"
 import { FaSearch, FaTimes } from "react-icons/fa"
 import { TbGuitarPick, TbGuitarPickFilled } from "react-icons/tb"
@@ -124,7 +124,7 @@ export default function Header({
                 className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
                 title="Yummy!"
               >
-                <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+                <PiHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               </button>
             </div>
           </div>
@@ -364,7 +364,7 @@ export default function Header({
                 className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
                 title="Yummy!"
               >
-                <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+                <PiHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
               </button>
             </div>
           </div>
@@ -427,7 +427,7 @@ export default function Header({
               className="text-white p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
               title="Yummy!"
             >
-              <FaHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
+              <PiHamburger className="w-5 h-5 group-hover:text-yellow-400 transition-colors" />
             </button>
           </div>
         )}

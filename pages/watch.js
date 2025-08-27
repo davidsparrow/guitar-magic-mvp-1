@@ -2267,10 +2267,10 @@ export default function Watch() {
       <Header 
         showBrainIcon={false}
         showSearchIcon={false}
-        logoImage="/images/gt_logo_wide_on_black_450x90.png"
+        logoImage="/images/gt_logoM_PlayButton.png"
         // Search functionality
         showSearchBar={true}
-        showFavoritesToggle={true}
+        showFavoritesToggle={false}
         showResumeButton={true}
         showSortDropdown={false}
         // Search state
@@ -2281,7 +2281,7 @@ export default function Watch() {
         // Event handlers
         onSearchChange={setSearchQuery}
         onSearchSubmit={handleSearchSubmit}
-        onFavoritesToggle={() => {}}
+        onFavoritesToggle={() => router.push('/search?show_favorites=true')}
         onResumeClick={() => {}}
         onSortChange={() => {}}
         // Standard props

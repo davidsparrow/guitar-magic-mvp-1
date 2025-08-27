@@ -240,29 +240,79 @@ export default function Search() {
 
     // Listen for page show events (browser back button)
     window.addEventListener('pageshow', handlePageShow)
+    
+    // Listen for browser back/forward button navigation
+    const handlePopState = () => {
+      if (mounted && router.isReady) {
+        // Small delay to ensure router.query is updated
+        setTimeout(() => {
+          const { q, view, show_favorites } = router.query
+          
+          // Restore favorites mode if URL contains show_favorites
+          if (show_favorites === 'true') {
+            setShowFavoritesOnly(true)
+            setHasSearched(true)
+            return
+          }
+          
+          // Restore search results if URL contains query
+          if (q && typeof q === 'string') {
+            setSearchQuery(q)
+            setHasSearched(true)
+            const cachedResults = getSearchFromCache(q)
+            if (cachedResults) {
+              setSearchResults(cachedResults.results)
+              setNextPageToken(cachedResults.nextPageToken)
+            } else {
+              performSearchWithQuery(q)
+            }
+          }
+        }, 100)
+      }
+    }
+    
+    window.addEventListener('popstate', handlePopState)
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('popstate', handlePopState)
     }
   }, [mounted, user?.id, searchQuery, hasSearched, searchResults.length])
 
-  // Auto-search when page loads with query parameter
+  // Auto-search when page loads with query parameter and restore state from browser navigation
   useEffect(() => {
     if (mounted && router.isReady) {
-      const { q, view } = router.query
+      const { q, view, show_favorites } = router.query
+      
+      // Check for show_favorites parameter (from watch.js navigation or browser back button)
+      if (show_favorites === 'true') {
+        setShowFavoritesOnly(true)
+        setHasSearched(true)
+        // Favorites will be loaded by the existing useEffect that calls loadUserFavorites
+        return
+      }
       
       // Check for favorites view parameter
       if (view === 'favorites') {
         setShowFavoritesOnly(true)
+        setHasSearched(true)
         return
       }
       
-      // Perform search if query parameter exists
+      // Perform search if query parameter exists (restore search results from browser back button)
       if (q && typeof q === 'string') {
         setSearchQuery(q)
-        // Perform search directly with the URL query
-        performSearchWithQuery(q)
+        setHasSearched(true)
+        // Try to restore from cache first, then perform new search if needed
+        const cachedResults = getSearchFromCache(q)
+        if (cachedResults) {
+          setSearchResults(cachedResults.results)
+          setNextPageToken(cachedResults.nextPageToken)
+        } else {
+          // Perform search directly with the URL query
+          performSearchWithQuery(q)
+        }
       }
     }
   }, [mounted, router.isReady, router.query])
@@ -449,6 +499,9 @@ export default function Search() {
         setSearchResults(results.videos)
         setHasSearched(true)
         
+        // Update URL to maintain state for browser navigation
+        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`, undefined, { shallow: true })
+        
         // Save to cache for future use
         saveSearchToCache(searchQuery.trim(), results.videos, results.nextPageToken)
         
@@ -563,6 +616,9 @@ export default function Search() {
       setHasSearched(true)
       setNextPageToken(results.nextPageToken)
       setSearchQuery(query)
+
+      // Update URL to maintain state for browser navigation
+      router.push(`/search?q=${encodeURIComponent(query.trim())}`, undefined, { shallow: true })
 
       // Save to cache for future use
       saveSearchToCache(query, results.videos, results.nextPageToken)
@@ -723,6 +779,19 @@ export default function Search() {
     // User is authenticated and has favorites - allow toggle
     const newState = !showFavoritesOnly
     setShowFavoritesOnly(newState)
+    
+    // Update URL to maintain state for browser navigation
+    if (newState) {
+      // Switching to favorites mode
+      router.push('/search?show_favorites=true', undefined, { shallow: true })
+    } else {
+      // Switching back to search mode - preserve search query if exists
+      if (searchQuery) {
+        router.push(`/search?q=${encodeURIComponent(searchQuery)}`, undefined, { shallow: true })
+      } else {
+        router.push('/search', undefined, { shallow: true })
+      }
+    }
   }
 
   // Handle video favorite toggle
