@@ -75,6 +75,9 @@ export const ChordCaptionModal = ({
     end_time: ''
   })
   
+  // State for edit sub-modal
+  const [showEditModal, setShowEditModal] = useState(false)
+  
   // State for validation
   const [validationErrors, setValidationErrors] = useState([])
   
@@ -363,11 +366,33 @@ export const ChordCaptionModal = ({
    */
   const handleEditChord = (chord) => {
     setEditingChordId(chord.id)
+    
+    // Parse the chord name to get root note and modifier
+    const chordName = chord.chord_name || ''
+    let rootNote = ''
+    let modifier = ''
+    
+    // Try to extract root note and modifier from chord name
+    if (chordName) {
+      // Look for root note (first character or first two characters)
+      for (let i = 1; i <= 2; i++) {
+        const possibleRoot = chordName.substring(0, i)
+        if (ROOT_NOTES.some(note => note.value === possibleRoot)) {
+          rootNote = possibleRoot
+          modifier = chordName.substring(i)
+          break
+        }
+      }
+    }
+    
     setEditingChord({
       chord_name: chord.chord_name,
       start_time: chord.start_time,
-      end_time: chord.end_time
+      end_time: chord.end_time,
+      rootNote: rootNote,
+      modifier: modifier
     })
+    setShowEditModal(true)
   }
   
   /**
@@ -398,6 +423,7 @@ export const ChordCaptionModal = ({
         
         setEditingChordId(null)
         setEditingChord({ chord_name: '', start_time: '', end_time: '' })
+        setShowEditModal(false)
         
         setError('✅ Chord updated successfully! (Mock mode)')
         setTimeout(() => setError(null), 3000)
@@ -425,6 +451,8 @@ export const ChordCaptionModal = ({
           
           setEditingChordId(null)
           setEditingChord({ chord_name: '', start_time: '', end_time: '' })
+          setShowEditModal(false)
+          
           console.log('✅ Chord updated successfully')
         } else {
           setError(result.error || 'Failed to update chord caption')
@@ -445,6 +473,7 @@ export const ChordCaptionModal = ({
   const handleCancelEditChord = () => {
     setEditingChordId(null)
     setEditingChord({ chord_name: '', start_time: '', end_time: '' })
+    setShowEditModal(false)
   }
   
   /**
@@ -791,56 +820,7 @@ export const ChordCaptionModal = ({
                 key={chord.id} 
                 className="border-b border-gray-700 last:border-b-0"
               >
-                {editingChordId === chord.id ? (
-                  /* Edit Mode */
-                  <div className="flex items-center space-x-4 py-3">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={editingChord.chord_name}
-                        onChange={(e) => setEditingChord(prev => ({ ...prev, chord_name: e.target.value }))}
-                        className="w-24 px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={editingChord.start_time}
-                        onChange={(e) => setEditingChord(prev => ({ ...prev, start_time: e.target.value }))}
-                        className="w-20 px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={editingChord.end_time}
-                        onChange={(e) => setEditingChord(prev => ({ ...prev, end_time: e.target.value }))}
-                        className="w-20 px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
-                      />
-                    </div>
-                    
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={handleSaveEditedChord}
-                        className="p-1 text-green-400 hover:text-green-300 hover:bg-white/10 rounded transition-colors"
-                        title="Save changes"
-                      >
-                        <CiSaveDown1 className="w-4 h-4" />
-                      </button>
-                      
-                      <button
-                        onClick={handleCancelEditChord}
-                        className="p-1 text-gray-400 hover:text-gray-300 hover:bg-white/10 rounded transition-colors"
-                        title="Cancel editing"
-                      >
-                        <FaTimes className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* Display Mode */
+
                   <div className="flex items-center space-x-4 py-3">
                     <div className="flex-1">
                       <span className="text-lg font-bold text-blue-400">
@@ -882,12 +862,122 @@ export const ChordCaptionModal = ({
                       </button>
                     </div>
                   </div>
-                )}
               </div>
             ))
           )}
         </div>
       </div>
+      
+      {/* Edit Chord Sub-Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-lg shadow-2xl max-w-md w-full relative text-white p-6 border-2 border-blue-400/50">
+            {/* Sub-Modal Title */}
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-blue-400">
+                ✏️ Edit Chord Caption
+              </h3>
+            </div>
+            
+            {/* Edit Form */}
+            <div className="space-y-4">
+              {/* Chord Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Chord:</label>
+                <div className="flex space-x-2">
+                  <select 
+                    value={editingChord.rootNote || ''}
+                    onChange={(e) => {
+                      const rootNote = e.target.value
+                      const modifier = editingChord.modifier || ''
+                      const chordName = buildChordName(rootNote, modifier)
+                      setEditingChord(prev => ({ 
+                        ...prev, 
+                        rootNote,
+                        chord_name: chordName 
+                      }))
+                    }}
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
+                  >
+                    <option value="">Select Root Note</option>
+                    {ROOT_NOTES.map(note => (
+                      <option key={note.value} value={note.value}>
+                        {note.label}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  <select 
+                    value={editingChord.modifier || ''}
+                    onChange={(e) => {
+                      const modifier = e.target.value
+                      const rootNote = editingChord.rootNote || ''
+                      const chordName = buildChordName(rootNote, modifier)
+                      setEditingChord(prev => ({ 
+                        ...prev, 
+                        modifier,
+                        chord_name: chordName 
+                      }))
+                    }}
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
+                  >
+                    <option value="">Major</option>
+                    {CHORD_MODIFIERS.filter(m => m.value !== '').map(mod => (
+                      <option key={mod.value} value={mod.value}>
+                        {mod.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Time Inputs */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Start Time:</label>
+                  <input
+                    type="text"
+                    value={editingChord.start_time}
+                    onChange={(e) => setEditingChord(prev => ({ ...prev, start_time: e.target.value }))}
+                    placeholder="0:00"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">End Time:</label>
+                  <input
+                    type="text"
+                    value={editingChord.end_time}
+                    onChange={(e) => setEditingChord(prev => ({ ...prev, end_time: e.target.value }))}
+                    placeholder="0:30"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex justify-center space-x-3 pt-4">
+                <button
+                  onClick={handleSaveEditedChord}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+                
+                <button
+                  onClick={handleCancelEditChord}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
