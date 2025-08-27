@@ -31,6 +31,7 @@ import {
   updateChordCaption as updateChordInDB,
   deleteChordCaption as deleteChordInDB
 } from '../utils/chordCaptionUtils'
+import { supabase } from '../lib/supabase/client'
 
 /**
  * Chord Caption Modal Component
@@ -79,10 +80,10 @@ export const ChordCaptionModal = ({
   
   // Load chord captions when modal opens
   useEffect(() => {
-    if (showChordModal && favoriteId) {
+    if (showChordModal && favoriteId && userId) {
       loadChordCaptions()
     }
-  }, [showChordModal, favoriteId])
+  }, [showChordModal, favoriteId, userId])
   
   /**
    * Load chord captions from database
@@ -92,8 +93,25 @@ export const ChordCaptionModal = ({
       setIsLoading(true)
       setError(null)
       
-      // Use real database function
-      const result = await loadChordsFromDB(favoriteId)
+      // First get the favorite record for this video (similar to loadCaptions)
+      const { data: favoriteData, error: favoriteError } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('video_id', favoriteId)
+        .single()
+      
+      if (favoriteError) {
+        if (favoriteError.code === 'PGRST116') {
+          // No favorite found
+          setError('Video must be favorited to load chord captions')
+          return
+        }
+        throw favoriteError
+      }
+      
+      // Now get chord captions for this favorite using the UUID
+      const result = await loadChordsFromDB(favoriteData.id)
       
       if (result.success) {
         setChords(result.data || [])
@@ -280,7 +298,21 @@ export const ChordCaptionModal = ({
           setError('User ID is required to create chord captions')
           return
         }
-        const result = await createChordInDB(chordData, favoriteId, userId)
+        
+        // Get the favorite ID (UUID) for this video
+        const { data: favoriteData, error: favoriteError } = await supabase
+          .from('favorites')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('video_id', favoriteId)
+          .single()
+        
+        if (favoriteError) {
+          setError('Video must be favorited to create chord captions')
+          return
+        }
+        
+        const result = await createChordInDB(chordData, favoriteData.id, userId)
         
         if (result.success) {
           setChords(prev => [...prev, result.data])

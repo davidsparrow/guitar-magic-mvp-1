@@ -42,7 +42,6 @@ import {
 import {
   saveUserDefaultCaptionDuration,
   checkIfVideoFavorited,
-  getFavoriteId,
   removeFavorite,
   loadCaptions,
   saveCaption,
@@ -133,7 +132,6 @@ export default function Watch() {
   const [showChordModal, setShowChordModal] = useState(false)        // Controls chord modal visibility
   const [chordCaptions, setChordCaptions] = useState([])             // Stores array of chord caption data
   const [isLoadingChords, setIsLoadingChords] = useState(false)      // Loading state for chord operations
-  const [favoriteId, setFavoriteId] = useState(null)                 // Store the UUID of the favorite record
   // =============================================
   
   // Search functionality states
@@ -779,14 +777,6 @@ export default function Watch() {
       if (videoId && user?.id) {
         const isFavorited = await checkIfVideoFavorited(videoId, user?.id)
         setIsVideoFavorited(isFavorited)
-        
-        // If favorited, get the favorite ID (UUID) for chord captions
-        if (isFavorited) {
-          const favId = await getFavoriteId(videoId, user?.id)
-          setFavoriteId(favId)
-        } else {
-          setFavoriteId(null)
-        }
         // Favorite status checked
       }
     }
@@ -1225,13 +1215,7 @@ export default function Watch() {
       return
     }
 
-    // Check if we have a valid favorite ID (UUID)
-    if (!favoriteId) {
-      showCustomAlertModal('Error: Could not find favorite record. Please try refreshing the page.', [
-        { text: 'OK', action: hideCustomAlertModal }
-      ])
-      return
-    }
+
 
     // Open chord modal
     setShowChordModal(true)
@@ -3015,7 +2999,7 @@ export default function Watch() {
       <ChordCaptionModal
         showChordModal={showChordModal}
         setShowChordModal={setShowChordModal}
-        favoriteId={favoriteId}
+        favoriteId={videoId}
         videoDurationSeconds={player ? player.getDuration() : 0}
         currentTimeSeconds={player ? player.getCurrentTime() : 0}
         onChordsUpdated={() => {
