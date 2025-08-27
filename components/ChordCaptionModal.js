@@ -16,6 +16,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { FaPlus, FaTimes } from "react-icons/fa"
+import { RiEdit2Fill } from "react-icons/ri"
 import { CiSaveDown1 } from "react-icons/ci"
 import { MdOutlineCancel, MdDeleteSweep } from "react-icons/md"
 import { IoDuplicate } from "react-icons/io5"
@@ -53,7 +54,8 @@ export const ChordCaptionModal = ({
   videoDurationSeconds = 0,
   currentTimeSeconds = 0,
   onChordsUpdated,
-  userId
+  userId,
+  onCancel
 }) => {
   // State for chord captions
   const [chords, setChords] = useState([])
@@ -127,9 +129,13 @@ export const ChordCaptionModal = ({
       // Now get chord captions for this favorite using the UUID
       const result = await loadChordsFromDB(favoriteData.id)
       
-      if (result.success) {
-        setChords(result.data || [])
-      } else {
+              if (result.success) {
+          setChords(result.data || [])
+          // Notify parent component to update its chordCaptions state
+          if (onChordsUpdated) {
+            onChordsUpdated(result.data || [])
+          }
+        } else {
         setError(result.error || 'Failed to load chord captions')
       }
       
@@ -824,8 +830,28 @@ export const ChordCaptionModal = ({
             </span>
           </div>
           
-          {/* Right side - Save button */}
+          {/* Right side - Cancel, Test, and Save buttons */}
           <div className="flex items-center space-x-2">
+
+            
+            {/* Test Button with Confirmation */}
+            <button
+              onClick={() => {
+                if (confirm('This is a TEST confirmation dialog. Click OK to proceed.')) {
+                  // Call the same CANCEL ALL functionality as the grey Cancel button
+                  if (onCancel) {
+                    onCancel()
+                  }
+                }
+              }}
+              className="w-[95px] px-3 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors text-sm flex items-center justify-center space-x-1"
+              title="Test confirmation dialog"
+            >
+              <MdOutlineCancel className="w-5 h-5" />
+              <span>CANCEL</span>
+            </button>
+            
+            {/* Save Button */}
             <button
               onClick={() => setShowChordModal(false)}
               className="w-20 px-3 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm flex items-center justify-center space-x-1"
@@ -980,7 +1006,7 @@ export const ChordCaptionModal = ({
                         className="p-1 text-blue-400 hover:text-blue-300 hover:bg-white/10 rounded transition-colors"
                         title="Edit chord"
                       >
-                        <FaPlus className="w-4 h-4" />
+                        <RiEdit2Fill className="w-4 h-4" />
                       </button>
                       
                       <button
