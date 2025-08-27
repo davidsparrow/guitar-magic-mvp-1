@@ -29,7 +29,8 @@ import {
   loadChordCaptions as loadChordsFromDB,
   createChordCaption as createChordInDB,
   updateChordCaption as updateChordInDB,
-  deleteChordCaption as deleteChordInDB
+  deleteChordCaption as deleteChordInDB,
+  deleteAllChordCaptionsForFavorite
 } from '../utils/chordCaptionUtils'
 import { supabase } from '../lib/supabase/client'
 
@@ -605,19 +606,39 @@ export const ChordCaptionModal = ({
   /**
    * Delete all chords
    */
-  const handleDeleteAllChords = () => {
+  const handleDeleteAllChords = async () => {
     if (chords.length === 0) return
     
     if (confirm('Are you sure you want to delete ALL chord captions? This action cannot be undone.')) {
-      setChords([])
-      
-      // Notify parent component
-      if (onChordsUpdated) {
-        onChordsUpdated([])
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        // Call the database function to delete all chords
+        const result = await deleteAllChordCaptionsForFavorite(favoriteId)
+        
+        if (result.success) {
+          // Clear local state after successful database deletion
+          setChords([])
+          
+          // Notify parent component
+          if (onChordsUpdated) {
+            onChordsUpdated([])
+          }
+          
+          setError(`✅ Successfully deleted ${result.deletedCount} chord captions!`)
+          setTimeout(() => setError(null), 3000)
+        } else {
+          setError(`❌ Failed to delete: ${result.error}`)
+          setTimeout(() => setError(null), 5000)
+        }
+      } catch (error) {
+        console.error('❌ Error in handleDeleteAllChords:', error)
+        setError(`❌ Failed to delete: ${error.message}`)
+        setTimeout(() => setError(null), 5000)
+      } finally {
+        setIsLoading(false)
       }
-      
-      setError('✅ All chords deleted successfully! (Mock mode)')
-      setTimeout(() => setError(null), 3000)
     }
   }
   

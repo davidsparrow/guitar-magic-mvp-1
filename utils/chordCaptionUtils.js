@@ -930,3 +930,82 @@ export const getPreviousActiveChord = (chords, currentTimeSeconds) => {
   
   return pastChords.length > 0 ? pastChords[0] : null
 }
+
+/**
+ * 🗑️ DELETE ALL FUNCTIONALITY
+ */
+
+/**
+ * Delete all chord captions for a specific favorite
+ * 
+ * @param {string} favoriteId - The UUID of the favorite video
+ * @returns {Object} - { success: boolean, deletedCount?: number, error?: string }
+ */
+export const deleteAllChordCaptionsForFavorite = async (favoriteId) => {
+  try {
+    if (!favoriteId) {
+      throw new Error('favoriteId is required')
+    }
+    
+    console.log(`🗑️  Deleting all chord captions for favorite: ${favoriteId}`)
+    
+    // First, count how many chords we're about to delete
+    const { count: beforeCount, error: countError } = await supabase
+      .from('chord_captions')
+      .select('*', { count: 'exact', head: true })
+      .eq('favorite_id', favoriteId)
+    
+    if (countError) {
+      console.error('❌ Error counting chords before deletion:', countError)
+      throw countError
+    }
+    
+    if (beforeCount === 0) {
+      console.log('ℹ️  No chord captions found for this favorite')
+      return { success: true, deletedCount: 0 }
+    }
+    
+    console.log(`Found ${beforeCount} chord captions to delete`)
+    
+    // Delete all chord captions for this favorite
+    const { error: deleteError } = await supabase
+      .from('chord_captions')
+      .delete()
+      .eq('favorite_id', favoriteId)
+    
+    if (deleteError) {
+      console.error('❌ Error deleting all chord captions:', deleteError)
+      throw deleteError
+    }
+    
+    // Verify deletion
+    const { count: afterCount, error: verifyError } = await supabase
+      .from('chord_captions')
+      .select('*', { count: 'exact', head: true })
+      .eq('favorite_id', favoriteId)
+    
+    if (verifyError) {
+      console.error('❌ Error verifying deletion:', verifyError)
+      throw verifyError
+    }
+    
+    if (afterCount > 0) {
+      console.error(`❌ Delete All failed! Still have ${afterCount} chords`)
+      throw new Error(`Delete All failed - still have ${afterCount} chords`)
+    }
+    
+    console.log(`✅ Successfully deleted ${beforeCount} chord captions`)
+    
+    return { 
+      success: true, 
+      deletedCount: beforeCount 
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in deleteAllChordCaptionsForFavorite:', error)
+    return { 
+      success: false, 
+      error: error.message 
+    }
+  }
+}
