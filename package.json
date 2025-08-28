@@ -12,13 +12,15 @@
     "@stripe/stripe-js": "^7.8.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.38.4",
+    "aws-sdk": "^2.1692.0",
     "dotenv": "^17.2.1",
     "next": "^14.2.31",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
     "react-youtube": "^10.1.0",
-    "stripe": "^18.4.0"
+    "stripe": "^18.4.0",
+    "two.js": "^0.8.19"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",

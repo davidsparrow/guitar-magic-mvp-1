@@ -63,6 +63,7 @@ import {
   showVideoPlayingRestriction as showVideoPlayingRestrictionFromUtils
 } from '../utils/videoPlayerUtils'
 import ChordCaptionModal from '../components/ChordCaptionModal'
+import { deleteAllChordCaptions, saveChordCaptions } from '../utils/ChordCaptionDatabase'
 
 export default function Watch() {
 
@@ -132,6 +133,7 @@ export default function Watch() {
   const [showChordModal, setShowChordModal] = useState(false)        // Controls chord modal visibility
   const [chordCaptions, setChordCaptions] = useState([])             // Stores array of chord caption data
   const [isLoadingChords, setIsLoadingChords] = useState(false)      // Loading state for chord operations
+  const [originalChordCaptionsBlob, setOriginalChordCaptionsBlob] = useState(null) // Store original chord captions as JSON blob for cancel functionality
   // =============================================
   
   // Search functionality states
@@ -1213,10 +1215,8 @@ export default function Watch() {
         ])
         return
       }
-      return
+            return
     }
-
-
 
     // Open chord modal
     setShowChordModal(true)
@@ -1809,6 +1809,57 @@ export default function Watch() {
     setEditingCaption(null)
     
             // Caption editing cancelled - all changes reverted
+  }
+
+  // 🎸 Handle canceling chord caption editing
+  const handleCancelChordCaptions = async () => {
+    try {
+      console.log('🎸 CANCELLING CHORD CAPTIONS - Starting delete + restore process...')
+      
+      // Check if we have a blob to restore from
+      if (!originalChordCaptionsBlob) {
+        console.log('⚠️ No original chord captions blob found - just closing modal')
+        setShowChordModal(false)
+        return
+      }
+      
+      // Step 1: Delete ALL chord captions for this video from database
+      console.log('🗑️ Step 1: Deleting all chord captions from database...')
+      const deleteSuccess = await deleteAllChordCaptions(videoId, user?.id, setIsLoadingChords, setDbError)
+      
+      if (!deleteSuccess) {
+        console.error('❌ Failed to delete chord captions - cannot proceed with cancel')
+        setDbError('Failed to cancel changes - please try again')
+        return
+      }
+      
+      // Step 2: Restore chord captions from the original blob
+      console.log('🔄 Step 2: Restoring chord captions from original blob...')
+      const restoreSuccess = await saveChordCaptions(originalChordCaptionsBlob, videoId, user?.id, setIsLoadingChords, setDbError)
+      
+      if (!restoreSuccess) {
+        console.error('❌ CRITICAL ERROR: Failed to restore chord captions from blob!')
+        // TODO: Log to ERROR-LOG table with CRITICAL-NOTIFY-ADMIN flag when we have that table
+        setDbError('CRITICAL ERROR: Failed to restore chord captions. Please contact support.')
+        return
+      }
+      
+      // Step 3: Update local state to match restored database state
+      console.log('✅ Step 3: Updating local state to match restored database...')
+      setChordCaptions(JSON.parse(JSON.stringify(originalChordCaptionsBlob)))
+      
+      // Step 4: Clear the blob and close modal
+      console.log('🧹 Step 4: Clearing blob and closing modal...')
+      setOriginalChordCaptionsBlob(null)
+      setShowChordModal(false)
+      
+      console.log('🎸 CHORD CAPTIONS CANCELLED SUCCESSFULLY - All changes reverted!')
+      
+    } catch (error) {
+      console.error('❌ CRITICAL ERROR in handleCancelChordCaptions:', error)
+      // TODO: Log to ERROR-LOG table with CRITICAL-NOTIFY-ADMIN flag when we have that table
+      setDbError('Critical error during cancel operation. Please contact support.')
+    }
   }
 
   // Handle duplicate caption
@@ -3003,11 +3054,24 @@ export default function Watch() {
         videoId={videoId}
         videoDurationSeconds={player ? player.getDuration() : 0}
         currentTimeSeconds={player ? player.getCurrentTime() : 0}
-        onChordsUpdated={() => {
+        onChordsUpdated={(chordData) => {
           // Handle chord updates - reload chord captions if needed
           console.log('✅ Chord captions updated')
+          
+          // 🎸 CAPTURE ORIGINAL CHORD CAPTIONS AS JSON BLOB FOR CANCEL FUNCTIONALITY 🎸
+          // =============================================================================
+          // Only capture blob if we don't have one yet (first time loading)
+          if (!originalChordCaptionsBlob && chordData && chordData.length > 0) {
+            setOriginalChordCaptionsBlob(JSON.parse(JSON.stringify(chordData)))
+            console.log('🎸 CHORD CAPTIONS CAPTURED:', {
+              count: chordData.length,
+              blob: JSON.parse(JSON.stringify(chordData))
+            })
+          }
+          // =============================================================================
         }}
         userId={user?.id}
+        onCancel={handleCancelChordCaptions}
       />
 
       {/* Auth Modal */}

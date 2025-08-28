@@ -11,6 +11,8 @@
  * - Chord name and type
  */
 
+import { assignErgonomicFingering } from './generateChordFingering.js'
+
 /**
  * Chord Data Structure
  * @typedef {Object} ChordData
@@ -260,16 +262,15 @@ const generateChordFretboard = (rootNote, chordType) => {
     return null
   }
   
-  // Optimize finger assignments
-  let fingerNumber = 1
+  // Optimize finger assignments using helper
+  const assigned = assignErgonomicFingering(frets, fingering)
   for (let i = 0; i < fingering.length; i++) {
-    if (fingering[i] !== 'X' && frets[i] !== '0') {
-      fingering[i] = fingerNumber.toString()
-      fingerNumber = Math.min(fingerNumber + 1, 4)
-    }
+    fingering[i] = assigned[i]
   }
   
-  return { strings, fingering, frets }
+  // Always return canonical tuning labels for strings (Low E → High E)
+  const tuningLabels = ['E', 'A', 'D', 'G', 'B', 'E']
+  return { strings: tuningLabels, fingering, frets }
 }
 
 /**
