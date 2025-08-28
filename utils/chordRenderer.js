@@ -43,7 +43,7 @@ const FINGER_COLORS = {
   '1': '#ff914d', // Orange - Index finger
   '2': '#cb6ce6', // Purple - Middle finger
   '3': '#0f8120', // Green - Ring finger (darker green for better contrast)
-  '4': '#082cf',  // Blue - Pinky finger
+  '4': '#082cf0', // Blue - Pinky finger (fixed missing digit)
   'T': '#000000'  // Black - Thumb
 }
 
@@ -125,10 +125,19 @@ const drawFretboard = (theme = 'light') => {
     const y1 = startY
     const y2 = startY + (5 * SVG_CONFIG.stringSpacing) // Stop exactly at last string (no crossing below)
     
-    // Nut is thicker than other frets
-    const thickness = i === 0 ? SVG_CONFIG.nutThickness : SVG_CONFIG.stringThickness
-    
-    svg += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${lineColor}" stroke-width="${thickness}"/>`
+    if (i === 0) {
+      // Nut - draw with black border for light theme
+      if (theme === 'light') {
+        // Light theme: Black nut with subtle black border for definition
+        svg += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="black" stroke-width="${SVG_CONFIG.nutThickness}"/>`
+      } else {
+        // Dark theme: White nut (no border needed)
+        svg += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="white" stroke-width="${SVG_CONFIG.nutThickness}"/>`
+      }
+    } else {
+      // Regular frets - draw normally
+      svg += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${lineColor}" stroke-width="${SVG_CONFIG.stringThickness}"/>`
+    }
   }
   
   return svg

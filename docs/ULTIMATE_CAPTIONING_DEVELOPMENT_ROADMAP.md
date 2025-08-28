@@ -46,6 +46,85 @@ database/
 
 ---
 
+## **📊 DATABASE ARCHITECTURE**
+
+### **Existing Tables (✅ COMPLETED)**
+- **`favorites`** - User's saved YouTube videos
+- **`captions`** - Text captions with timing
+- **`chord_captions`** - Chord caption records with sync groups
+- **`chord_sync_groups`** - Organization for chord captions
+- **`custom_loops`** - User-defined video loop segments
+- **`user_profiles`** - Extended user data and preferences
+- **`admin_settings`** - Feature gates and system configuration
+- **`subscriptions`** - Stripe subscription management
+- **`billing_history`** - Payment and invoice tracking
+- **`channel_watch_time`** - Creator revenue calculation data
+- **`creator_payouts`** - Monthly creator compensation
+- **`public_leaderboard`** - Creator performance rankings
+- **`saved_searches`** - User search history and favorites
+- **`sharing_links`** - Caption sharing between users
+- **`user_usage`** - Daily usage tracking and limits
+
+### **New Tables (🆕 TO BE BUILT)**
+
+#### **`chord_positions`** - Chord Rendering Data & SVG URLs
+```sql
+CREATE TABLE chord_positions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    chord_name TEXT NOT NULL, -- e.g., "Am", "C", "F"
+    position_type TEXT NOT NULL, -- "open", "barre", "power", "sus2", etc.
+    fret_position INTEGER NOT NULL, -- 0 for open, 1-12 for fretted
+    strings JSONB NOT NULL, -- ["E", "A", "D", "G", "B", "E"]
+    frets JSONB NOT NULL, -- ["X", "0", "2", "2", "1", "0"]
+    fingering JSONB NOT NULL, -- ["X", "X", "1", "2", "3", "X"]
+    difficulty TEXT, -- "beginner", "intermediate", "advanced"
+    aws_svg_url_light TEXT, -- S3 URL for light theme SVG
+    aws_svg_url_dark TEXT, -- S3 URL for dark theme SVG
+    svg_file_size INTEGER, -- File size in bytes
+    metadata JSONB DEFAULT '{}', -- Additional chord info
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### **`song_requests`** - User Auto-Generation Requests
+```sql
+CREATE TABLE song_requests (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
+    youtube_video_url TEXT NOT NULL,
+    youtube_video_id TEXT NOT NULL,
+    song_title TEXT,
+    artist_name TEXT,
+    request_status TEXT DEFAULT 'pending', -- 'pending', 'processing', 'completed', 'failed'
+    accuracy_score DECIMAL(3,2), -- 0.00 to 1.00 confidence rating
+    validation_notes TEXT, -- Why accuracy score is what it is
+    ultimate_guitar_data JSONB, -- Raw scraped data from UG
+    processed_captions JSONB, -- Final processed caption data
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### **`auto_generated_captions`** - UG-Based Caption Data
+```sql
+CREATE TABLE auto_generated_captions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    song_request_id UUID REFERENCES song_requests(id) ON DELETE CASCADE,
+    youtube_video_id TEXT NOT NULL,
+    caption_type TEXT NOT NULL, -- 'chords', 'lyrics', 'tabs'
+    start_time TEXT NOT NULL, -- "MM:SS" format
+    end_time TEXT NOT NULL, -- "MM:SS" format
+    content TEXT NOT NULL, -- Chord name, lyric line, or tab data
+    section_type TEXT, -- 'intro', 'verse', 'chorus', 'bridge', 'outro'
+    confidence_score DECIMAL(3,2), -- Individual caption accuracy
+    metadata JSONB DEFAULT '{}', -- Additional timing or musical info
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
 ## **🚀 PHASE-BY-PHASE IMPLEMENTATION**
 
 ### **PHASE 1: FOUNDATION & CHORD DIAGRAMS (Weeks 1-2)**
@@ -418,10 +497,10 @@ Row 4: Auto-Generated Content (future)
 ## **🎯 IMMEDIATE NEXT STEPS**
 
 ### **This Week (Week 1)**
-1. **Create database tables** for chord and tab systems
+1. **Design demand-driven song data architecture** (✅ COMPLETED - see strategy below)
 2. **Set up development environment** for new components
-3. **Research UberChord API** integration details
-4. **Plan Ultimate Guitar scraper** implementation
+3. **Research Ultimate Guitar scraper** integration details
+4. **Plan user request form** for auto-generation
 
 ### **Next Week (Week 2)**
 1. **Build chord diagram utilities** and basic rendering
@@ -437,6 +516,51 @@ Row 4: Auto-Generated Content (future)
 
 ---
 
+## **🎯 DEMAND-DRIVEN SONG DATA STRATEGY (REVISED)**
+
+### **🏗️ ARCHITECTURE OVERVIEW**
+Instead of randomly scraping thousands of songs hoping users want them, we're building a **demand-driven, user-requested song library** that grows organically based on what our actual users need.
+
+### **📊 DATA SOURCES & STORAGE**
+- **Public Data Only**: We scrape websites for public-facing song data only
+- **Data Types**: Song titles, artist names, lyrics, chords, tab captions, timeline metadata
+- **Storage**: All data stored permanently in Supabase (no public API)
+- **No Random Scraping**: We only scrape songs that users specifically request
+
+### **🎸 CHORD SYSTEM ARCHITECTURE**
+**Two-Table Design:**
+1. **`chord_captions`** (✅ ALREADY BUILT)
+   - Placeholder records for organizing schema logically
+   - Allows users to select chord names in UI for custom chord captions
+   - Links to `chord_sync_groups` for organization
+
+2. **`chord_positions`** (🆕 TO BE BUILT)
+   - Actual chord data for rendering (strings, frets, fingering)
+   - Final SVG file URLs from AWS S3
+   - Multiple position variants per chord (open, barre, different frets)
+   - Black/white chord SVG images for light/dark themes
+
+### **🚀 AUTO-GENERATION WORKFLOW**
+**User Request Process:**
+1. **Premium Feature**: Only available to highest-tier paid members
+2. **Request Form**: Users submit YouTube video URLs they want auto-generated
+3. **Smart Scraping**: We scrape Ultimate Guitar for that specific song
+4. **Accuracy Validation**: Compare video length/characteristics with scraped data
+5. **Data Linking**: If accurate enough, link caption data to video URL in Supabase
+6. **Fallback**: If video differs significantly, notify user and suggest alternatives
+
+### **✅ ACCURACY VALIDATION CRITERIA**
+- **Video Length**: Must match song metadata within acceptable tolerance
+- **Key Consistency**: Ensure chord progressions match video audio
+- **Cover Detection**: Identify if video is original vs. cover version
+- **Quality Score**: Rate confidence level of auto-generation accuracy
+
+### **📈 GROWTH STRATEGY**
+- **Organic Growth**: Library builds based solely on user demand
+- **Quality Over Quantity**: Focus on accuracy, not volume
+- **User Satisfaction**: Only generate captions for videos we can do well
+- **Continuous Improvement**: Learn from user feedback and validation results
+
 ## **🌟 VISION REALIZATION**
 
 By the end of this 8-week development cycle, GuitarMagic will have:
@@ -444,7 +568,7 @@ By the end of this 8-week development cycle, GuitarMagic will have:
 1. **Professional-grade captioning system** that rivals commercial platforms
 2. **Modular, scalable architecture** ready for future features
 3. **Mobile-responsive design** that works perfectly on all devices
-4. **API-integrated system** that automatically generates content
+4. **Demand-driven song data system** that grows based on user needs
 5. **User-friendly interface** that musicians love to use
 
 **This isn't just a feature addition - it's a complete platform transformation that will establish GuitarMagic as the premier tool for musicians learning from YouTube videos.**

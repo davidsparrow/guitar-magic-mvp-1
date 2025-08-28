@@ -168,21 +168,22 @@ FEATURE_SPECIFICATIONS
 ## 🏆 Phase 3: Ultimate Platform (6-8 weeks)
 
 ### **17. Ultimate Guitar Integration** ⭐ HOLY GRAIL
-- **Auto-fetch chord progressions by song name**  
-- **Multiple tab versions (acoustic, electric, etc.)**
-- **Green/Orange/Red light status system**
-- **Song matching with confidence scoring**
+- **Demand-driven song scraping** (only when users request specific songs)
+- **Smart accuracy validation** (video length, key consistency, cover detection)
+- **User request form** for premium members to submit video URLs
+- **Quality scoring system** to ensure caption accuracy
 - **Estimate**: 7-10 days
-- **Complexity**: High (scraper integration + matching logic)
+- **Complexity**: High (scraper integration + validation logic)
 - **APIs**: Ultimate Guitar scraper endpoints
 - **GitHub**: `https://github.com/Pilfer/ultimate-guitar-scraper`
 
 ### **18. Auto-Synchronized Chords** ⭐ REVOLUTIONARY
-- **Automatic chord timeline from UG database**
-- **Song structure detection (verse, chorus, bridge)**
-- **Pre-timed chord changes with video**
+- **User-requested chord timelines** from UG database
+- **Song structure detection** (verse, chorus, bridge) with timing
+- **Pre-timed chord changes** that sync with video playback
+- **Fallback handling** for videos that don't match scraped data
 - **Estimate**: 5-7 days
-- **Complexity**: High (data parsing + timeline sync)
+- **Complexity**: High (data parsing + timeline sync + validation)
 
 ### **19. Advanced Practice Features** ⭐ PREMIUM
 - **Loop sections with chord displays**
