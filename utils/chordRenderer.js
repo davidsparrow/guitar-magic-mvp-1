@@ -4,11 +4,13 @@
  * 
  * Features:
  * - Correct string order mapping (E1 at top, E6 at bottom)
- * - 6-fret display zones (nut → 5th fret)
+ * - DYNAMIC fret positioning (automatically calculates optimal display range)
  * - Accurate finger positioning with colored circles
  * - String labels and fret numbers
  * - Support for open and barre chord positions
  */
+
+import { calculateOptimalFretPosition } from './chordFretPositioning.js'
 
 /**
  * 🎯 SVG Dimensions and Layout Constants
@@ -59,15 +61,20 @@ const FRET_NUMBERS = ['0', '1', '2', '3', '4', '5']
 
 /**
  * 🎯 MAIN CHORD RENDERING FUNCTION
- * Generates SVG string for a chord diagram
+ * Generates SVG string for a chord diagram with DYNAMIC fret positioning
  * @param {Object} chordData - Chord data from chordData.js
  * @param {string} zone - Fret zone (default: 'open' for nut→5th fret)
+ * @param {string} theme - Theme ('light' or 'dark')
  * @returns {string} SVG string ready for file saving
  */
 export const renderChord = (chordData, zone = 'open', theme = 'light') => {
   if (!chordData || !chordData.strings || !chordData.frets || !chordData.fingering) {
     throw new Error('Invalid chord data provided')
   }
+  
+  // 🎯 CALCULATE OPTIMAL FRET POSITIONING
+  const fretPositioning = calculateOptimalFretPosition(chordData.frets)
+  console.log(`🎯 Dynamic positioning: ${fretPositioning.reason}`)
   
   // Start building SVG
   let svg = `<svg width="${SVG_CONFIG.width}" height="${SVG_CONFIG.height}" xmlns="http://www.w3.org/2000/svg">`
@@ -76,17 +83,17 @@ export const renderChord = (chordData, zone = 'open', theme = 'light') => {
   const bgColor = theme === 'dark' ? 'black' : 'white'
   svg += `<rect width="${SVG_CONFIG.width}" height="${SVG_CONFIG.height}" fill="${bgColor}"/>`
   
-  // Draw the fretboard based on theme
-  svg += drawFretboard(theme)
+  // Draw the fretboard based on theme and calculated positioning
+  svg += drawFretboard(theme, fretPositioning)
   
   // Draw mute/open symbols above the nut
-  svg += drawMuteOpenSymbols(chordData, theme)
+  svg += drawMuteOpenSymbols(chordData, theme, fretPositioning)
   
   // Draw finger positions
-  svg += drawFingerPositions(chordData, theme)
+  svg += drawFingerPositions(chordData, theme, fretPositioning)
   
   // Draw string labels and fret numbers
-  svg += drawLabels(theme)
+  svg += drawLabels(theme, fretPositioning)
   
   // Close SVG
   svg += '</svg>'
@@ -95,12 +102,12 @@ export const renderChord = (chordData, zone = 'open', theme = 'light') => {
 }
 
 /**
- * 🎨 Draw the basic fretboard grid
+ * 🎨 Draw the basic fretboard grid with DYNAMIC positioning
  * Creates strings (horizontal lines) and frets (vertical lines)
  * Strings: E1 at top, E6 at bottom
- * Frets: Nut at left, 5th fret at right
+ * Frets: Dynamically positioned based on chord requirements
  */
-const drawFretboard = (theme = 'light') => {
+const drawFretboard = (theme = 'light', fretPositioning) => {
   let svg = ''
   
   // Calculate starting positions
@@ -110,23 +117,32 @@ const drawFretboard = (theme = 'light') => {
   // Set colors based on theme
   const lineColor = theme === 'dark' ? 'white' : 'black'
   
+  // 🎯 DYNAMIC FRET POSITIONING
+  const leftMostFret = fretPositioning.leftMostFret
+  const rightMostFret = fretPositioning.rightMostFret
+  const displayRange = fretPositioning.displayRange
+  
+  // Calculate total fret width needed
+  const totalFretWidth = (rightMostFret - leftMostFret) * SVG_CONFIG.fretSpacing
+  
   // Draw strings (6 horizontal lines, top to bottom: High E at top, Bass E at bottom)
   for (let i = 0; i < 6; i++) {
     const y = startY + ((5 - i) * SVG_CONFIG.stringSpacing) // Flip: High E (i=0) at top, Bass E (i=5) at bottom
     const x1 = startX
-    const x2 = startX + (5 * SVG_CONFIG.fretSpacing) // 5 fret spaces + nut
+    const x2 = startX + totalFretWidth // Dynamic width based on calculated positioning
     
     svg += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${lineColor}" stroke-width="${SVG_CONFIG.stringThickness}"/>`
   }
   
-  // Draw frets (6 vertical lines, left to right: nut, 1, 2, 3, 4, 5)
-  for (let i = 0; i < 6; i++) {
+  // Draw frets (vertical lines) based on calculated positioning
+  for (let i = 0; i < displayRange.length; i++) {
+    const fretNumber = displayRange[i]
     const x = startX + (i * SVG_CONFIG.fretSpacing)
     const y1 = startY
     const y2 = startY + (5 * SVG_CONFIG.stringSpacing) // Stop exactly at last string (no crossing below)
     
-    if (i === 0) {
-      // Nut - draw with black border for light theme
+    if (fretNumber === leftMostFret && leftMostFret === 0) {
+      // Nut (0th fret) - draw with black border for light theme
       if (theme === 'light') {
         // Light theme: Black nut with subtle black border for definition
         svg += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="black" stroke-width="${SVG_CONFIG.nutThickness}"/>`
@@ -144,13 +160,18 @@ const drawFretboard = (theme = 'light') => {
 }
 
 /**
- * 🚫 Draw mute (X) and open (O) string symbols above the nut
+ * 🚫 Draw mute (X) and open (O) string symbols with DYNAMIC positioning
  * Places symbols above the correct strings at the top of the diagram
  * @param {Object} chordData - Chord data with strings, frets, fingering
+ * @param {string} theme - Theme ('light' or 'dark')
+ * @param {Object} fretPositioning - Calculated fret positioning data
  * @returns {string} SVG elements for mute/open symbols
  */
-const drawMuteOpenSymbols = (chordData, theme = 'light') => {
+const drawMuteOpenSymbols = (chordData, theme = 'light', fretPositioning) => {
   let svg = ''
+  
+  // 🎯 DYNAMIC FRET POSITIONING
+  const leftMostFret = fretPositioning.leftMostFret
   
   // Process each string
   for (let stringIndex = 0; stringIndex < 6; stringIndex++) {
@@ -159,8 +180,9 @@ const drawMuteOpenSymbols = (chordData, theme = 'light') => {
     // Only draw symbols for muted (X) or open (0) strings
     if (fret !== 'X' && fret !== '0') continue
     
-    // Calculate position above the nut (flipped string order)
-    const x = SVG_CONFIG.leftMargin + (0 * SVG_CONFIG.fretSpacing) // Nut position
+    // 🎯 DYNAMIC POSITION CALCULATION - Adjust for left-most fret offset
+    const adjustedFretPosition = 0 - leftMostFret // Always relative to left-most fret
+    const x = SVG_CONFIG.leftMargin + (adjustedFretPosition * SVG_CONFIG.fretSpacing)
     const y = SVG_CONFIG.topMargin + ((5 - stringIndex) * SVG_CONFIG.stringSpacing) - 8 // Above the string (flipped)
     
     if (fret === 'X') {
@@ -180,13 +202,18 @@ const drawMuteOpenSymbols = (chordData, theme = 'light') => {
 }
 
 /**
- * 🎯 Draw finger positions on the fretboard
+ * 🎯 Draw finger positions on the fretboard with DYNAMIC positioning
  * Places colored circles with white numbers at correct positions
  * @param {Object} chordData - Chord data with strings, frets, fingering
+ * @param {string} theme - Theme ('light' or 'dark')
+ * @param {Object} fretPositioning - Calculated fret positioning data
  * @returns {string} SVG elements for finger positions
  */
-const drawFingerPositions = (chordData, theme = 'light') => {
+const drawFingerPositions = (chordData, theme = 'light', fretPositioning) => {
   let svg = ''
+  
+  // 🎯 DYNAMIC FRET POSITIONING
+  const leftMostFret = fretPositioning.leftMostFret
   
   // Process each string (array index 0-5 maps to visual position 0-5)
   for (let stringIndex = 0; stringIndex < 6; stringIndex++) {
@@ -200,8 +227,9 @@ const drawFingerPositions = (chordData, theme = 'light') => {
     const fretNumber = parseInt(fret)
     const stringPosition = stringIndex
     
-    // Position calculation (flipped string order)
-    const x = SVG_CONFIG.leftMargin + (fretNumber * SVG_CONFIG.fretSpacing) - (SVG_CONFIG.fretSpacing / 2)
+    // 🎯 DYNAMIC POSITION CALCULATION - Adjust for left-most fret offset
+    const adjustedFretPosition = fretNumber - leftMostFret
+    const x = SVG_CONFIG.leftMargin + (adjustedFretPosition * SVG_CONFIG.fretSpacing) - (SVG_CONFIG.fretSpacing / 2)
     const y = SVG_CONFIG.topMargin + ((5 - stringPosition) * SVG_CONFIG.stringSpacing) // Flip: High E at top, Bass E at bottom
     
     // Get finger color
@@ -222,30 +250,39 @@ const drawFingerPositions = (chordData, theme = 'light') => {
 }
 
 /**
- * 🏷️ Draw string labels and fret numbers
+ * 🏷️ Draw string labels and fret numbers with DYNAMIC positioning
  * String labels on the right side, fret numbers on the bottom
  * @returns {string} SVG elements for labels
  */
-const drawLabels = (theme = 'light') => {
+const drawLabels = (theme = 'light', fretPositioning) => {
   let svg = ''
   
   // Set text color based on theme
   const textColor = theme === 'dark' ? 'white' : 'black'
   
+  // 🎯 DYNAMIC FRET POSITIONING
+  const leftMostFret = fretPositioning.leftMostFret
+  const rightMostFret = fretPositioning.rightMostFret
+  const displayRange = fretPositioning.displayRange
+  
+  // Calculate total fret width for string label positioning
+  const totalFretWidth = (rightMostFret - leftMostFret) * SVG_CONFIG.fretSpacing
+  
   // Draw string labels on the right side (High E at top, Bass E at bottom)
   for (let i = 0; i < 6; i++) {
-    const x = SVG_CONFIG.leftMargin + (5 * SVG_CONFIG.fretSpacing) + 15 // Right of 5th fret
+    const x = SVG_CONFIG.leftMargin + totalFretWidth + 15 // Right of last calculated fret
     const y = SVG_CONFIG.topMargin + ((5 - i) * SVG_CONFIG.stringSpacing) + 4 // Align with string (flipped)
     
     svg += `<text x="${x}" y="${y}" text-anchor="start" fill="${textColor}" font-family="Arial, sans-serif" font-size="10">${STRING_NAMES[i]}</text>`
   }
   
-  // Draw fret numbers on the bottom (0, 1, 2, 3, 4, 5) - moved up 4px
-  for (let i = 0; i < 6; i++) {
+  // 🎯 Draw DYNAMIC fret numbers on the bottom based on calculated positioning
+  for (let i = 0; i < displayRange.length; i++) {
+    const fretNumber = displayRange[i]
     const x = SVG_CONFIG.leftMargin + (i * SVG_CONFIG.fretSpacing)
     const y = SVG_CONFIG.topMargin + (5 * SVG_CONFIG.stringSpacing) + 16 // Below 6th string, moved up 4px
     
-    svg += `<text x="${x}" y="${y}" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="10">${FRET_NUMBERS[i]}</text>`
+    svg += `<text x="${x}" y="${y}" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="10">${fretNumber}</text>`
   }
   
   return svg
