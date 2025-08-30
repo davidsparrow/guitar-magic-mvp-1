@@ -1,5 +1,6 @@
 // Bulk Ultimate Guitar Songs Importer
 // Connects to Supabase and imports songs from all HTML files in the ug-pages folder
+// Now includes automatic retry and cleanup system for failed songs
 
 import fs from 'fs';
 import path from 'path';
@@ -28,6 +29,281 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// File paths for pending and unprocessed songs
+const PENDING_FILE = 'pending_extraction.md';
+const UNPROCESSED_FILE = 'unprocessed.md';
+
+/**
+ * Load pending songs from file
+ * @returns {Array} Array of pending song objects
+ */
+function loadPendingSongs() {
+  try {
+    if (!fs.existsSync(PENDING_FILE)) {
+      return [];
+    }
+    
+    const content = fs.readFileSync(PENDING_FILE, 'utf8');
+    const songs = [];
+    
+    // Parse the markdown content to extract song information
+    const lines = content.split('\n');
+    let currentSong = null;
+    
+    for (const line of lines) {
+      if (line.startsWith('- ') && line.includes(' - retry_count:')) {
+        // Parse song line: "Artist - Song Title (Tab ID: 123456) - retry_count: 2"
+        const match = line.match(/^- (.+?) - (.+?) \(Tab ID: (\d+)\) - retry_count: (\d+)/);
+        if (match) {
+          currentSong = {
+            artist: match[1].trim(),
+            title: match[2].trim(),
+            tabId: match[3].trim(),
+            retryCount: parseInt(match[4])
+          };
+          songs.push(currentSong);
+        }
+      }
+    }
+    
+    return songs;
+  } catch (error) {
+    console.error('❌ Error loading pending songs:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Save pending songs to file
+ * @param {Array} songs - Array of pending song objects
+ */
+function savePendingSongs(songs) {
+  try {
+    let content = '# Pending Song Extraction - Retry Queue\n\n';
+    
+    if (songs.length === 0) {
+      content += '## No pending songs\n';
+    } else {
+      content += '## Failed Songs (Retry Count)\n';
+      for (const song of songs) {
+        content += `- ${song.artist} - ${song.title} (Tab ID: ${song.tabId}) - retry_count: ${song.retryCount}\n`;
+      }
+      content += `\n## Total Pending: ${songs.length} songs\n`;
+      content += '## Next Reprocessing: When count reaches 10+\n';
+    }
+    
+    fs.writeFileSync(PENDING_FILE, content);
+  } catch (error) {
+    console.error('❌ Error saving pending songs:', error.message);
+  }
+}
+
+/**
+ * Load unprocessed songs from file
+ * @returns {Array} Array of unprocessed song objects
+ */
+function loadUnprocessedSongs() {
+  try {
+    if (!fs.existsSync(UNPROCESSED_FILE)) {
+      return [];
+    }
+    
+    const content = fs.readFileSync(UNPROCESSED_FILE, 'utf8');
+    const songs = [];
+    
+    // Parse the markdown content to extract song information
+    const lines = content.split('\n');
+    
+    for (const line of lines) {
+      if (line.startsWith('- ') && line.includes(' (final_retry_count:')) {
+        // Parse song line: "Artist - Song Title (Tab ID: 123456) (final_retry_count: 5, last_attempt: 2025-08-29)"
+        const match = line.match(/^- (.+?) - (.+?) \(Tab ID: (\d+)\) \(final_retry_count: (\d+), last_attempt: (.+?)\)/);
+        if (match) {
+          songs.push({
+            artist: match[1].trim(),
+            title: match[2].trim(),
+            tabId: match[3].trim(),
+            finalRetryCount: parseInt(match[4]),
+            lastAttempt: match[5].trim()
+          });
+        }
+      }
+    }
+    
+    return songs;
+  } catch (error) {
+    console.error('❌ Error loading unprocessed songs:', error.message);
+    return [];
+  }
+}
+
+/**
+ * Add song to unprocessed list
+ * @param {Object} song - Song object to add
+ */
+function addToUnprocessed(song) {
+  try {
+    const songs = loadUnprocessedSongs();
+    
+    // Check if song already exists
+    const existingIndex = songs.findIndex(s => 
+      s.artist === song.artist && s.title === song.title && s.tabId === song.tabId
+    );
+    
+    if (existingIndex === -1) {
+      songs.push({
+        artist: song.artist,
+        title: song.title,
+        tabId: song.tabId,
+        finalRetryCount: 5,
+        lastAttempt: new Date().toISOString().split('T')[0]
+      });
+    }
+    
+    // Save updated unprocessed list
+    let content = '# Unprocessed Songs - Permanent Archive\n\n';
+    content += '## Songs That Failed After 5 Retry Attempts\n';
+    
+    for (const s of songs) {
+      content += `- ${s.artist} - ${s.title} (Tab ID: ${s.tabId}) (final_retry_count: ${s.finalRetryCount}, last_attempt: ${s.lastAttempt})\n`;
+    }
+    
+    content += `\n## Total Unprocessed: ${songs.length} songs\n`;
+    content += '## Status: Requires manual investigation\n';
+    
+    fs.writeFileSync(UNPROCESSED_FILE, content);
+    
+    console.log(`   📋 Moved "${song.title}" by ${song.artist} to unprocessed list`);
+  } catch (error) {
+    console.error('❌ Error adding to unprocessed list:', error.message);
+  }
+}
+
+/**
+ * Add failed song to pending list
+ * @param {Object} song - Song object that failed
+ * @param {string} errorMessage - Error message from failure
+ */
+function addToPending(song, errorMessage) {
+  try {
+    const pendingSongs = loadPendingSongs();
+    
+    // Check if song already exists in pending
+    const existingIndex = pendingSongs.findIndex(s => 
+      s.artist === song.artist && s.title === song.title && s.tabId === song.tabId
+    );
+    
+    if (existingIndex !== -1) {
+      // Increment retry count
+      pendingSongs[existingIndex].retryCount++;
+      
+      // If retry count reaches 5, move to unprocessed
+      if (pendingSongs[existingIndex].retryCount >= 5) {
+        const songToMove = pendingSongs.splice(existingIndex, 1)[0];
+        addToUnprocessed(songToMove);
+        console.log(`   ⚠️  Song "${song.title}" by ${song.artist} moved to unprocessed after 5 retries`);
+        return;
+      }
+    } else {
+      // Add new failed song
+      pendingSongs.push({
+        artist: song.artist,
+        title: song.title,
+        tabId: song.tabId,
+        retryCount: 1
+      });
+    }
+    
+    savePendingSongs(pendingSongs);
+    console.log(`   📝 Added "${song.title}" by ${song.artist} to pending list (retry: ${pendingSongs.find(s => s.artist === song.artist && s.title === song.title)?.retryCount || 1})`);
+  } catch (error) {
+    console.error('❌ Error adding to pending list:', error.message);
+  }
+}
+
+/**
+ * Remove song from pending list (after successful processing)
+ * @param {Object} song - Song object to remove
+ */
+function removeFromPending(song) {
+  try {
+    const pendingSongs = loadPendingSongs();
+    const filteredSongs = pendingSongs.filter(s => 
+      !(s.artist === song.artist && s.title === song.title && s.tabId === song.tabId)
+    );
+    
+    if (filteredSongs.length !== pendingSongs.length) {
+      savePendingSongs(filteredSongs);
+      console.log(`   ✅ Removed "${song.title}" by ${song.artist} from pending list`);
+    }
+  } catch (error) {
+    console.error('❌ Error removing from pending list:', error.message);
+  }
+}
+
+/**
+ * Process pending songs (retry failed songs)
+ * @returns {Object} Result of pending songs processing
+ */
+async function processPendingSongs() {
+  const pendingSongs = loadPendingSongs();
+  
+  if (pendingSongs.length === 0) {
+    return { success: true, processed: 0, successful: 0, failed: 0 };
+  }
+  
+  console.log(`\n🔄 Processing ${pendingSongs.length} pending songs...`);
+  
+  let successful = 0;
+  let failed = 0;
+  
+  for (const song of pendingSongs) {
+    try {
+      // Try to insert the song again (this will trigger the same validation)
+      const songData = {
+        title: song.title,
+        artist: song.artist,
+        ug_tab_id: song.tabId,
+        ug_url: `https://tabs.ultimate-guitar.com/tab/${song.artist.toLowerCase().replace(/\s+/g, '-')}/${song.title.toLowerCase().replace(/\s+/g, '-')}-${song.tabId}`,
+        key_signature: null,
+        difficulty: 'unknown',
+        ug_rating: null,
+        ug_votes: 0,
+        genre: 'rock',
+        instrument_type: 'guitar',
+        tuning: 'E A D G B E',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
+        .from('songs')
+        .insert([songData]);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Success! Remove from pending list
+      removeFromPending(song);
+      successful++;
+      console.log(`   ✅ Successfully reprocessed "${song.title}" by ${song.artist}"`);
+      
+    } catch (error) {
+      failed++;
+      console.log(`   ❌ Failed to reprocess "${song.title}" by ${song.artist}: ${error.message}`);
+      
+      // Add back to pending with incremented retry count
+      addToPending(song, error.message);
+    }
+    
+    // Small delay between retries
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  return { success: true, processed: pendingSongs.length, successful, failed };
+}
 
 /**
  * Extract song data from a single HTML file
@@ -160,6 +436,14 @@ async function insertSongsToSupabase(songs) {
         if (error) {
           console.error(`   ❌ Failed to insert "${song.title}" by ${song.artist}: ${error.message}`);
           errorCount++;
+          
+          // Add failed song to pending list for retry
+          addToPending({
+            artist: song.artist,
+            title: song.title,
+            tabId: song.ug_tab_id
+          }, error.message);
+          
         } else {
           insertedCount++;
         }
@@ -170,6 +454,13 @@ async function insertSongsToSupabase(songs) {
       } catch (insertError) {
         console.error(`   ❌ Unexpected error inserting "${song.title}" by ${song.artist}: ${insertError.message}`);
         errorCount++;
+        
+        // Add failed song to pending list for retry
+        addToPending({
+          artist: song.artist,
+          title: song.title,
+          tabId: song.ug_tab_id
+        }, insertError.message);
       }
     }
     
@@ -221,6 +512,16 @@ function getHTMLFiles() {
 async function main() {
   console.log('🎸 Bulk Ultimate Guitar Songs Importer');
   console.log('=' .repeat(60));
+  
+  // Check pending songs first (TRIGGER POINT B: Before starting new HTML processing)
+  const pendingSongs = loadPendingSongs();
+  if (pendingSongs.length >= 10) {
+    console.log(`🔄 Found ${pendingSongs.length} pending songs (≥10), processing them first...`);
+    const pendingResult = await processPendingSongs();
+    console.log(`   📊 Pending songs processed: ${pendingResult.processed}, successful: ${pendingResult.successful}, failed: ${pendingResult.failed}`);
+  } else if (pendingSongs.length > 0) {
+    console.log(`📋 Found ${pendingSongs.length} pending songs (<10), will process at end of session`);
+  }
   
   // Get all HTML files
   const htmlFiles = getHTMLFiles();
@@ -280,6 +581,18 @@ async function main() {
     
     // Small delay to avoid overwhelming the database
     await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  // TRIGGER POINT A: Process pending songs at end of session if any accumulated
+  const finalPendingSongs = loadPendingSongs();
+  if (finalPendingSongs.length > 0) {
+    console.log(`\n🔄 Processing ${finalPendingSongs.length} pending songs at end of session...`);
+    const pendingResult = await processPendingSongs();
+    console.log(`   📊 Final pending songs processed: ${pendingResult.processed}, successful: ${pendingResult.successful}, failed: ${pendingResult.failed}`);
+    
+    // Update totals to include pending song results
+    totalSongsInserted += pendingResult.successful;
+    totalErrors += pendingResult.failed;
   }
   
   // Summary
