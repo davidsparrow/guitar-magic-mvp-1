@@ -1463,6 +1463,27 @@
     "column_default": null
   },
   {
+    "table_name": "song_attributes",
+    "column_name": "contains_lyrics",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "contains_chords",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "contains_chord_progressions",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
     "table_name": "song_chord_progressions",
     "column_name": "id",
     "data_type": "uuid",

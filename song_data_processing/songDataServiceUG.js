@@ -497,12 +497,42 @@ const extractChordProgressions = (ugData, sections) => {
           // Find the section this chord belongs to
           const section = findSectionForTime(timingMarkers, sections, i, lines)
           
+          // Ensure we have valid timing for the chord
+          let startTime = section ? section.startTime : null
+          let endTime = section ? section.endTime : null
+          
+          // If no section timing, try to find the closest timing marker
+          if (!startTime) {
+            // Look backwards from current line for timing markers
+            for (let j = i; j >= 0; j--) {
+              const prevLine = lines[j].trim()
+              const timingMatch = prevLine.match(/(\d+:\d+)/)
+              if (timingMatch) {
+                startTime = timingMatch[1]
+                break
+              }
+            }
+          }
+          
+          // If still no timing, use a default
+          if (!startTime) {
+            startTime = '0:00'
+          }
+          
+          // If no end time, estimate based on sequence
+          if (!endTime && chordOrder < chordProgressions.length + 10) {
+            // Estimate 10 seconds per chord if no timing available
+            const startSeconds = startTime ? parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]) : 0
+            const endSeconds = startSeconds + 10
+            endTime = `${Math.floor(endSeconds / 60)}:${(endSeconds % 60).toString().padStart(2, '0')}`
+          }
+          
           const chordProgression = {
             chordName: chordInfo.chordName,
             chordType: chordInfo.chordType,
             rootNote: chordInfo.rootNote,
-            startTime: section ? section.startTime : null,
-            endTime: section ? section.endTime : null,
+            startTime: startTime,
+            endTime: endTime,
             sequenceOrder: chordOrder++,
             barPosition: null, // Will be calculated later
             chordData: {

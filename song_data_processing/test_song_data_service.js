@@ -5,7 +5,7 @@
  * into structured song objects using our enhanced database schema
  */
 
-import { testSongDataService, getSongDataServiceStatus } from '../utils/songDataServiceUG.js'
+import { testSongDataService, getSongDataServiceStatus } from './songDataServiceUG.js'
 
 /**
  * Test the song data service with different tab IDs
