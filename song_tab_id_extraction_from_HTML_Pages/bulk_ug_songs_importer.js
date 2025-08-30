@@ -6,8 +6,14 @@ import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config({ path: '.env.local' });
+// Load environment variables from parent directory
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
 
 /**
  * Supabase client configuration
@@ -194,7 +200,7 @@ async function insertSongsToSupabase(songs) {
  * @returns {Array} Array of HTML file paths
  */
 function getHTMLFiles() {
-  const ugPagesDir = './docs/ug-pages';
+  const ugPagesDir = './ug-pages';
   
   if (!fs.existsSync(ugPagesDir)) {
     console.error(`❌ Directory not found: ${ugPagesDir}`);
@@ -220,7 +226,7 @@ async function main() {
   const htmlFiles = getHTMLFiles();
   
   if (htmlFiles.length === 0) {
-    console.log('❌ No HTML files found in docs/ug-pages/ folder');
+    console.log('❌ No HTML files found in ug-pages/ folder');
     return;
   }
   

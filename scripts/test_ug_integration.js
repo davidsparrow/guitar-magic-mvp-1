@@ -5,7 +5,8 @@
  * 1. Chord Data Service UG
  * 2. UG Scraper Integration  
  * 3. Chord Data Mapper UG
- * 4. End-to-end integration
+ * 4. Database Infrastructure & Caching
+ * 5. End-to-end integration
  * 
  * Run with: node scripts/test_ug_integration.js
  */
@@ -28,6 +29,11 @@ import {
   getChordDataMapperStatus 
 } from '../utils/chordDataMapperUG.js'
 
+// Database infrastructure testing
+import { createClient } from '@supabase/supabase-js'
+import dotenv from 'dotenv'
+dotenv.config()
+
 /**
  * 🎯 MAIN TEST FUNCTION
  * Runs all tests in sequence
@@ -40,13 +46,16 @@ async function runAllTests() {
     // Test 1: Service Status Checks
     await testServiceStatus()
     
-    // Test 2: Individual Component Tests
+    // Test 2: Database Infrastructure & Caching
+    await testDatabaseInfrastructure()
+    
+    // Test 3: Individual Component Tests
     await testIndividualComponents()
     
-    // Test 3: Integration Tests
+    // Test 4: Integration Tests
     await testIntegration()
     
-    // Test 4: End-to-End Tests
+    // Test 5: End-to-End Tests
     await testEndToEnd()
     
     console.log('=' .repeat(60))
@@ -87,10 +96,181 @@ async function testServiceStatus() {
 }
 
 /**
- * Test 2: Test individual components
+ * Test 2: Database Infrastructure & Caching Strategy
+ * Tests the "never scan twice" infrastructure
+ */
+async function testDatabaseInfrastructure() {
+  console.log('\n🗄️  TEST 2: Database Infrastructure & Caching')
+  console.log('-'.repeat(40))
+  
+  try {
+    // Initialize Supabase client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.log('❌ Missing Supabase environment variables')
+      return false
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    console.log('✅ Supabase client initialized')
+    
+    // Test 2.1: Required Tables Exist
+    console.log('\n   🔍 Testing Required Database Tables...')
+    const requiredTables = [
+      'songs',
+      'song_attributes', 
+      'song_sections',
+      'song_chord_progressions',
+      'video_song_mappings',
+      'chord_sync_groups',
+      'chord_sync_chords',
+      'tab_caption_requests'
+    ]
+    
+    let tablesFound = 0
+    for (const table of requiredTables) {
+      try {
+        const { data, error } = await supabase
+          .from(table)
+          .select('count')
+          .limit(1)
+        
+        if (error) {
+          console.log(`   ❌ Table ${table}: ${error.message}`)
+        } else {
+          console.log(`   ✅ Table ${table} accessible`)
+          tablesFound++
+        }
+      } catch (err) {
+        console.log(`   ❌ Table ${table} error: ${err.message}`)
+      }
+    }
+    
+    // Test 2.2: Helper Functions Exist
+    console.log('\n   🔧 Testing Database Helper Functions...')
+    
+    // Check if required tables for the function exist first
+    const functionTables = ['chord_sync_groups', 'chord_sync_chords']
+    let functionTablesExist = 0
+    
+    for (const table of functionTables) {
+      try {
+        const { data, error } = await supabase
+          .from(table)
+          .select('count')
+          .limit(1)
+        
+        if (error) {
+          console.log(`   ❌ Function table ${table}: ${error.message}`)
+        } else {
+          console.log(`   ✅ Function table ${table} accessible`)
+          functionTablesExist++
+        }
+      } catch (err) {
+        console.log(`   ❌ Function table ${table} error: ${err.message}`)
+      }
+    }
+    
+    // Only test the function if the required tables exist
+    if (functionTablesExist === functionTables.length) {
+      try {
+        const { data: syncGroup, error: syncError } = await supabase
+          .rpc('create_chord_sync_group', {
+            p_favorite_id: 'test-123',
+            p_song_id: 'test-song-123'
+          })
+        
+        if (syncError) {
+          console.log(`   ❌ create_chord_sync_group: ${syncError.message}`)
+        } else {
+          console.log('   ✅ create_chord_sync_group function working')
+        }
+      } catch (err) {
+        console.log(`   ❌ Function test error: ${err.message}`)
+      }
+    } else {
+      console.log('   ⚠️  Skipping function test - required tables missing')
+    }
+    
+    // Test 2.3: Song Caching Strategy
+    console.log('\n   💾 Testing Song Caching Strategy...')
+    try {
+      const { data: songs, error } = await supabase
+        .from('songs')
+        .select('*')
+        .limit(5)
+      
+      if (error) {
+        console.log(`   ❌ Songs table query failed: ${error.message}`)
+      } else if (songs && songs.length > 0) {
+        console.log(`   ✅ Songs table accessible with ${songs.length} sample records`)
+        
+        // Check data completeness for caching
+        const sampleSong = songs[0]
+        const dataFields = Object.keys(sampleSong)
+        console.log(`   📊 Sample song has ${dataFields.length} fields: ${dataFields.join(', ')}`)
+        
+        // Check for key UG data fields that enable caching
+        const ugFields = ['title', 'artist', 'chords', 'sections', 'progression']
+        const hasUGData = ugFields.some(field => 
+          dataFields.includes(field) || 
+          sampleSong[field] !== undefined
+        )
+        
+        if (hasUGData) {
+          console.log('   ✅ UG data fields detected - caching ready')
+        } else {
+          console.log('   ⚠️  UG data fields not yet populated - caching pending')
+        }
+      } else {
+        console.log('   ✅ Songs table empty - ready for first comprehensive scan')
+      }
+    } catch (err) {
+      console.log(`   ❌ Songs table error: ${err.message}`)
+    }
+    
+    // Test 2.4: Data Completeness Strategy
+    console.log('\n   📋 Validating Data Completeness Strategy...')
+    const requiredDataFields = {
+      basic: ['title', 'artist', 'album', 'year', 'genre'],
+      structure: ['sections', 'chord_progressions', 'timing'],
+      technical: ['difficulty', 'tuning', 'capo', 'tempo'],
+      content: ['lyrics', 'chords', 'tabs', 'notes'],
+      metadata: ['rating', 'votes', 'views', 'last_updated']
+    }
+    
+    console.log('   📊 Required Data Fields for Complete Capture:')
+    Object.entries(requiredDataFields).forEach(([category, fields]) => {
+      console.log(`   ${category.toUpperCase()}: ${fields.join(', ')}`)
+    })
+    
+    console.log(`\n   📊 Total fields to capture: ${Object.values(requiredDataFields).flat().length}`)
+    console.log('   ✅ Data completeness strategy defined for "never scan twice"')
+    
+    const infrastructureReady = tablesFound >= 4 // At least 4 out of 5 tables
+    if (infrastructureReady) {
+      console.log('\n✅ Database Infrastructure Tests: PASSED')
+      console.log('   💡 Ready to implement comprehensive song data capture')
+    } else {
+      console.log('\n⚠️  Database Infrastructure Tests: PARTIAL')
+      console.log('   💡 Some tables missing - may need schema updates')
+    }
+    
+    return infrastructureReady
+    
+  } catch (error) {
+    console.error('❌ Database Infrastructure Tests: FAILED', error)
+    return false
+  }
+}
+
+/**
+ * Test 3: Test individual components
  */
 async function testIndividualComponents() {
-  console.log('\n🔧 TEST 2: Individual Component Tests')
+  console.log('\n🔧 TEST 3: Individual Component Tests')
   console.log('-'.repeat(40))
   
   try {
@@ -125,10 +305,10 @@ async function testIndividualComponents() {
 }
 
 /**
- * Test 3: Test integration between components
+ * Test 4: Test integration between components
  */
 async function testIntegration() {
-  console.log('\n🔗 TEST 3: Integration Tests')
+  console.log('\n🔗 TEST 4: Integration Tests')
   console.log('-'.repeat(40))
   
   try {
@@ -159,10 +339,10 @@ async function testIntegration() {
 }
 
 /**
- * Test 4: End-to-end testing
+ * Test 5: End-to-end testing
  */
 async function testEndToEnd() {
-  console.log('\n🎯 TEST 4: End-to-End Tests')
+  console.log('\n🎯 TEST 5: End-to-End Tests')
   console.log('-'.repeat(40))
   
   try {

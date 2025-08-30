@@ -518,6 +518,76 @@
     "column_default": null
   },
   {
+    "table_name": "chord_sync_chords",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()"
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "sync_group_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "chord_name",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "timing_ms",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "position_data",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": "'{}'::jsonb"
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "chord_variation_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "display_settings",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": "'{}'::jsonb"
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "user_notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "chord_sync_chords",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
+  },
+  {
     "table_name": "chord_sync_groups",
     "column_name": "id",
     "data_type": "uuid",
@@ -796,6 +866,27 @@
     "data_type": "timestamp with time zone",
     "is_nullable": "YES",
     "column_default": "now()"
+  },
+  {
+    "table_name": "database_enhancement_summary",
+    "column_name": "table_name",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "database_enhancement_summary",
+    "column_name": "record_count",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "database_enhancement_summary",
+    "column_name": "status",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
   },
   {
     "table_name": "favorites",
@@ -1281,6 +1372,97 @@
     "column_default": null
   },
   {
+    "table_name": "song_attributes",
+    "column_name": "mapping_confidence_reason",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "mapping_verified",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "mapping_verified_by",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "mapping_verified_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "mapping_notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "ug_metadata",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": "'{}'::jsonb"
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "tab_format",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "tab_accuracy_score",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "tab_completeness_score",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "user_notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "practice_tips",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "common_mistakes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_attributes",
+    "column_name": "learning_progression",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
     "table_name": "song_chord_progressions",
     "column_name": "id",
     "data_type": "uuid",
@@ -1405,6 +1587,139 @@
     "data_type": "jsonb",
     "is_nullable": "YES",
     "column_default": null
+  },
+  {
+    "table_name": "song_chord_progressions",
+    "column_name": "barre_technique",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "song_chord_progressions",
+    "column_name": "stretch_required",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "song_chord_progressions",
+    "column_name": "thumb_position",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_chord_progressions",
+    "column_name": "muting_technique",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_chord_progressions",
+    "column_name": "hammer_on_pull_off",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "song_chord_progressions",
+    "column_name": "slide_technique",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "song_chord_progressions",
+    "column_name": "chord_difficulty_score",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()"
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "song_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "metadata_type",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "metadata_key",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "metadata_value",
+    "data_type": "jsonb",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "confidence_score",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "source",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": "'ultimate_guitar'::text"
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "source_url",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "last_verified",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "verified_by",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "song_metadata",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
   },
   {
     "table_name": "song_sections",
@@ -1557,6 +1872,55 @@
     "table_name": "song_sections",
     "column_name": "chord_sequence",
     "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_sections",
+    "column_name": "bar_count",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_sections",
+    "column_name": "measure_count",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_sections",
+    "column_name": "chord_changes_per_bar",
+    "data_type": "jsonb",
+    "is_nullable": "YES",
+    "column_default": "'[]'::jsonb"
+  },
+  {
+    "table_name": "song_sections",
+    "column_name": "strumming_pattern",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_sections",
+    "column_name": "picking_pattern",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_sections",
+    "column_name": "dynamics",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "song_sections",
+    "column_name": "special_instructions",
+    "data_type": "text",
     "is_nullable": "YES",
     "column_default": null
   },
@@ -1750,6 +2114,83 @@
     "column_default": null
   },
   {
+    "table_name": "songs",
+    "column_name": "ug_last_updated",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "songs",
+    "column_name": "tab_count",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": "0"
+  },
+  {
+    "table_name": "songs",
+    "column_name": "official_tab",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "songs",
+    "column_name": "verified_tab",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "songs",
+    "column_name": "tab_contributor",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "songs",
+    "column_name": "tab_contribution_date",
+    "data_type": "date",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "songs",
+    "column_name": "tab_quality_score",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "songs",
+    "column_name": "scan_attempts",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": "0"
+  },
+  {
+    "table_name": "songs",
+    "column_name": "last_scan_success",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "songs",
+    "column_name": "scan_error_message",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "songs",
+    "column_name": "data_completeness_score",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": "0"
+  },
+  {
     "table_name": "subscriptions",
     "column_name": "id",
     "data_type": "uuid",
@@ -1860,6 +2301,118 @@
     "data_type": "jsonb",
     "is_nullable": "YES",
     "column_default": "'[]'::jsonb"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "song_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "priority",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'normal'::text"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "status",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'pending'::text"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "requested_by",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "requested_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "processed_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "processing_notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "error_message",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "retry_count",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": "0"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "max_retries",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": "3"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "next_retry_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "ug_tab_id",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "ug_url",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "tab_caption_requests",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": "now()"
   },
   {
     "table_name": "user_profiles",
@@ -2168,5 +2721,47 @@
     "data_type": "timestamp with time zone",
     "is_nullable": "YES",
     "column_default": "now()"
+  },
+  {
+    "table_name": "video_song_mappings",
+    "column_name": "video_id",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "video_song_mappings",
+    "column_name": "mapping_confidence_reason",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "video_song_mappings",
+    "column_name": "mapping_verified",
+    "data_type": "boolean",
+    "is_nullable": "YES",
+    "column_default": "false"
+  },
+  {
+    "table_name": "video_song_mappings",
+    "column_name": "mapping_verified_by",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "video_song_mappings",
+    "column_name": "mapping_verified_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "video_song_mappings",
+    "column_name": "mapping_notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
   }
 ]
